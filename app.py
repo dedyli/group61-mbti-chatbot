@@ -1,13 +1,41 @@
 import streamlit as st
 import requests
 
-# App title and sticky header
+# App title and fixed header using Streamlit components
 st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
 st.markdown("""
-    <div style='background-color: #1e293b; padding: 20px 10px; text-align: center; border-bottom: 2px solid violet; position: relative; top: 0; z-index: 999;'>
-        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' height='60' style='vertical-align: middle; margin-right: 10px;'>
-        <span style='color: violet; font-size: 28px; font-weight: bold;'>Group 61 – MBTI Personality Chatbot</span>
+    <style>
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1e293b;
+            z-index: 1000;
+            padding: 10px 0;
+            text-align: center;
+            border-bottom: 2px solid violet;
+        }
+        .fixed-header img {
+            height: 50px;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        .fixed-header span {
+            color: violet;
+            font-size: 24px;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .main-container {
+            margin-top: 100px;
+        }
+    </style>
+    <div class="fixed-header">
+        <img src="https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png" />
+        <span>Group 61 – MBTI Personality Chatbot</span>
     </div>
+    <div class="main-container">
 """, unsafe_allow_html=True)
 
 # Initialize chat history
@@ -52,5 +80,5 @@ if prompt:
             st.markdown(bot_msg)
             st.session_state.messages.append({"role": "assistant", "content": bot_msg})
 
-            st.markdown(bot_msg)
-            st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+# Close the container div
+st.markdown("</div>", unsafe_allow_html=True)
