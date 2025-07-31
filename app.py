@@ -1,12 +1,14 @@
 import streamlit as st
 import requests
 
-# App title
-st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot")
+# App title and fixed header
+st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
 st.markdown("""
-    <h1 style='text-align: center; color: violet;'>Group 61 - MBTI Personality Chatbot</h1>
-    <h2 style='text-align: center;'>🧠 MBTI Personality Chatbot</h2>
-    <p style='text-align: center;'>Chat freely with me. After a few responses, I’ll guess your MBTI personality type!</p>
+    <div style='position: fixed; top: 0; left: 0; width: 100%; background-color: #1e293b; z-index: 1000; padding: 20px 10px; text-align: center;'>
+        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' height='60' style='vertical-align: middle; margin-right: 10px;'>
+        <span style='color: violet; font-size: 28px; font-weight: bold;'>Group 61 – MBTI Personality Chatbot</span>
+    </div>
+    <div style='margin-top: 120px;'></div>
 """, unsafe_allow_html=True)
 
 # Initialize chat history
