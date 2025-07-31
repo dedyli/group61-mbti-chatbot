@@ -1,13 +1,41 @@
 import streamlit as st
 import requests
 
-# App title and visible header with Tsinghua logo
+# App title and fixed header using custom CSS
 st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
 st.markdown("""
-    <div style='background-color: #1e293b; padding: 15px; text-align: center; border-bottom: 2px solid violet;'>
-        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' style='height: 60px; vertical-align: middle; margin-right: 15px;' />
-        <span style='color: violet; font-size: 26px; font-weight: bold; vertical-align: middle;'>Group 61 – MBTI Personality Chatbot</span>
+    <style>
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1e293b;
+            z-index: 9999;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 2px solid violet;
+        }
+        .fixed-header img {
+            height: 50px;
+            vertical-align: middle;
+            margin-right: 15px;
+        }
+        .fixed-header span {
+            color: violet;
+            font-size: 24px;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .main-container {
+            margin-top: 100px;
+        }
+    </style>
+    <div class="fixed-header">
+        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' />
+        <span>Group 61 – MBTI Personality Chatbot</span>
     </div>
+    <div class="main-container">
 """, unsafe_allow_html=True)
 
 # Initialize chat history
@@ -51,3 +79,5 @@ if prompt:
 
             st.markdown(bot_msg)
             st.session_state.messages.append({"role": "assistant", "content": bot_msg})
+
+st.markdown("</div>", unsafe_allow_html=True)
