@@ -1,54 +1,52 @@
 import streamlit as st
-import openai
+import requests
 
-# Replace this with your actual OpenRouter API key
-openai.api_key = "YOUR_OPENROUTER_API_KEY"
-openai.api_base = "https://openrouter.ai/api/v1"
-
-st.set_page_config(page_title="MBTI Personality Chatbot", layout="centered")
-
-# Tsinghua branding
+# App title
+st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot")
 st.markdown("""
-    <div style='text-align: center; padding: 10px;'>
-        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' height='80'/>
-        <h1 style='color: white;'>Tsinghua University - IEDE Program</h1>
-        <h2 style='color: violet;'>Group 61 - MBTI Personality Chatbot</h2>
-    </div>
-    <style>
-        body {background-color: #0f172a; color: white;}
-        .stApp {background-color: #1e293b; padding: 1rem;}
-    </style>
+    <h1 style='text-align: center; color: violet;'>Group 61 - MBTI Personality Chatbot</h1>
+    <h2 style='text-align: center;'>🧠 MBTI Personality Chatbot</h2>
+    <p style='text-align: center;'>Chat freely with me. After a few responses, I’ll guess your MBTI personality type!</p>
 """, unsafe_allow_html=True)
 
-st.title("🧠 MBTI Personality Chatbot")
-st.markdown("Chat freely with me. After a few responses, I’ll guess your MBTI personality type!")
-
+# Initialize chat history
 if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "mbti_result" not in st.session_state:
-    st.session_state.mbti_result = None
+    st.session_state["messages"] = []
 
-user_input = st.chat_input("Say something...")
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-
+# Display chat messages
 for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# Trigger MBTI prediction after 3+ messages
-user_msgs = [m for m in st.session_state.messages if m["role"] == "user"]
+# User input
+prompt = st.chat_input("Say something...")
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-if len(user_msgs) >= 3 and not st.session_state.mbti_result:
-    convo = "\n".join([f'{m["role"].capitalize()}: {m["content"]}' for m in st.session_state.messages])
-    prompt = f"You are a personality expert. Based on the following conversation, what is the user's MBTI personality type?\n\n{convo}\n\nRespond only with the 4-letter MBTI type and a one-line explanation."
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            headers = {
+                "Authorization": f"Bearer {st.secrets['OPENROUTER_API_KEY']}",
+                "Content-Type": "application/json"
+            }
 
-    response = openai.ChatCompletion.create(
-        model="mistralai/mixtral-8x7b-instruct",
-        messages=[{"role": "user", "content": prompt}]
-    )
+            data = {
+                "model": "mistralai/mixtral-8x7b-instruct",
+                "messages": st.session_state.messages,
+            }
 
-    st.session_state.mbti_result = response["choices"][0]["message"]["content"]
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=data
+            )
 
-if st.session_state.mbti_result:
-    st.markdown(f"🧬 **Predicted MBTI Type:** {st.session_state.mbti_result}")
+            try:
+                bot_msg = response.json()["choices"][0]["message"]["content"]
+            except Exception as e:
+                bot_msg = f"Error: {e}\n\n{response.text}"
+
+            st.markdown(bot_msg)
+            st.session_state.messages.append({"role": "assistant", "content": bot_msg})
