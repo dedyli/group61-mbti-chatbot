@@ -28,15 +28,16 @@ st.markdown("""
             vertical-align: middle;
         }
         .main-container {
-            margin-top: 100px;
+            margin-top: 120px;
         }
     </style>
     <div class="fixed-header">
         <img src="https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png" />
         <span>Group 61 – MBTI Personality Chatbot</span>
     </div>
-    <div class="main-container">
 """, unsafe_allow_html=True)
+
+st.markdown("<div class='main-container'>", unsafe_allow_html=True)
 
 # Initialize chat history
 if "messages" not in st.session_state:
