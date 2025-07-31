@@ -1,14 +1,13 @@
 import streamlit as st
 import requests
 
-# App title and fixed header
+# App title and sticky header
 st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
 st.markdown("""
-    <div style='position: fixed; top: 0; left: 0; width: 100%; background-color: #1e293b; z-index: 1000; padding: 20px 10px; text-align: center;'>
+    <div style='background-color: #1e293b; padding: 20px 10px; text-align: center; border-bottom: 2px solid violet; position: relative; top: 0; z-index: 999;'>
         <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' height='60' style='vertical-align: middle; margin-right: 10px;'>
         <span style='color: violet; font-size: 28px; font-weight: bold;'>Group 61 – MBTI Personality Chatbot</span>
     </div>
-    <div style='margin-top: 120px;'></div>
 """, unsafe_allow_html=True)
 
 # Initialize chat history
@@ -49,6 +48,9 @@ if prompt:
                 bot_msg = response.json()["choices"][0]["message"]["content"]
             except Exception as e:
                 bot_msg = f"Error: {e}\n\n{response.text}"
+
+            st.markdown(bot_msg)
+            st.session_state.messages.append({"role": "assistant", "content": bot_msg})
 
             st.markdown(bot_msg)
             st.session_state.messages.append({"role": "assistant", "content": bot_msg})
