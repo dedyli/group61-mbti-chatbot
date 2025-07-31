@@ -1,42 +1,17 @@
 import streamlit as st
 import requests
 
-# App title and fixed header using custom CSS
+# App title using Streamlit columns instead of fixed header
 st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
-st.markdown("""
-    <style>
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: #1e293b;
-            z-index: 9999;
-            padding: 10px;
-            text-align: center;
-            border-bottom: 2px solid violet;
-        }
-        .fixed-header img {
-            height: 50px;
-            vertical-align: middle;
-            margin-right: 15px;
-        }
-        .fixed-header span {
-            color: violet;
-            font-size: 24px;
-            font-weight: bold;
-            vertical-align: middle;
-        }
-        .main-container {
-            margin-top: 100px;
-        }
-    </style>
-    <div class="fixed-header">
-        <img src='https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png' />
-        <span>Group 61 – MBTI Personality Chatbot</span>
-    </div>
-    <div class="main-container">
-""", unsafe_allow_html=True)
+col1, col2 = st.columns([1, 10])
+with col1:
+    st.image("https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png", width=60)
+with col2:
+    st.markdown("""
+        <h2 style='color: violet; margin-top: 10px;'>Group 61 – MBTI Personality Chatbot</h2>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -79,5 +54,3 @@ if prompt:
 
             st.markdown(bot_msg)
             st.session_state.messages.append({"role": "assistant", "content": bot_msg})
-
-st.markdown("</div>", unsafe_allow_html=True)
