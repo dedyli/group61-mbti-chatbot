@@ -1,17 +1,25 @@
 import streamlit as st
 import requests
 
-# App title using Streamlit columns instead of fixed header
 st.set_page_config(page_title="Group 61 - MBTI Personality Chatbot", layout="centered")
+
+# Invisible anchor for "Scroll to Top"
+st.markdown('<a id="top"></a>', unsafe_allow_html=True)
+
+# App header with Tsinghua logo and title
 col1, col2 = st.columns([1, 10])
 with col1:
-    st.image("https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png", width=60)
+    st.image("https://upload.wikimedia.org/wikipedia/en/3/3f/Tsinghua_University_Logo.png", width=50)
 with col2:
-    st.markdown("""
-        <h2 style='color: violet; margin-top: 10px;'>Group 61 – MBTI Personality Chatbot</h2>
-    """, unsafe_allow_html=True)
-
+    st.markdown("<h2 style='color: violet; margin-top: 12px;'>Group 61 – MBTI Personality Chatbot</h2>", unsafe_allow_html=True)
 st.markdown("---")
+
+# "Scroll to Top" button
+st.markdown("""
+<div style="text-align: right;">
+    <a href="#top" style="color: #8338ec; font-size: 18px; text-decoration: underline;">⬆️ Scroll to Top</a>
+</div>
+""", unsafe_allow_html=True)
 
 # Initialize chat history
 if "messages" not in st.session_state:
