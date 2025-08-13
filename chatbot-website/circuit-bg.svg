@@ -1,0 +1,22 @@
+<!-- circuit-bg.svg -->
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.23">
+    <rect x="0" y="0" width="1920" height="1080" fill="none"></rect>
+    <g stroke="#bbdefb" stroke-width="1.3">
+      <path d="M100 80 h100 v120 h-80 v100"></path>
+      <path d="M370 280 v-70 h90 v90 h120"></path>
+      <path d="M800 150 v100 h-70 v60"></path>
+      <path d="M1300 340 v-80 h110 v120 h80"></path>
+      <path d="M1700 220 v140 h-100"></path>
+      <circle cx="450" cy="400" r="8"></circle>
+      <circle cx="1100" cy="150" r="8"></circle>
+      <circle cx="1750" cy="370" r="8"></circle>
+      <circle cx="1500" cy="950" r="8"></circle>
+      <path d="M900 900 v-110 h100 v40 h60"></path>
+      <path d="M1250 820 v-30 h70 v80"></path>
+      <path d="M170 850 v-90 h80"></path>
+      <path d="M400 900 h60 v-70"></path>
+      <path d="M1000 450 v50 h120"></path>
+    </g>
+  </g>
+</svg>

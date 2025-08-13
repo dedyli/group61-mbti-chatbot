@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mind-Mapper AI | Group 61 | Tsinghua IEDE</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Dialogflow -->
+  <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      color: #222;
+      overflow-x: hidden;
+      /* Animated gradient background */
+      background: linear-gradient(120deg, #5c1bb5, #8d3cde, #0d0b1f);
+      background-size: 200% 200%;
+      animation: bgShift 14s ease infinite;
+    }
+    @keyframes bgShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Container */
+    .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+    /* Glass header */
+    header {
+      position: sticky;
+      top: 20px;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 22px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+    .branding { display: flex; gap: 12px; align-items: center; }
+    .branding img { height: 44px; width: auto; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); transition: transform .3s ease; }
+    .branding:hover img { transform: rotate(-6deg) scale(1.05); }
+    .brand-text { color: #fff; font-size: 12px; opacity: .9; line-height: 1.2; }
+
+    nav ul { list-style: none; display: flex; gap: 8px; align-items: center; }
+    nav a {
+      text-decoration: none; color: #fff; font-weight: 600; letter-spacing: .2px;
+      padding: 10px 16px; border-radius: 999px; position: relative;
+      transition: all .25s cubic-bezier(.22,.61,.36,1);
+    }
+    nav a:hover, nav a.active { background: rgba(255,255,255,0.18); transform: translateY(-2px); }
+    .globe { cursor: pointer; font-size: 20px; padding: 8px 12px; border-radius: 999px; }
+    .dropdown { position: relative; }
+    .dropdown-menu {
+      display: none; position: absolute; right: 0; top: calc(100% + 10px);
+      background: rgba(255,255,255,.95);
+      border-radius: 14px; min-width: 160px; overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0,0,0,.2);
+    }
+    .dropdown-menu a { display: block; padding: 10px 14px; color: #3D2C8D; }
+    .dropdown-menu a:hover { background: #f1eafe; }
+
+    /* HERO */
+    #home {
+      position: relative; min-height: 86vh;
+      display: grid; grid-template-columns: 1.05fr 1fr; gap: 32px;
+      align-items: center; margin-top: 30px;
+    }
+    .hero-copy { color: #fff; }
+    .title {
+      font-size: clamp(42px, 6vw, 76px);
+      font-weight: 800; line-height: 1.05;
+      text-shadow: 0 10px 30px rgba(0,0,0,.35);
+      margin-bottom: 16px;
+    }
+    .typewriter { font-size: clamp(16px, 2.3vw, 22px); opacity: .95; min-height: 30px; }
+    .hero-actions { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary, .btn-ghost {
+      cursor: pointer; border: none; padding: 12px 18px; border-radius: 12px; font-weight: 700;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(45deg, #ffcc70, #ff7a59);
+      color: #20123a;
+      box-shadow: 0 10px 30px rgba(255,122,89,.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-ghost { background: rgba(255,255,255,.16); color: #fff; }
+    .btn-ghost:hover { background: rgba(255,255,255,.25); transform: translateY(-2px); }
+
+    /* Parallax image card */
+    .hero-art {
+      position: relative; perspective: 1000px;
+    }
+    .art-card {
+      position: relative; border-radius: 26px; overflow: hidden;
+      transform-style: preserve-3d;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.25);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    .art-img {
+      display: block; width: 100%; height: auto;
+      transform: translateZ(20px) scale(1.01);
+      filter: saturate(105%);
+    }
+    .welcome-badge {
+      position: absolute; right: 18px; top: 18px;
+      background: #ffefc4; color: #7a4e00; padding: 10px 14px; border-radius: 12px;
+      font-weight: 700; transform: rotate(2deg); box-shadow: 0 12px 20px rgba(0,0,0,.25);
+      animation: popIn .8s ease both .6s;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-10px) scale(.95) rotate(2deg); }
+      to   { opacity: 1; transform: translateY(0)      scale(1)    rotate(2deg); }
+    }
+
+    /* Chat teaser */
+    .chat-mini {
+      margin-top: 18px; padding: 14px; border-radius: 16px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      display: flex; gap: 10px; align-items: center; color: #fff;
+    }
+    .chat-mini input {
+      flex: 1; background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25); border-radius: 10px;
+      padding: 10px 12px; color: #fff;
+      outline: none;
+    }
+    .chat-mini input::placeholder { color: #eae6ff; opacity: .8; }
+
+    /* Sections */
+    section { padding: 76px 0; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+    .card {
+      background: rgba(255,255,255,.85);
+      border: 1px solid rgba(0,0,0,.06);
+      border-radius: 20px; padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.12);
+      transition: transform .25s ease;
+    }
+    .card:hover { transform: translateY(-6px); }
+    .section-title {
+      color: #fff; text-align: center; font-weight: 800;
+      font-size: clamp(30px, 4.6vw, 42px); margin-bottom: 24px;
+      text-shadow: 0 8px 26px rgba(0,0,0,.35);
+    }
+    .section-sub { max-width: 900px; margin: 0 auto 28px; color: #f4ecff; text-align: center; opacity: .95; }
+
+    /* Steps */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .step { background: rgba(255,255,255,.95); border-radius: 18px; padding: 24px; border: 1px solid #eee; text-align: center; }
+    .step .num { width: 50px; height: 50px; border-radius: 50%; display: inline-flex; align-items:center; justify-content:center; font-weight: 800; color:#fff; background:#6B4FBB; margin-bottom: 10px; transition: transform .2s; }
+    .step:hover .num { transform: scale(1.12); }
+
+    /* Stats counters */
+    .stats { display:flex; gap:18px; justify-content:center; margin-top: 26px; flex-wrap: wrap; }
+    .stat {
+      background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
+      color:#fff; padding:18px 22px; border-radius:16px; min-width:180px; text-align:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .stat .value { font-size: 36px; font-weight: 800; }
+
+    /* FAQ */
+    .faq { max-width: 900px; margin: 0 auto; }
+    .faq-item { background:#fff; border:1px solid #eee; border-radius:14px; margin-bottom:12px; overflow:hidden; }
+    .faq-q { cursor:pointer; padding:16px 18px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+    .faq-q .chev { transition: transform .25s; }
+    .faq-a { max-height:0; overflow:hidden; transition: max-height .35s ease, padding .35s ease; padding: 0 18px; }
+    .faq-item.open .faq-a { max-height: 220px; padding: 0 18px 16px; }
+    .faq-item.open .faq-q .chev { transform: rotate(180deg); }
+
+    /* Contact */
+    .form { display: grid; gap:12px; max-width: 720px; margin: 0 auto; }
+    .form input, .form textarea { padding: 12px 14px; border-radius: 12px; border:1px solid #ddd; font-family: inherit; }
+    .form input:focus, .form textarea:focus { outline: none; border-color:#6B4FBB; box-shadow: 0 0 0 3px rgba(107,79,187,.2); }
+    .form button { justify-self: start; }
+
+    /* Reveal on scroll */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.show { opacity: 1; transform: translateY(0); }
+
+    /* Responsive */
+    @media (max-width: 1050px) {
+      #home { grid-template-columns: 1fr; min-height: auto; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="reveal">
+      <div class="branding">
+        <img src="Tsinghua_University_logo_and_wordmark_in_Chinese_and_English_characters.svg.png" alt="Tsinghua Logo"
+             onerror="this.onerror=null;this.src='https://placehold.co/50x50/5c1bb5/ffffff?text=T';">
+        <div class="brand-text">
+          <div data-lang="en">Presented by Group 61<br>Tsinghua University – IEDE</div>
+          <div data-lang="vi">Trình bày bởi Nhóm 61<br>Đại học Thanh Hoa – IEDE</div>
+        </div>
+      </div>
+      <nav>
+        <ul>
+          <li><a class="active" href="#home"><span data-lang="en">Home</span><span data-lang="vi">Trang chủ</span></a></li>
+          <li><a href="#how"><span data-lang="en">How It Works</span><span data-lang="vi">Cách hoạt động</span></a></li>
+          <li><a href="#about"><span data-lang="en">About</span><span data-lang="vi">Giới thiệu</span></a></li>
+          <li><a href="#faq"><span>FAQ</span></a></li>
+          <li><a href="#contact"><span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span></a></li>
+          <li class="dropdown">
+            <a class="globe">🌐</a>
+            <div class="dropdown-menu">
+              <a href="#" data-lang-code="en">English</a>
+              <a href="#" data-lang-code="vi">Tiếng Việt</a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- HERO -->
+    <main>
+      <section id="home" class="reveal">
+        <div class="hero-copy">
+          <div class="title">Mind‑Mapper AI</div>
+          <div class="typewriter" id="typewriter"></div>
+
+          <div class="hero-actions">
+            <button class="btn-primary" id="btn-start"><span data-lang="en">Start Chat</span><span data-lang="vi">Bắt đầu</span></button>
+            <a class="btn-ghost" href="#how"><span data-lang="en">See how it works</span><span data-lang="vi">Xem cách hoạt động</span></a>
+          </div>
+
+          <div class="chat-mini">
+            <input id="teaser-input" placeholder="Say hi to the AI…" />
+            <button class="btn-primary" id="teaser-send"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+          </div>
+        </div>
+
+        <div class="hero-art">
+          <div class="art-card" id="parallax">
+            <img src="vietnam_students.png" class="art-img" alt="Vietnamese students"
+                 onerror="this.onerror=null;this.src='https://placehold.co/800x520?text=Students';">
+            <div class="welcome-badge">
+              <span data-lang="en">Welcome, students of Vietnam! 👋</span>
+              <span data-lang="vi">Chào mừng các bạn học sinh Việt Nam! 👋</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Intro cards -->
+      <section class="reveal">
+        <h2 class="section-title"><span data-lang="en">Why you’ll love this</span><span data-lang="vi">Vì sao bạn sẽ thích</span></h2>
+        <p class="section-sub">
+          <span data-lang="en">Fast, friendly and insightful personality exploration designed for students, powered by Generative AI.</span>
+          <span data-lang="vi">Khám phá tính cách nhanh, thân thiện và sâu sắc được thiết kế cho học sinh, vận hành bởi AI tạo sinh.</span>
+        </p>
+        <div class="card-grid">
+          <div class="card"><strong>😊 <span data-lang="en">Natural Conversation</span><span data-lang="vi">Trò chuyện tự nhiên</span></strong><br/>
+            <span data-lang="en">No tests, no forms—just talk.</span>
+            <span data-lang="vi">Không bài kiểm tra, không biểu mẫu—chỉ là trò chuyện.</span>
+          </div>
+          <div class="card"><strong>🔒 <span data-lang="en">Privacy First</span><span data-lang="vi">Ưu tiên quyền riêng tư</span></strong><br/>
+            <span data-lang="en">Conversations are anonymized and never shared.</span>
+            <span data-lang="vi">Cuộc trò chuyện được ẩn danh và không chia sẻ.</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+          <div class="stat"><div class="value" data-count="16">0</div><div>MBTI Types</div></div>
+          <div class="stat"><div class="value" data-count="2">0</div><div>Languages</div></div>
+          <div class="stat"><div class="value" data-count="10">0</div><div>Minutes</div></div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section id="how" class="reveal">
+        <h2 class="section-title"><span data-lang="en">How It Works</span><span data-lang="vi">Cách hoạt động</span></h2>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3><span data-lang="en">Start the Conversation</span><span data-lang="vi">Bắt đầu trò chuyện</span></h3>
+            <p><span data-lang="en">Say hi to the chatbot—no forms needed.</span>
+               <span data-lang="vi">Chào chatbot—không cần biểu mẫu.</span></p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3><span data-lang="en">Be Yourself</span><span data-lang="vi">Hãy là chính mình</span></h3>
+            <p><span data-lang="en">Share thoughts openly; AI reads your vibe.</span>
+               <span data-lang="vi">Chia sẻ cởi mở; AI sẽ thấu hiểu bạn.</span></p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3><span data-lang="en">Get Your Profile</span><span data-lang="vi">Nhận hồ sơ</span></h3>
+            <p><span data-lang="en">Receive an MBTI-style profile with insights.</span>
+               <span data-lang="vi">Nhận hồ sơ MBTI kèm nhận định.</span></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section id="about" class="reveal">
+        <h2 class="section-title"><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></h2>
+        <div class="card">
+          <p><span data-lang="en">
+            We are Group 61 of Tsinghua University’s IEDE program, building tools that help students know themselves better.
+          </span><span data-lang="vi">
+            Chúng tôi là Nhóm 61 của chương trình IEDE, ĐH Thanh Hoa, xây dựng công cụ giúp học sinh hiểu bản thân hơn.
+          </span></p>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq" class="reveal">
+        <h2 class="section-title">FAQ</h2>
+        <div class="faq">
+          <div class="faq-item">
+            <div class="faq-q">
+              <span><span data-lang="en">What is MBTI?</span><span data-lang="vi">MBTI là gì?</span></span>
+              <span class="chev">⌄</span>
+            </div>
+            <div class="faq-a">
+              <p><span data-lang="en">A framework describing 16 personality types based on preferences.</span>
+                 <span data-lang="vi">Khung mô tả 16 kiểu tính cách dựa trên sở thích.</span></p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">
+              <span><span data-lang="en">Is my data private?</span><span data-lang="vi">Dữ liệu có riêng tư?</span></span>
+              <span class="chev">⌄</span>
+            </div>
+            <div class="faq-a">
+              <p><span data-lang="en">Yes—anonymized, secure, never sold.</span>
+                 <span data-lang="vi">Có—ẩn danh, bảo mật, không bán.</span></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section id="contact" class="reveal">
+        <h2 class="section-title"><span data-lang="en">Get in Touch</span><span data-lang="vi">Liên hệ</span></h2>
+        <form class="form" onsubmit="alert('Thanks!'); this.reset(); return false;">
+          <input type="text" required data-lang-en-placeholder="Your Name" data-lang-vi-placeholder="Tên của bạn">
+          <input type="email" required data-lang-en-placeholder="Your Email" data-lang-vi-placeholder="Email của bạn">
+          <textarea rows="5" required data-lang-en-placeholder="Your Message" data-lang-vi-placeholder="Tin nhắn của bạn"></textarea>
+          <button class="btn-primary" type="submit"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Dialogflow Messenger -->
+  <df-messenger intent="WELCOME" chat-title="Mind-Mapper AI" agent-id="224cb18e-50b8-41b2-9207-d75132dca977" language-code="en"></df-messenger>
+
+  <script>
+    // Helpers
+    const $ = (s, root=document) => root.querySelector(s);
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+
+    // Language
+    const dropdown = $('.dropdown');
+    const menu = $('.dropdown-menu');
+    dropdown.addEventListener('click', (e) => {
+      const isLink = e.target.matches('[data-lang-code]');
+      if (e.target.classList.contains('globe')) return;
+      if (!isLink) return;
+      e.preventDefault();
+      setLanguage(e.target.getAttribute('data-lang-code'));
+      menu.style.display = 'none';
+    });
+    $('.globe').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', ()=> menu.style.display = 'none');
+
+    function setLanguage(lang) {
+      document.body.className = 'lang-' + lang;
+      const placeholders = $$('[data-lang-en-placeholder]');
+      placeholders.forEach(el => {
+        const txt = el.getAttribute('data-lang-' + lang + '-placeholder');
+        if (txt) el.setAttribute('placeholder', txt);
+      });
+      const df = document.querySelector('df-messenger');
+      if (df) df.setAttribute('language-code', lang);
+      localStorage.setItem('preferredLanguage', lang);
+    }
+    setLanguage(localStorage.getItem('preferredLanguage') || 'en');
+
+    // Typewriter
+    const phrases = {
+      en: [
+        'Conversational Personality Analysis.',
+        'Built for students, powered by Generative AI.',
+        'Discover your MBTI‑style profile in minutes.'
+      ],
+      vi: [
+        'Phân tích tính cách qua hội thoại.',
+        'Dành cho học sinh, vận hành bởi AI tạo sinh.',
+        'Khám phá hồ sơ MBTI trong vài phút.'
+      ]
+    };
+    function runTypewriter() {
+      const lang = document.body.className.includes('lang-vi') ? 'vi' : 'en';
+      const lines = phrases[lang];
+      const target = $('#typewriter');
+      let i = 0, j = 0, deleting = false;
+      function tick() {
+        const line = lines[i % lines.length];
+        if (!deleting) {
+          j++; target.textContent = line.slice(0, j);
+          if (j === line.length) { deleting = true; setTimeout(tick, 1200); return; }
+        } else {
+          j--; target.textContent = line.slice(0, j);
+          if (j === 0) { deleting = false; i++; }
+        }
+        setTimeout(tick, deleting ? 22 : 30);
+      }
+      tick();
+    }
+    runTypewriter();
+
+    // Parallax effect
+    const card = $('#parallax');
+    card.addEventListener('mousemove', (e)=>{
+      const b = card.getBoundingClientRect();
+      const rotY = ((e.clientX - b.left) / b.width - 0.5) * 8;
+      const rotX = ((e.clientY - b.top) / b.height - 0.5) * -8;
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    });
+    card.addEventListener('mouseleave', ()=> card.style.transform = 'rotateX(0) rotateY(0)');
+
+    // Reveal on scroll
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if (e.isIntersecting) e.target.classList.add('show'); });
+    }, { threshold: .15 });
+    $$('.reveal').forEach(el=> io.observe(el));
+
+    // Counters
+    const statIO = new IntersectionObserver((entries)=>{
+      entries.forEach(({isIntersecting, target})=>{
+        if (!isIntersecting || target.dataset.counted) return;
+        target.dataset.counted = '1';
+        const v = target.dataset.count|0;
+        let n = 0;
+        const step = Math.max(1, Math.round(v/40));
+        const id = setInterval(()=>{
+          n += step; if (n >= v) { n = v; clearInterval(id); }
+          target.textContent = n;
+        }, 24);
+      });
+    }, { threshold: .5 });
+    $$('.stat .value').forEach(el=> statIO.observe(el));
+
+    // FAQ accordion
+    $$('.faq-item .faq-q').forEach(q => {
+      q.addEventListener('click', ()=> q.parentElement.classList.toggle('open'));
+    });
+
+    // Chat teaser
+    $('#btn-start').addEventListener('click', ()=> document.querySelector('df-messenger').shadowRoot.querySelector('button[aria-label="Open Chatbot"]').click());
+    $('#teaser-send').addEventListener('click', ()=> {
+      document.querySelector('df-messenger').shadowRoot.querySelector('button[aria-label="Open Chatbot"]').click();
+    });
+  </script>
+</body>
+</html>

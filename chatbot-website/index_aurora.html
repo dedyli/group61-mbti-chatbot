@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind-Mapper AI | Group 61 | Tsinghua IEDE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            /* Gradient background as requested */
+            background: linear-gradient(180deg, #E6E0FF 0%, #FFFFFF 100%);
+            color: #333;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: transparent;
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative; /* raise above aurora */
+            z-index: 1;
+        }
+
+        /* AURORA BACKGROUND (new) */
+        .aurora {
+            position: fixed;
+            inset: -20%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(40px) saturate(130%);
+            opacity: 0.85;
+            mix-blend-mode: normal;
+        }
+        .aurora::before,
+        .aurora::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-repeat: no-repeat;
+            animation: swirl 36s ease-in-out infinite alternate;
+        }
+        /* Tsinghua purple (primary) + complementary teals & soft violet highlights */
+        .aurora::before {
+            background-image:
+                radial-gradient(40% 35% at 12% 22%, rgba(107,79,187,0.35), rgba(107,79,187,0) 60%),
+                radial-gradient(35% 28% at 88% 18%, rgba(230,224,255,0.65), rgba(230,224,255,0) 60%),
+                radial-gradient(45% 36% at 82% 78%, rgba(92,27,181,0.30), rgba(92,27,181,0) 60%);
+        }
+        .aurora::after {
+            animation-duration: 42s;
+            background-image:
+                radial-gradient(38% 32% at 18% 86%, rgba(77,201,189,0.20), rgba(77,201,189,0) 60%),
+                radial-gradient(30% 26% at 78% 58%, rgba(122,162,255,0.18), rgba(122,162,255,0) 60%),
+                radial-gradient(36% 30% at 46% 40%, rgba(255,176,217,0.18), rgba(255,176,217,0) 60%);
+        }
+        @keyframes swirl {
+            0%   { transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1.05); }
+            50%  { transform: translate3d(2%, 1%, 0) rotate(10deg) scale(1.08); }
+            100% { transform: translate3d(4%, 3%, 0) rotate(18deg) scale(1.12); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .aurora, .aurora::before, .aurora::after { animation: none !important; }
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* Header and Navigation */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 2rem;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            padding: 1rem 2rem;
+            border-radius: 99px;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(91, 33, 182, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-container img {
+            height: 45px;
+            margin-right: 16px;
+            transition: transform 0.3s ease;
+        }
+        .logo-container:hover img {
+            transform: rotate(-10deg) scale(1.1);
+        }
+
+        .logo-text {
+            font-size: 0.8rem;
+            color: #6B4FBB;
+            font-weight: 500;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #6B4FBB;
+            font-weight: 600;
+            padding: 0.8rem 1.5rem;
+            border-radius: 99px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: #6B4FBB;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(107, 79, 187, 0.4);
+        }
+        
+        /* Language Dropdown Styles */
+        .lang-dropdown {
+            position: relative;
+            margin-left: 1rem;
+        }
+
+        .globe-icon {
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: block;
+            color: #6B4FBB;
+            line-height: 1; /* Align icon better */
+        }
+         .globe-icon:hover {
+            transform: scale(1.1);
+            background: none; /* Override default hover */
+            box-shadow: none;
+        }
+
+        .dropdown-content {
+            display: none; /* Initially hidden */
+            position: absolute;
+            right: 0;
+            top: calc(100% + 10px); /* Position below the icon */
+            background-color: white;
+            min-width: 140px;
+            box-shadow: 0px 8px 24px 0px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            z-index: 101;
+            overflow: hidden;
+            padding: 0.5rem 0;
+        }
+
+        .dropdown-content a {
+            color: #3D2C8D;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            font-weight: 500;
+            border-radius: 0; /* Override nav link style */
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f5f3ff;
+            color: #6B4FBB; /* Ensure text color on hover is consistent */
+            box-shadow: none; /* Override nav link style */
+            transform: none; /* Override nav link style */
+        }
+        
+        .dropdown-content a.active {
+            background-color: #6B4FBB;
+            color: white;
+        }
+
+        /* --- Content Hiding/Showing --- */
+        [data-lang="vi"],
+        [data-lang="en"] {
+            display: none; /* Hide all language elements by default */
+        }
+        body.lang-en [data-lang="en"] { display: inline; }
+        body.lang-en .block-en { display: block; }
+        body.lang-vi [data-lang="vi"] { display: inline; }
+        body.lang-vi .block-vi { display: block; }
+
+        /* Page Sections */
+        section {
+            padding: 70px 0;
+            border-bottom: 1px solid #EAEAEA;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        section.visible { opacity: 1; transform: translateY(0); }
+        section:last-of-type { border-bottom: none; }
+        .section-title { font-size: 3rem; font-weight: 800; color: #3D2C8D; margin-bottom: 2.5rem; text-align: center; }
+        .section-content { max-width: 900px; margin: 0 auto; line-height: 1.8; color: #555; }
+
+        /* Home Section */
+        #home { padding-top: 30px; padding-bottom: 30px; display: flex; align-items: center; }
+        .home-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 3rem; align-items: center; width: 100%; }
+        .content-left { animation: fadeIn 1s 0.2s ease-out both; }
+        .content-left h1 { font-size: 4rem; font-weight: 800; color: #3D2C8D; line-height: 1.1; margin-bottom: 1.5rem; }
+        .content-left .subtitle { font-size: 1.6rem; color: #3D2C8D; margin-bottom: 2rem; font-weight: 500; }
+        .content-left .description { font-size: 1.1rem; color: #555; max-width: 500px; margin-bottom: 2.5rem; }
+        .main-illustration-container { position: relative; animation: fadeIn 1s 0.4s ease-out both; }
+        .main-illustration { width: 100%; max-width: 600px; display: block; margin: 0 auto; animation: float 4s ease-in-out infinite; }
+        .welcome-banner { position: absolute; top: 20px; right: 0; background-color: #FFDDA9; color: #8C5A0B; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: rotate(3deg); transition: transform 0.3s ease; }
+        .welcome-banner:hover { transform: rotate(0deg) scale(1.05); }
+
+        /* Bottom Section of Home */
+        .bottom-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        #intro-cards { padding-top: 0; }
+        .chat-prompt { background: white; border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 48px rgba(91, 33, 182, 0.1); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .chat-prompt:hover { transform: translateY(-10px); box-shadow: 0 20px 60px rgba(91, 33, 182, 0.15); }
+        .chat-message { display: flex; align-items: center; gap: 1rem; font-size: 1.2rem; color: #3D2C8D; font-weight: 600; }
+        .chat-message-icon { width: 60px; height: 60px; background-color: #D6CFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; transition: transform 0.3s ease; }
+        .chat-prompt:hover .chat-message-icon { transform: scale(1.1) rotate(10deg); }
+        .chat-input-area { margin-top: 1.5rem; background-color: #F7F7F7; border: 1px solid #EAEAEA; border-radius: 12px; padding: 1rem; color: #AAA; }
+
+        /* Info List */
+        .info-list ul { list-style: none; display: flex; flex-direction: column; gap: 1.5rem; padding-top: 1rem; }
+        .info-list li { display: flex; align-items: center; gap: 1rem; font-size: 1.1rem; font-weight: 500; color: #555; transition: color 0.3s ease; }
+        .info-list li:hover { color: #6B4FBB; }
+        .info-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .info-list li:hover .info-icon { transform: scale(1.15) rotate(-5deg); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .icon-question { background: #A084E8; }
+        .icon-lock { background: #6F61C0; }
+        .icon-sun { background: #FFD966; color: #8C5A0B;}
+
+        /* How it Works Section */
+        .steps-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; }
+        .step { background: white; padding: 2.5rem 2rem; border-radius: 20px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.05); border: 1px solid #eee; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .step:hover { transform: translateY(-15px); box-shadow: 0 15px 40px rgba(91, 33, 182, 0.12); }
+        .step-number { font-size: 1.5rem; font-weight: 700; color: #fff; background: #6B4FBB; width: 50px; height: 50px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; transition: transform 0.3s ease; }
+        .step:hover .step-number { transform: scale(1.2); }
+        .step h3 { font-size: 1.4rem; color: #3D2C8D; margin-bottom: 0.5rem; font-weight: 700; }
+
+        /* FAQ Section */
+        .faq-item { background: white; border-radius: 12px; margin-bottom: 1rem; padding: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.04); overflow: hidden; transition: margin-bottom 0.4s ease; }
+        .faq-question { font-weight: 600; color: #3D2C8D; cursor: pointer; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .faq-question::after { content: '+'; font-size: 1.5rem; transition: transform 0.4s ease; }
+        .faq-item.open .faq-question::after { transform: rotate(45deg); }
+        .faq-answer { padding: 0 2rem; max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease; }
+        .faq-item.open .faq-answer { padding-bottom: 1.5rem; max-height: 200px; }
+
+        /* Contact Section */
+        .contact-form { display: flex; flex-direction: column; gap: 1.5rem; }
+        .contact-form input, .contact-form textarea { width: 100%; padding: 1.2rem; border-radius: 12px; border: 1px solid #ddd; font-family: 'Poppins', sans-serif; font-size: 1rem; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+        .contact-form input:focus, .contact-form textarea:focus { outline: none; border-color: #6B4FBB; box-shadow: 0 0 0 3px rgba(107, 79, 187, 0.2); }
+        .contact-form button { padding: 1.2rem; border-radius: 12px; border: none; background: linear-gradient(45deg, #8E2DE2, #4A00E0); color: white; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .contact-form button:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(74, 0, 224, 0.3); }
+
+        /* Dialogflow Messenger */
+        df-messenger { z-index: 1001 !important; }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            #home { min-height: auto; padding-top: 50px; padding-bottom: 50px; }
+            .home-grid, .bottom-section { grid-template-columns: 1fr; }
+            .main-illustration-container { order: -1; margin-bottom: 2rem; }
+            .content-left { text-align: center; }
+            .content-left .description { margin-left: auto; margin-right: auto; }
+        }
+        @media (max-width: 992px) {
+            header { flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; position: static; border-radius: 24px; }
+            nav ul { flex-wrap: wrap; justify-content: center; }
+        }
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .container { padding: 1rem; }
+            header { padding: 1rem; }
+            .content-left h1 { font-size: 2.8rem; }
+            .content-left .subtitle { font-size: 1.3rem; }
+            nav a { padding: 0.6rem 1.2rem; }
+            .section-title { font-size: 2.2rem; }
+            .steps-container { grid-template-columns: 1fr; }
+        }
+    </style>
+    <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+</head>
+<body>
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <img src="Tsinghua_University_logo_and_wordmark_in_Chinese_and_English_characters.svg.png" alt="Tsinghua University Logo" onerror="this.onerror=null;this.src='https://placehold.co/50x50/E6E0FF/6B4FBB?text=Logo';">
+                <div class="logo-text">
+                    <span data-lang="en" class="block-en">Presented by<br>Group 61 of<br>Tsinghua University<br>IEDE Program</span>
+                    <span data-lang="vi" class="block-vi">Trình bày bởi<br>Nhóm 61<br>Đại học Thanh Hoa<br>Chương trình IEDE</span>
+                </div>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#home" class="active"><span data-lang="en">Home</span><span data-lang="vi">Trang chủ</span></a></li>
+                    <li><a href="#how-it-works"><span data-lang="en">How It Works</span><span data-lang="vi">Cách Hoạt Động</span></a></li>
+                    <li><a href="#about"><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></a></li>
+                    <li><a href="#faq"><span>FAQ</span></a></li>
+                    <li><a href="#contact"><span data-lang="en">Contact</span><span data-lang="vi">Liên Hệ</span></a></li>
+                    <li class="lang-dropdown">
+                        <a href="#" class="globe-icon">🌐</a>
+                        <div class="dropdown-content">
+                            <a href="#" id="lang-en-btn" data-lang-code="en">English</a>
+                            <a href="#" id="lang-vi-btn" data-lang-code="vi">Tiếng Việt</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section id="home">
+                <div class="home-grid">
+                    <div class="content-left">
+                        <h1>Mind-Mapper AI</h1>
+                        <p class="subtitle">
+                            <span data-lang="en">Conversational Personality Analysis using MBTI and Generative AI</span>
+                            <span data-lang="vi">Phân tích tính cách qua hội thoại sử dụng MBTI và AI tạo sinh</span>
+                        </p>
+                        <p class="description">
+                            <span data-lang="en">Discover your unique personality traits with our AI-powered, interactive experience — crafted for students by students.</span>
+                            <span data-lang="vi">Khám phá những nét tính cách độc đáo của bạn với trải nghiệm tương tác được hỗ trợ bởi AI — được xây dựng bởi sinh viên dành riêng cho các bạn học sinh.</span>
+                        </p>
+                    </div>
+                    <div class="main-illustration-container">
+                        <img src="vietnam_students.png" alt="Illustration of two students" class="main-illustration" onerror="this.onerror=null;this.src='https://placehold.co/600x400/E6E0FF/3D2C8D?text=Illustration';">
+                        <div class="welcome-banner">
+                            <span data-lang="en">Welcome, students of Vietnam! 👋</span>
+                            <span data-lang="vi">Chào mừng các bạn học sinh Việt Nam! 👋</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="intro-cards">
+                 <div class="bottom-section">
+                    <div class="chat-prompt">
+                        <div class="chat-message">
+                            <div class="chat-message-icon">😊</div>
+                            <p>
+                                <span data-lang="en">Hi! I'm your Mind-Mapper AI. Let's explore your personality together! Ready to begin?</span>
+                                <span data-lang="vi">Chào bạn! Tôi là Mind-Mapper AI. Hãy cùng nhau khám phá tính cách của bạn nhé! Bạn đã sẵn sàng chưa?</span>
+                            </p>
+                        </div>
+                        <div class="chat-input-area">
+                            <span data-lang="en">Type your answer here...</span>
+                            <span data-lang="vi">Nhập câu trả lời của bạn ở đây...</span>
+                        </div>
+                    </div>
+                    <div class="info-list">
+                        <ul>
+                            <li>
+                                <div class="info-icon icon-question">?</div>
+                                <span>
+                                    <span data-lang="en">What is MBTI!?</span>
+                                    <span data-lang="vi">MBTI là gì!?</span>
+                                </span>
+                            </li>
+                            <li>
+                                <div class="info-icon icon-lock">🔒</div>
+                                <span>
+                                    <span data-lang="en">Your privacy matters</span>
+                                    <span data-lang="vi">Quyền riêng tư của bạn rất quan trọng</span>
+                                </span>
+                            </li>
+                            <li>
+                                <div class="info-icon icon-sun">☀️</div>
+                                <span>
+                                    <span data-lang="en">There are no right or wrong answers. Just be yourself!</span>
+                                    <span data-lang="vi">Không có câu trả lời đúng hay sai. Cứ là chính mình nhé!</span>
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="how-it-works">
+                <h2 class="section-title">
+                    <span data-lang="en">How It Works</span>
+                    <span data-lang="vi">Cách Hoạt Động</span>
+                </h2>
+                <div class="section-content">
+                    <p class="text-center" style="text-align: center; margin-bottom: 3rem;">
+                        <span data-lang="en">Our process is simple and engaging. In just a few steps, you'll gain valuable insights into your personality.</span>
+                        <span data-lang="vi">Quy trình của chúng tôi rất đơn giản và thú vị. Chỉ trong vài bước, bạn sẽ có được những hiểu biết giá trị về tính cách của mình.</span>
+                    </p>
+                    <div class="steps-container">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h3>
+                                <span data-lang="en">Start the Conversation</span>
+                                <span data-lang="vi">Bắt đầu cuộc trò chuyện</span>
+                            </h3>
+                            <p>
+                                <span data-lang="en">Begin by interacting with our friendly AI chatbot. There are no forms or multiple-choice questions, just a natural conversation.</span>
+                                <span data-lang="vi">Bắt đầu bằng cách tương tác với chatbot AI thân thiện của chúng tôi. Không có biểu mẫu hay câu hỏi trắc nghiệm, chỉ là một cuộc trò chuyện tự nhiên.</span>
+                            </p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h3>
+                                <span data-lang="en">Be Yourself</span>
+                                <span data-lang="vi">Hãy là chính mình</span>
+                            </h3>
+                            <p>
+                                <span data-lang="en">Share your thoughts and experiences openly. Our Generative AI analyzes your responses to understand your unique traits.</span>
+                                <span data-lang="vi">Chia sẻ suy nghĩ và trải nghiệm của bạn một cách cởi mở. AI tạo sinh của chúng tôi sẽ phân tích câu trả lời của bạn để hiểu những đặc điểm riêng của bạn.</span>
+                            </p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h3>
+                                <span data-lang="en">Receive Your Profile</span>
+                                <span data-lang="vi">Nhận hồ sơ của bạn</span>
+                            </h3>
+                            <p>
+                                <span data-lang="en">After a short chat, you'll receive a detailed personality profile based on the MBTI framework, complete with insights and analysis.</span>
+                                <span data-lang="vi">Sau một cuộc trò chuyện ngắn, bạn sẽ nhận được một hồ sơ tính cách chi tiết dựa trên khuôn khổ MBTI, hoàn chỉnh với những phân tích và hiểu biết sâu sắc.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="about">
+                <h2 class="section-title">
+                    <span data-lang="en">About Group 61</span>
+                    <span data-lang="vi">Về Nhóm 61</span>
+                </h2>
+                <div class="section-content">
+                    <p>
+                        <span data-lang="en">We are Group 61, a diverse team of students from the “Innovation and Entrepreneurship for the 21st Century AI-driven Digital Economy (IEDE 2025)” program at Tsinghua University. Our project, Mind-Mapper AI, was born from a shared passion for leveraging technology to foster self-awareness and personal growth.</span>
+                        <span data-lang="vi">Chúng tôi là Nhóm 61, gồm các sinh viên đến từ chương trình “Innovation and Entrepreneurship for the 21st Century AI-driven Digital Economy (IEDE 2025)” tại Đại học Thanh Hoa. Dự án Mind-Mapper AI ra đời từ niềm đam mê chung trong việc tận dụng công nghệ để thúc đẩy sự tự nhận thức và phát triển cá nhân.</span>
+                    </p>
+                    <br>
+                    <p>
+                        <span data-lang="en">Our goal is to make personality analysis more accessible, engaging, and modern for fellow students. We believe that understanding oneself is the first step towards achieving personal and academic success. This tool is our contribution to that journey, combining cutting-edge AI with proven psychological frameworks.</span>
+                        <span data-lang="vi">Mục tiêu của chúng tôi là giúp việc phân tích tính cách trở nên dễ tiếp cận, hấp dẫn và hiện đại hơn cho các bạn học sinh. Chúng tôi tin rằng việc hiểu rõ bản thân là bước đầu tiên để đạt được thành công trong học tập và cuộc sống cá nhân. Công cụ này là đóng góp của chúng tôi cho hành trình đó, kết hợp AI tiên tiến với các khung lý thuyết tâm lý đã được kiểm chứng.</span>
+                    </p>
+                </div>
+            </section>
+
+            <section id="faq">
+                <h2 class="section-title">
+                    <span data-lang="en">Frequently Asked Questions</span>
+                    <span data-lang="vi">Câu hỏi thường gặp</span>
+                </h2>
+                <div class="section-content">
+                    <div class="faq-item">
+                        <p class="faq-question">
+                            <span data-lang="en">What is the MBTI?</span>
+                            <span data-lang="vi">MBTI là gì?</span>
+                        </p>
+                        <div class="faq-answer">
+                            <p>
+                                <span data-lang="en">The Myers-Briggs Type Indicator (MBTI) is an introspective self-report questionnaire indicating differing psychological preferences in how people perceive the world and make decisions. It assigns individuals to one of 16 personality types.</span>
+                                <span data-lang="vi">Chỉ số phân loại tính cách Myers-Briggs (MBTI) là một bảng câu hỏi tự đánh giá mang tính nội tâm, nhằm chỉ ra những khuynh hướng tâm lý khác nhau trong cách con người nhận thức thế giới và đưa ra quyết định. MBTI phân loại mỗi người vào một trong 16 kiểu tính cách.</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <p class="faq-question">
+                            <span data-lang="en">Is my data private and secure?</span>
+                            <span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn không?</span>
+                        </p>
+                        <div class="faq-answer">
+                            <p>
+                                <span data-lang="en">Absolutely. We are committed to your privacy. All conversations are anonymized, and we do not store any personal identifying information. The analysis is performed securely, and your data is never shared with third parties.</span>
+                                <span data-lang="vi">Chắc chắn rồi. Chúng tôi cam kết bảo vệ quyền riêng tư của bạn. Mọi cuộc trò chuyện đều được ẩn danh và chúng tôi không lưu trữ bất kỳ thông tin nhận dạng cá nhân nào. Việc phân tích được thực hiện một cách an toàn và dữ liệu của bạn không bao giờ được chia sẻ với bên thứ ba.</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <p class="faq-question">
+                            <span data-lang="en">How accurate is the AI analysis?</span>
+                            <span data-lang="vi">Phân tích của AI chính xác đến mức nào?</span>
+                        </p>
+                        <div class="faq-answer">
+                            <p>
+                                <span data-lang="en">Our model uses advanced Generative AI trained on vast amounts of text data to understand the nuances of language and personality. While it provides a highly insightful estimation of your MBTI type, it should be considered a tool for self-exploration rather than a clinical diagnosis.</span>
+                                <span data-lang="vi">Mô hình của chúng tôi sử dụng trí tuệ nhân tạo sinh (Generative AI) tiên tiến, được huấn luyện trên một lượng lớn dữ liệu văn bản để hiểu rõ các sắc thái ngôn ngữ và tính cách. Mặc dù nó đưa ra một ước đoán rất sâu sắc về kiểu MBTI của bạn, nhưng nó nên được xem là một công cụ hỗ trợ khám phá bản thân chứ không phải là một chẩn đoán lâm sàng.</span>
+                            </p>
+                        </div>
+                    </div>
+                     <div class="faq-item">
+                        <p class="faq-question">
+                            <span data-lang="en">How long does the conversation take?</span>
+                            <span data-lang="vi">Cuộc trò chuyện mất bao lâu?</span>
+                        </p>
+                        <div class="faq-answer">
+                            <p>
+                                <span data-lang="en">The core conversation is designed to be quick and efficient, typically taking between 5 to 10 minutes to complete. We want to respect your time while gathering enough information to provide a meaningful analysis.</span>
+                                <span data-lang="vi">Phần trò chuyện chính được thiết kế để diễn ra nhanh chóng và hiệu quả, thường chỉ mất từ 5 đến 10 phút để hoàn thành. Chúng tôi muốn tôn trọng thời gian của bạn trong khi vẫn thu thập đủ thông tin để đưa ra một phân tích có ý nghĩa.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact">
+                <h2 class="section-title">
+                    <span data-lang="en">Get In Touch</span>
+                    <span data-lang="vi">Liên Hệ</span>
+                </h2>
+                <div class="section-content">
+                    <p style="text-align:center; margin-bottom: 2rem;">
+                        <span data-lang="en">Have questions, feedback, or suggestions? We'd love to hear from you!</span>
+                        <span data-lang="vi">Có câu hỏi, phản hồi hoặc đề xuất? Chúng tôi rất mong nhận được tin từ bạn!</span>
+                    </p>
+                    <form class="contact-form" onsubmit="alert('Thank you for your message!'); this.reset(); return false;">
+                        <input type="text" name="name" required
+                            data-lang-en-placeholder="Your Name"
+                            data-lang-vi-placeholder="Tên của bạn">
+                        <input type="email" name="email" required
+                            data-lang-en-placeholder="Your Email"
+                            data-lang-vi-placeholder="Email của bạn">
+                        <textarea name="message" rows="5" required
+                            data-lang-en-placeholder="Your Message"
+                            data-lang-vi-placeholder="Tin nhắn của bạn"></textarea>
+                        <button type="submit">
+                            <span data-lang="en">Send Message</span>
+                            <span data-lang="vi">Gửi Tin Nhắn</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <df-messenger
+        intent="WELCOME"
+        chat-title="Mind-Mapper AI"
+        agent-id="224cb18e-50b8-41b2-9207-d75132dca977"
+        language-code="en"
+    ></df-messenger>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Language Switcher ---
+            const langDropdownTrigger = document.querySelector('.lang-dropdown .globe-icon');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            const langButtons = document.querySelectorAll('.dropdown-content a');
+            const translatablePlaceholders = document.querySelectorAll('[data-lang-en-placeholder]');
+            const dfMessenger = document.querySelector('df-messenger');
+
+            // Function to toggle dropdown
+            langDropdownTrigger.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Function to close dropdown when clicking outside
+            document.addEventListener('click', function() {
+                if (dropdownContent.style.display === 'block') {
+                    dropdownContent.style.display = 'none';
+                }
+            });
+            
+            // Core function to set the language
+            function setLanguage(lang) {
+                document.body.className = `lang-${lang}`;
+                
+                // Update button active state
+                langButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-lang-code') === lang);
+                });
+
+                // Update form placeholders
+                translatablePlaceholders.forEach(el => {
+                    const placeholderText = el.getAttribute(`data-lang-${lang}-placeholder`);
+                    el.setAttribute('placeholder', placeholderText);
+                });
+
+                // Update Dialogflow messenger language
+                if (dfMessenger) {
+                    dfMessenger.setAttribute('language-code', lang);
+                }
+                
+                // Save preference to localStorage
+                localStorage.setItem('preferredLanguage', lang);
+            }
+
+            // Add click listeners to language buttons
+            langButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const lang = this.getAttribute('data-lang-code');
+                    setLanguage(lang);
+                    dropdownContent.style.display = 'none'; // Hide dropdown after selection
+                });
+            });
+
+            // Set initial language from localStorage or default to 'en'
+            const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
+            setLanguage(preferredLanguage);
+
+
+            // --- Navigation Active State ---
+            const navLinks = document.querySelectorAll('nav ul > li > a');
+            const sections = document.querySelectorAll('main > section');
+
+            window.addEventListener('scroll', () => {
+                let current = 'home';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 150) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') && link.getAttribute('href').substring(1) === current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // --- FAQ Accordion ---
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    const isOpen = item.classList.contains('open');
+                    faqItems.forEach(i => i.classList.remove('open'));
+                    if (!isOpen) {
+                        item.classList.add('open');
+                    }
+                });
+            });
+
+            // --- Scroll Animations ---
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+
+</body>
+</html>
