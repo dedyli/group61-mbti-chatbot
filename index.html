@@ -357,32 +357,50 @@
       
       messages.push({role:'user', content:text});
       
-      try {
-        const res = await fetch('/.netlify/functions/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            model: 'microsoft/phi-3-medium-128k-instruct:free', 
-            messages, 
-            temperature: 0.7, 
-            max_tokens: 500 
-          })
-        });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+      // Try multiple models in order of preference
+      const models = [
+        'qwen/qwen-2.5-7b-instruct:free',
+        'deepseek/deepseek-r1-distill-llama-70b:free',
+        'mistralai/mistral-7b-instruct:free',
+        'google/gemma-7b-it:free'
+      ];
+      
+      for (let i = 0; i < models.length; i++) {
+        try {
+          const res = await fetch('/.netlify/functions/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              model: models[i], 
+              messages, 
+              temperature: 0.7, 
+              max_tokens: 500 
+            })
+          });
+          
+          if (!res.ok) {
+            if (i === models.length - 1) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            continue; // Try next model
+          }
+          
+          const json = await res.json();
+          hideTyping();
+          
+          const output = json.choices?.[0]?.message?.content || 'Sorry, no response received.';
+          appendMessage('assistant', output);
+          return; // Success, exit function
+          
+        } catch (err) {
+          console.error(`Error with model ${models[i]}:`, err);
+          if (i === models.length - 1) {
+            // Last model failed
+            hideTyping();
+            appendMessage('assistant', 'Sorry, I encountered an error with all available models. Please try again later.');
+          }
+          // Otherwise continue to next model
         }
-        
-        const json = await res.json();
-        hideTyping();
-        
-        const output = json.choices?.[0]?.message?.content || 'Sorry, no response received.';
-        appendMessage('assistant', output);
-        
-      } catch (err) {
-        hideTyping();
-        console.error('Chat error:', err);
-        appendMessage('assistant', 'Sorry, I encountered an error. Please check your connection and try again.');
       }
     }
 
