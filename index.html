@@ -232,7 +232,6 @@
     </section>
   </main>
 
-  <!-- Chat launcher and panel -->
   <button class="chat-launch" id="chatOpen" title="Open Mind–Mapper AI">🧠 <b><span data-lang="en">Chat</span><span data-lang="vi">Trò chuyện</span></b></button>
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
@@ -260,7 +259,11 @@
       for(let i=0;i<120;i++){ 
         const s=document.createElement('i'); 
         s.style.left=Math.random()*100+'vw'; 
-        s.style.top=(100+Math.random()*100)+'vh'; 
+        // --- FIXED LINE ---
+        // The original code started sparkles too far below the screen (100vh to 200vh).
+        // This corrected code starts them just at the bottom of the screen (100vh),
+        // so their upward animation is visible.
+        s.style.top = '100vh'; 
         s.style.animationDuration=(10+Math.random()*16)+'s'; 
         host.appendChild(s);
       } 
