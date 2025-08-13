@@ -152,7 +152,7 @@
       </div>
       <div class="illustrationWrap">
         <div class="card3d" id="card3d">
-          <img class="hero-img" src="vietnam_students.png" alt="Students collaborating"/>
+          <img class="hero-img" src="vietnam_students.png"/>
         </div>
       </div>
     </section>
@@ -236,13 +236,7 @@
   <div class="chat-panel open" id="chatPanel" aria-live="polite">
     <div class="chat-head">
       <h3>Mind‑Mapper AI — Personality Analyst</h3>
-      <div class="model-select">
-        <label for="model">Model:</label>
-        <select id="model">
-          <option value="webllm">On‑device (WebGPU)</option>
-          <option value="openrouter">OpenRouter (free tier models)</option>
-        </select>
-      </div>
+      <div class="model-select"><span>Model: OpenRouter (secure)</span></div>
     </div>
     <div class="chat-body" id="chatBody">
       <div class="msg ai"><div class="bubble"><span data-lang="en">Hi! I’m your MBTI‑style personality analyst. Share how you approach studying, friends, and decisions. I’ll reflect back patterns and, when you’re ready, I can infer a type with a confidence score.</span><span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hành vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span></div></div>
@@ -254,9 +248,7 @@
     <div class="notice" style="padding:8px 12px">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
   </div>
 
-  <!-- WebLLM runtime (on‑device free LLM) -->
-  <script src="https://unpkg.com/@mlc-ai/web-llm@0.2.73/dist/index.min.js"></script>
-  <script>
+  <!-- WebLLM runtime (on‑device free LLM) --><script>
     // Sparkles
     (function makeSparkles(){ const host=document.getElementById('sparkles'); for(let i=0;i<120;i++){ const s=document.createElement('i'); s.style.left=Math.random()*100+'vw'; s.style.top=(100+Math.random()*100)+'vh'; s.style.animationDuration=(10+Math.random()*16)+'s'; host.appendChild(s);} })();
 
@@ -279,45 +271,31 @@
     const chatBody=document.getElementById('chatBody');
     const input=document.getElementById('chatInput');
     const sendBtn=document.getElementById('sendBtn');
-    const modelSel=document.getElementById('model');
-
+    
     const SYSTEM_PROMPT=`You are Mind‑Mapper AI, a warm, insightful personality analyst for students.\n1) Ask brief, empathetic questions to understand the user across MBTI axes: (E/I), (S/N), (T/F), (J/P).\n2) Reflect patterns you notice, citing examples from their messages in plain language.\n3) When the user asks for their MBTI or after 6+ user messages, infer a 4‑letter type with a confidence %, and give 4–6 practical tips for study, teamwork, and wellbeing.\n4) Be unbiased and supportive. Keep answers under 180 words unless asked to go deeper.`;
-
-    let webllmEngine=null, webllmReady=false;
-    async function ensureWebLLM(){ if(webllmReady) return; if(!window.mlc) throw new Error('WebLLM runtime not loaded'); const {CreateMLCEngine, prebuiltAppConfig}=window.mlc; webllmEngine = await CreateMLCEngine(prebuiltAppConfig['Phi-3-mini-4k-instruct-q4f16_1'], {initProgressCallback:(p)=>{}}); webllmReady=true; }
 
     function appendMessage(role, text){ const wrap=document.createElement('div'); wrap.className='msg '+(role==='user'?'user':'ai'); wrap.innerHTML=`<div class="bubble">${text.replace(/</g,'&lt;')}</div>`; chatBody.appendChild(wrap); chatBody.scrollTop=chatBody.scrollHeight; }
 
-    async function respondOnDevice(text){
-      await ensureWebLLM();
-      const history=[{role:'system', content:SYSTEM_PROMPT}];
-      document.querySelectorAll('.msg').forEach(n=>{ const isUser=n.classList.contains('user'); const t=n.querySelector('.bubble').innerText; history.push({role:isUser?'user':'assistant', content:t}); });
-      history.push({role:'user', content:text});
-      let reply='';
-      await webllmEngine.chat.completions.create({messages:history, stream:true, temperature:0.6, max_tokens:400}, (evt)=>{
-        if(evt.choices && evt.choices.length){ const delta=evt.choices[0].delta?.content || ''; if(delta){ if(!appendMessage._streamEl){ appendMessage('assistant',''); appendMessage._streamEl=chatBody.lastElementChild.querySelector('.bubble'); } reply+=delta; appendMessage._streamEl.textContent=reply; chatBody.scrollTop=chatBody.scrollHeight; }}
-      });
-      appendMessage._streamEl=null;
-    }
-
-    async function respondOpenRouter(text){
-      const key=(typeof OPENROUTER_API_KEY!=='undefined')?OPENROUTER_API_KEY:(window.OPENROUTER_API_KEY||'');
-      if(!key){ appendMessage('assistant','To use a cloud model, set OPENROUTER_API_KEY as an environment variable on your host. Falling back to on‑device.'); modelSel.value='webllm'; return respondOnDevice(text); }
+        async function respondOpenRouter(text){
       const messages=[{role:'system', content:SYSTEM_PROMPT}];
       document.querySelectorAll('.msg').forEach(n=>{ const isUser=n.classList.contains('user'); const t=n.querySelector('.bubble').innerText; messages.push({role:isUser?'user':'assistant', content:t}); });
       messages.push({role:'user', content:text});
-      const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{ method:'POST', headers:{ 'Authorization':`Bearer ${key}`, 'Content-Type':'application/json' }, body:JSON.stringify({ model:'meta-llama/llama-3.1-8b-instruct:free', messages, temperature:0.6, max_tokens:400 }) });
-      const json=await res.json(); const out=json.choices?.[0]?.message?.content || 'Sorry, no response.'; appendMessage('assistant', out);
+      const res=await fetch('/.netlify/functions/chat',{
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({ model:'meta-llama/llama-3.1-8b-instruct:free', messages, temperature:0.6, max_tokens:400 })
+      });
+      const json=await res.json();
+      const out=json.choices?.[0]?.message?.content || 'Sorry, no response.';
+      appendMessage('assistant', out);
     }
 
-    async function handleSend(){ const text=input.value.trim(); if(!text) return; input.value=''; appendMessage('user', text); try{ if(modelSel.value==='webllm'){ await respondOnDevice(text);} else { await respondOpenRouter(text);} }catch(err){ console.error(err); appendMessage('assistant','I hit a snag. If your browser lacks WebGPU, try the cloud model (set your API key).'); } }
+    async function handleSend(){ const text=input.value.trim(); if(!text) return; input.value=''; appendMessage('user', text); try{ await respondOpenRouter(text); }catch(err){ console.error(err); appendMessage('assistant','I hit a snag. If your browser lacks WebGPU, try the cloud model (set your API key).'); } }
 
     sendBtn.addEventListener('click', handleSend);
     input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }});
-
-    // optional helper to inject key at runtime
-    window.setOpenRouterKey=(k)=>{ window.OPENROUTER_API_KEY=k };
   </script>
 </body>
 </html>
+
 
