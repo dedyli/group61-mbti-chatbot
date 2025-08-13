@@ -293,7 +293,27 @@
         document.body.classList.remove('lang-en','lang-vi'); 
         document.body.classList.add('lang-'+lang); 
         localStorage.setItem('preferredLanguage', lang); 
-        applyPlaceholders(); 
+        applyPlaceholders();
+        
+        // Clear chat and restart with new language
+        const chatBody = document.getElementById('chatBody');
+        if (chatBody) {
+          // Remove all messages except keep one initial message in the new language
+          chatBody.innerHTML = '';
+          const initialMsg = document.createElement('div');
+          initialMsg.className = 'msg ai';
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+          
+          if (lang === 'vi') {
+            bubble.innerHTML = `<span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hành vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>`;
+          } else {
+            bubble.innerHTML = `<span data-lang="en">Hi! I'm your MBTI–style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>`;
+          }
+          
+          initialMsg.appendChild(bubble);
+          chatBody.appendChild(initialMsg);
+        }
       }
       const saved=localStorage.getItem('preferredLanguage')||'en'; 
       sel.value=saved; 
@@ -315,11 +335,25 @@
     const input=document.getElementById('chatInput');
     const sendBtn=document.getElementById('sendBtn');
     
-    const SYSTEM_PROMPT=`You are Mind–Mapper AI, a warm, insightful personality analyst for students.
+    function getSystemPrompt() {
+      const isVietnamese = document.body.classList.contains('lang-vi');
+      
+      if (isVietnamese) {
+        return `Bạn là Mind–Mapper AI, một chuyên gia phân tích tính cách ấm áp và sâu sắc dành cho học sinh, sinh viên.
+1) Đặt các câu hỏi ngắn gọn, đầy cảm thông để hiểu người dùng qua các trục MBTI: (E/I), (S/N), (T/F), (J/P).
+2) Phản ánh các mẫu hành vi mà bạn nhận thấy, trích dẫn các ví dụ từ tin nhắn của họ bằng ngôn ngữ đơn giản.
+3) Khi người dùng yêu cầu kết quả MBTI hoặc sau 6+ tin nhắn, suy luận kiểu 4 chữ cái với % độ tin cậy, và đưa ra 4–6 lời khuyên thực tế về học tập, làm việc nhóm và sức khỏe tinh thần.
+4) Trung lập và hỗ trợ. Giữ câu trả lời dưới 180 từ trừ khi được yêu cầu đi sâu hơn.
+QUAN TRỌNG: Luôn trả lời bằng tiếng Việt.`;
+      } else {
+        return `You are Mind–Mapper AI, a warm, insightful personality analyst for students.
 1) Ask brief, empathetic questions to understand the user across MBTI axes: (E/I), (S/N), (T/F), (J/P).
 2) Reflect patterns you notice, citing examples from their messages in plain language.
 3) When the user asks for their MBTI or after 6+ user messages, infer a 4–letter type with a confidence %, and give 4–6 practical tips for study, teamwork, and wellbeing.
-4) Be unbiased and supportive. Keep answers under 180 words unless asked to go deeper.`;
+4) Be unbiased and supportive. Keep answers under 180 words unless asked to go deeper.
+IMPORTANT: Always respond in English.`;
+      }
+    }
 
     function appendMessage(role, text){ 
       const wrap=document.createElement('div'); 
@@ -346,7 +380,7 @@
     async function respondOpenRouter(text){
       showTyping();
       
-      const messages=[{role:'system', content:SYSTEM_PROMPT}];
+      const messages=[{role:'system', content:getSystemPrompt()}];
       
       // Collect conversation history
       document.querySelectorAll('.msg:not(.typing)').forEach(n=>{ 
