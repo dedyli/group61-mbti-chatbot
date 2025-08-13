@@ -1,6 +1,7 @@
-// Server-side proxy to OpenRouter (hides your API key)
-export async function handler(event, context) {
-  const ORIGIN = event.headers.origin || '';
+// netlify/functions/chat.js
+exports.handler = async (event, context) => {
+  const ORIGIN = event.headers.origin || event.headers.Origin || '';
+  
   // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -16,23 +17,38 @@ export async function handler(event, context) {
   }
 
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { 
+      statusCode: 405, 
+      headers: {
+        'Access-Control-Allow-Origin': ORIGIN || '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
   }
 
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
-    return { statusCode: 500, body: 'Missing OPENROUTER_API_KEY' };
+    return { 
+      statusCode: 500, 
+      headers: {
+        'Access-Control-Allow-Origin': ORIGIN || '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: 'Missing OPENROUTER_API_KEY' })
+    };
   }
 
   try {
     const body = event.body || '{}';
+    
+    console.log('Forwarding request to OpenRouter...');
 
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
-        // (Optional but recommended by OpenRouter)
         'HTTP-Referer': event.headers.referer || 'https://your-site.netlify.app',
         'X-Title': 'Mind-Mapper AI',
       },
@@ -40,17 +56,28 @@ export async function handler(event, context) {
     });
 
     const text = await resp.text();
+    
+    console.log('OpenRouter response status:', resp.status);
+    console.log('OpenRouter response:', text.substring(0, 200) + '...');
+
     return {
       statusCode: resp.status,
       headers: {
         'Content-Type': 'application/json',
-        // same-origin is fine since function shares the site origin;
-        // keeping permissive if you ever embed elsewhere:
         'Access-Control-Allow-Origin': ORIGIN || '*',
+        'Access-Control-Allow-Credentials': 'false',
       },
       body: text,
     };
   } catch (err) {
-    return { statusCode: 502, body: `Proxy error: ${err.message}` };
+    console.error('Function error:', err);
+    return { 
+      statusCode: 502, 
+      headers: {
+        'Access-Control-Allow-Origin': ORIGIN || '*',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: `Proxy error: ${err.message}` })
+    };
   }
-}
+};
