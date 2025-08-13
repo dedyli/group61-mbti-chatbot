@@ -27,8 +27,9 @@
       filter:saturate(120%) blur(10px); animation:auroraShift 24s ease-in-out infinite alternate; }
     @keyframes auroraShift{to{transform:translateY(-2%) scale(1.02)}}
     .sparkles{position:fixed; inset:0; z-index:-1; pointer-events:none}
-    .sparkles i{position:absolute; width:2px; height:2px; border-radius:50%; background:rgba(255,255,255,.55); filter:blur(.2px); opacity:.4; animation:float 16s linear infinite}
+    .sparkles i{position:absolute; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.85); filter:blur(.3px); opacity:.7; animation:float 16s linear infinite, twinkle 2.5s ease-in-out infinite alternate}
     @keyframes float{to{transform:translateY(-120vh)}}
+    @keyframes twinkle{0%{opacity:.3; transform:scale(.8)} 100%{opacity:1; transform:scale(1.2)}}
 
     /* Header */
     header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
@@ -86,7 +87,7 @@
     /* Chat widget */
     .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
     .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
-    .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; z-index:9999; background:linear-gradient(178deg, rgba(20,20,28,.96), rgba(16,15,22,.96)); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55) }
+    .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; z-index:9999; background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55) }
     .chat-panel.open{display:block}
     .chat-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--glass-stroke)}
     .chat-head h3{margin:0; font-family:'Playfair Display',serif; letter-spacing:.3px}
@@ -236,7 +237,6 @@
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
       <h3>Mind–Mapper AI – Personality Analyst</h3>
-      <div class="model-select"><span>Model: OpenRouter (secure)</span></div>
     </div>
     <div class="chat-body" id="chatBody">
       <div class="msg ai">
@@ -391,50 +391,33 @@ IMPORTANT: Always respond in English.`;
       
       messages.push({role:'user', content:text});
       
-      // Try multiple models in order of preference
-      const models = [
-        'qwen/qwen-2.5-7b-instruct:free',
-        'deepseek/deepseek-r1-distill-llama-70b:free',
-        'mistralai/mistral-7b-instruct:free',
-        'google/gemma-7b-it:free'
-      ];
-      
-      for (let i = 0; i < models.length; i++) {
-        try {
-          const res = await fetch('/.netlify/functions/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              model: models[i], 
-              messages, 
-              temperature: 0.7, 
-              max_tokens: 500 
-            })
-          });
-          
-          if (!res.ok) {
-            if (i === models.length - 1) {
-              throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            continue; // Try next model
-          }
-          
-          const json = await res.json();
-          hideTyping();
-          
-          const output = json.choices?.[0]?.message?.content || 'Sorry, no response received.';
-          appendMessage('assistant', output);
-          return; // Success, exit function
-          
-        } catch (err) {
-          console.error(`Error with model ${models[i]}:`, err);
-          if (i === models.length - 1) {
-            // Last model failed
-            hideTyping();
-            appendMessage('assistant', 'Sorry, I encountered an error with all available models. Please try again later.');
-          }
-          // Otherwise continue to next model
+      // Try only DeepSeek model since it's working
+      try {
+        const res = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            model: 'deepseek/deepseek-r1-distill-llama-70b:free', 
+            messages, 
+            temperature: 0.7, 
+            max_tokens: 500 
+          })
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
         }
+        
+        const json = await res.json();
+        hideTyping();
+        
+        const output = json.choices?.[0]?.message?.content || 'Sorry, no response received.';
+        appendMessage('assistant', output);
+        
+      } catch (err) {
+        hideTyping();
+        console.error('Chat error:', err);
+        appendMessage('assistant', 'Sorry, I encountered an error. Please check your connection and try again.');
       }
     }
 
