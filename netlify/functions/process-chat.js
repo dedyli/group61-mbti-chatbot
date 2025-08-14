@@ -98,7 +98,7 @@ export const handler = async (event) => {
         method: 'POST',
         headers: OPENROUTER_HEADERS,
         body: JSON.stringify({
-          model: 'sentence-transformers/all-minilm-l6-v2',
+          model: 'text-embedding-3-small', // Use a more reliable embedding model
           input: latestMessage,
         }),
       });
@@ -141,27 +141,25 @@ export const handler = async (event) => {
     const aiResponse = await tryModelsInOrder(finalMessages);
     console.log('AI response generated successfully');
 
-    // 5. Save conversation to Supabase
+    // 5. Save conversation to Supabase (regardless of embedding success)
     try {
-      if (queryEmbedding) {
-        const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
-        const { data: newConversation, error: insertError } = await supabase
-          .from('conversations')
-          .insert({ 
-            conversation_history: fullConversation, 
-            embedding: queryEmbedding 
-          })
-          .select('id')
-          .single();
+      const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
+      const { data: newConversation, error: insertError } = await supabase
+        .from('conversations')
+        .insert({ 
+          conversation_history: fullConversation, 
+          embedding: queryEmbedding // This can be null if embeddings failed
+        })
+        .select('id')
+        .single();
 
-        if (insertError) {
-          console.error('Failed to save conversation:', insertError.message);
-        } else {
-          console.log('Conversation saved with ID:', newConversation.id);
-        }
+      if (insertError) {
+        console.error('Failed to save conversation:', insertError.message);
+      } else {
+        console.log('Conversation saved with ID:', newConversation.id);
       }
     } catch (saveError) {
-      console.log('Conversation saving failed, but continuing:', saveError.message);
+      console.error('Conversation saving failed:', saveError.message);
     }
 
     // 6. Return success response
