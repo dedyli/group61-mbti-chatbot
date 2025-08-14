@@ -1,4 +1,23 @@
-// File Location: netlify/functions/process-chat.js
+// Function to validate AI response quality
+function isValidResponse(response) {
+    if (!response || response.length < 10) return false;
+    
+    // Check for garbled text patterns
+    const garbledPatterns = [
+        /[^\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, // Non-printable characters
+        /(.)\1{10,}/g, // Repeated characters
+        /[A-Za-z]{50,}/g, // Extremely long words
+    ];
+    
+    for (const pattern of garbledPatterns) {
+        if (pattern.test(response)) {
+            console.log('Detected garbled response pattern');
+            return false;
+        }
+    }
+    
+    return true;
+}// File Location: netlify/functions/process-chat.js
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,12 +34,9 @@ const OPENROUTER_HEADERS = {
   'User-Agent': 'Mind-Mapper-AI/1.0'
 };
 
-// Preferred models in order of preference (all free) - updated for stability
+// Using only DeepSeek Chat for ultra-low cost MBTI analysis
 const PREFERRED_MODELS = [
-    'google/gemma-2-9b-it:free',              // Try this first - often more stable
-    'qwen/qwen-2.5-7b-instruct:free',         // Good backup
-    'microsoft/phi-3-mini-128k-instruct:free', // Fast option
-    'meta-llama/llama-3.2-3b-instruct:free'   // Move problematic model to last
+    'deepseek/deepseek-chat'  // Single model: Ultra cheap, good MBTI analysis
 ];
 
 // Helper function to robustly handle API responses
@@ -47,67 +63,43 @@ async function getJsonResponse(response) {
     }
 }
 
-// Function to validate AI response quality
-function isValidResponse(response) {
-    if (!response || response.length < 10) return false;
-    
-    // Check for garbled text patterns
-    const garbledPatterns = [
-        /[^\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, // Non-printable characters
-        /(.)\1{10,}/g, // Repeated characters
-        /[A-Za-z]{50,}/g, // Extremely long words
-    ];
-    
-    for (const pattern of garbledPatterns) {
-        if (pattern.test(response)) {
-            console.log('Detected garbled response pattern');
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-// Function to try models in order until one works
+// Function to use DeepSeek Chat only
 async function tryModelsInOrder(messages) {
-    for (const model of PREFERRED_MODELS) {
-        try {
-            console.log(`Trying model: ${model}`);
-            const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
-                method: 'POST',
-                headers: OPENROUTER_HEADERS,
-                body: JSON.stringify({
-                    model: model,
-                    messages: messages,
-                    max_tokens: 1000, // Limit response length
-                    temperature: 0.7, // Add some randomness control
-                })
-            });
-            
-            if (chatResponse.ok) {
-                const chatJson = await getJsonResponse(chatResponse);
-                const aiResponse = chatJson.choices[0].message.content;
-                
-                // Validate the response quality
-                if (isValidResponse(aiResponse)) {
-                    console.log(`Success with model: ${model}`);
-                    return aiResponse;
-                } else {
-                    console.log(`Model ${model} returned garbled response, trying next...`);
-                    continue;
-                }
-            } else {
-                console.log(`Model ${model} failed with status: ${chatResponse.status}`);
-                continue;
-            }
-        } catch (error) {
-            console.log(`Model ${model} error:`, error.message);
-            continue;
-        }
-    }
+    const model = 'deepseek/deepseek-chat';
     
-    // If all models fail, return a fallback response
-    return "I apologize, but I'm experiencing technical difficulties right now. Please try again in a moment.";
+    try {
+        console.log(`Using DeepSeek Chat...`);
+        const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
+            method: 'POST',
+            headers: OPENROUTER_HEADERS,
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                max_tokens: 200, // Shorter limit for concise responses
+                temperature: 0.7,
+            })
+        });
+        
+        if (chatResponse.ok) {
+            const chatJson = await getJsonResponse(chatResponse);
+            const aiResponse = chatJson.choices[0].message.content;
+            
+            // Validate the response quality
+            if (isValidResponse(aiResponse)) {
+                console.log(`Success with DeepSeek Chat`);
+                return aiResponse;
+            } else {
+                console.log(`DeepSeek Chat returned garbled response`);
+                return "I apologize, but I'm having difficulty processing your request right now. Please try rephrasing your question.";
+            }
+        } else {
+            console.log(`DeepSeek Chat failed with status: ${chatResponse.status}`);
+            return "I'm experiencing technical difficulties. Please try again in a moment.";
+        }
+    } catch (error) {
+        console.log(`DeepSeek Chat error:`, error.message);
+        return "I apologize, but I'm having trouble connecting right now. Please try again shortly.";
+    }
 }
 
 export const handler = async (event) => {
@@ -161,10 +153,10 @@ export const handler = async (event) => {
     }
 
     // 3. Construct enhanced prompt with context if available
-    let systemPrompt = `You are Mind-Mapper AI. You help users understand their personality and provide helpful insights. Keep responses clear and concise.`;
+    let systemPrompt = `You are Mind-Mapper AI. Help users understand their personality. Keep responses short, clear, and helpful. Aim for 2-3 sentences maximum.`;
     
     if (similarConversations && similarConversations.length > 0) {
-      systemPrompt += `\n\nFor context, here are some similar conversations you've had:\n${similarConversations.map(conv => `- ${JSON.stringify(conv.conversation_history)}`).join('\n')}`;
+      systemPrompt += `\n\nContext: You've had similar conversations before.`;
     }
     
     const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
