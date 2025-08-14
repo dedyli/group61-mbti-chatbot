@@ -15,12 +15,12 @@ const OPENROUTER_HEADERS = {
   'User-Agent': 'Mind-Mapper-AI/1.0'
 };
 
-// Preferred models in order of preference (all free) - updated based on testing
+// Preferred models in order of preference (all free) - updated for stability
 const PREFERRED_MODELS = [
-    'meta-llama/llama-3.2-3b-instruct:free',  // Confirmed working
-    'google/gemma-2-9b-it:free',
-    'qwen/qwen-2.5-7b-instruct:free',
-    'microsoft/phi-3-mini-128k-instruct:free'  // Moved to end since it failed
+    'google/gemma-2-9b-it:free',              // Try this first - often more stable
+    'qwen/qwen-2.5-7b-instruct:free',         // Good backup
+    'microsoft/phi-3-mini-128k-instruct:free', // Fast option
+    'meta-llama/llama-3.2-3b-instruct:free'   // Move problematic model to last
 ];
 
 // Helper function to robustly handle API responses
@@ -47,6 +47,27 @@ async function getJsonResponse(response) {
     }
 }
 
+// Function to validate AI response quality
+function isValidResponse(response) {
+    if (!response || response.length < 10) return false;
+    
+    // Check for garbled text patterns
+    const garbledPatterns = [
+        /[^\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, // Non-printable characters
+        /(.)\1{10,}/g, // Repeated characters
+        /[A-Za-z]{50,}/g, // Extremely long words
+    ];
+    
+    for (const pattern of garbledPatterns) {
+        if (pattern.test(response)) {
+            console.log('Detected garbled response pattern');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 // Function to try models in order until one works
 async function tryModelsInOrder(messages) {
     for (const model of PREFERRED_MODELS) {
@@ -58,13 +79,23 @@ async function tryModelsInOrder(messages) {
                 body: JSON.stringify({
                     model: model,
                     messages: messages,
+                    max_tokens: 1000, // Limit response length
+                    temperature: 0.7, // Add some randomness control
                 })
             });
             
             if (chatResponse.ok) {
                 const chatJson = await getJsonResponse(chatResponse);
-                console.log(`Success with model: ${model}`);
-                return chatJson.choices[0].message.content;
+                const aiResponse = chatJson.choices[0].message.content;
+                
+                // Validate the response quality
+                if (isValidResponse(aiResponse)) {
+                    console.log(`Success with model: ${model}`);
+                    return aiResponse;
+                } else {
+                    console.log(`Model ${model} returned garbled response, trying next...`);
+                    continue;
+                }
             } else {
                 console.log(`Model ${model} failed with status: ${chatResponse.status}`);
                 continue;
@@ -74,7 +105,9 @@ async function tryModelsInOrder(messages) {
             continue;
         }
     }
-    throw new Error('All models failed to respond');
+    
+    // If all models fail, return a fallback response
+    return "I apologize, but I'm experiencing technical difficulties right now. Please try again in a moment.";
 }
 
 export const handler = async (event) => {
@@ -128,7 +161,7 @@ export const handler = async (event) => {
     }
 
     // 3. Construct enhanced prompt with context if available
-    let systemPrompt = `You are Mind-Mapper AI, a helpful personality analyst assistant. You help users understand their personality types, analyze their behavior patterns, and provide insights for personal growth.`;
+    let systemPrompt = `You are Mind-Mapper AI. You help users understand their personality and provide helpful insights. Keep responses clear and concise.`;
     
     if (similarConversations && similarConversations.length > 0) {
       systemPrompt += `\n\nFor context, here are some similar conversations you've had:\n${similarConversations.map(conv => `- ${JSON.stringify(conv.conversation_history)}`).join('\n')}`;
