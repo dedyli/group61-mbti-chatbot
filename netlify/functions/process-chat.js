@@ -317,8 +317,13 @@ export const handler = async (event) => {
   try {
     // Environment variable checks
     console.log('🔧 Checking environment variables...');
+    console.log('Available env vars:', Object.keys(process.env).filter(key => key.includes('API') || key.includes('KEY')));
+    console.log('OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
+    console.log('OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY?.length || 0);
+    
     if (!process.env.OPENROUTER_API_KEY) {
       console.error('❌ Missing OPENROUTER_API_KEY environment variable');
+      console.error('All environment variables:', Object.keys(process.env));
       throw new Error('Configuration error: API key not set');
     }
     console.log('✓ API key is set');
