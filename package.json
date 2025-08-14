@@ -1,0 +1,8 @@
+{
+  "name": "mind-mapper-ai",
+  "version": "1.0.0",
+  "description": "Dependencies for the Mind-Mapper AI Netlify site.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.55.0"
+  }
+}

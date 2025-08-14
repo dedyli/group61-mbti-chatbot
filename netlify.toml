@@ -2,6 +2,7 @@
   functions = "netlify/functions"
 
 [functions]
+  external_node_modules = ["@supabase/supabase-js"]
   node_bundler = "esbuild"
 
 [[headers]]
