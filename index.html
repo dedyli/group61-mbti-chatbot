@@ -11,19 +11,21 @@
     :root{ --bg:#0b0a13; --fg:#f7f5ff; --muted:#bdb7e6; --accent:#8B5CF6; --accent-2:#F0A6FF; --gold:#EED972; --glass:rgba(255,255,255,.08); --glass-stroke:rgba(255,255,255,.12); }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    body{ margin:0; color:var(--fg); background:var(--bg); font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
+    /* --- FIX 1: The body background is made transparent to see the sparkles behind it --- */
+    body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
 
     /* Bilingual helpers */
     [data-lang]{display:none}
     body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
     body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
 
-    /* Aurora */
+    /* --- FIX 2: The solid background color is moved to the rearmost element --- */
     .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
       radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
       radial-gradient(50vw 50vw at 110% 10%, rgba(240,166,255,.25), transparent 60%),
       radial-gradient(40vw 40vw at 50% 110%, rgba(238,217,114,.18), transparent 60%),
-      radial-gradient(25vw 25vw at 20% 70%, rgba(139,92,246,.18), transparent 70%);
+      radial-gradient(25vw 25vw at 20% 70%, rgba(139,92,246,.18), transparent 70%),
+      var(--bg);
       filter:saturate(120%) blur(10px); animation:auroraShift 24s ease-in-out infinite alternate; }
     @keyframes auroraShift{to{transform:translateY(-2%) scale(1.02)}}
     .sparkles{position:fixed; inset:0; z-index:-1; pointer-events:none}
@@ -253,17 +255,14 @@
   </div>
 
   <script>
-    // Sparkles
+    // --- FIX 3: Sparkle starting position is corrected ---
     (function makeSparkles(){ 
       const host=document.getElementById('sparkles'); 
       for(let i=0;i<120;i++){ 
         const s=document.createElement('i'); 
-        s.style.left=Math.random()*100+'vw'; 
-        // --- FIXED LINE ---
-        // The original code started sparkles too far below the screen (100vh to 200vh).
-        // This corrected code starts them just at the bottom of the screen (100vh),
-        // so their upward animation is visible.
-        s.style.top = '100vh'; 
+        s.style.left=Math.random()*100+'vw';
+        // This now starts sparkles at the bottom of the screen to animate up into view.
+        s.style.top = '100vh';
         s.style.animationDuration=(10+Math.random()*16)+'s'; 
         host.appendChild(s);
       } 
