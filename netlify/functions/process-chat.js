@@ -14,6 +14,14 @@ const OPENROUTER_HEADERS = {
   'X-Title': 'Mind-Mapper AI',
 };
 
+// Preferred models in order of preference (all free)
+const PREFERRED_MODELS = [
+    'microsoft/phi-3-mini-128k-instruct:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemma-2-9b-it:free',
+    'qwen/qwen-2.5-7b-instruct:free'
+];
+
 // Helper function to robustly handle API responses
 async function getJsonResponse(response) {
     const responseText = await response.text(); // Read the body as text ONCE
@@ -30,6 +38,35 @@ async function getJsonResponse(response) {
     }
 }
 
+// Function to try models in order until one works
+async function tryModelsInOrder(messages) {
+    for (const model of PREFERRED_MODELS) {
+        try {
+            console.log(`Trying model: ${model}`);
+            const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
+                method: 'POST',
+                headers: OPENROUTER_HEADERS,
+                body: JSON.stringify({
+                    model: model,
+                    messages: messages,
+                })
+            });
+            
+            if (chatResponse.ok) {
+                const chatJson = await getJsonResponse(chatResponse);
+                console.log(`Success with model: ${model}`);
+                return chatJson.choices[0].message.content;
+            } else {
+                console.log(`Model ${model} failed with status: ${chatResponse.status}`);
+                continue;
+            }
+        } catch (error) {
+            console.log(`Model ${model} error:`, error.message);
+            continue;
+        }
+    }
+    throw new Error('All models failed to respond');
+}
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -52,7 +89,6 @@ export const handler = async (event) => {
     const embeddingJson = await getJsonResponse(embeddingResponse);
     const queryEmbedding = embeddingJson.data[0].embedding;
 
-
     // 2. Search Supabase
     const { data: similarConversations } = await supabase.rpc('match_conversations', {
       query_embedding: queryEmbedding,
@@ -61,20 +97,11 @@ export const handler = async (event) => {
     });
 
     // 3. Construct prompt
-    const systemPrompt = `You are Mind-Mapper AI...`; // (Content is the same)
+    const systemPrompt = `You are Mind-Mapper AI, a helpful personality analyst assistant.`; 
     const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
-    // 4. Get chat response
-    const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
-        method: 'POST',
-        headers: OPENROUTER_HEADERS,
-        body: JSON.stringify({
-            model: 'deepseek/deepseek-r1-distill-llama-70b:free',
-            messages: finalMessages,
-        })
-    });
-    const chatJson = await getJsonResponse(chatResponse);
-    const aiResponse = chatJson.choices[0].message.content;
+    // 4. Get chat response using fallback model strategy
+    const aiResponse = await tryModelsInOrder(finalMessages);
 
     // 5. Save to Supabase
     const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
@@ -84,19 +111,37 @@ export const handler = async (event) => {
       .select('id')
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        // Don't throw here - still return the AI response even if saving fails
+    }
 
     // 6. Return success response
     return {
       statusCode: 200,
-      body: JSON.stringify({ response: aiResponse, conversationId: newConversation.id }),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        response: aiResponse, 
+        conversationId: newConversation?.id || null 
+      }),
     };
 
   } catch (error) {
     console.error('Error in process-chat function:', error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'An internal server error occurred.' })
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        error: error.message || 'An internal server error occurred.' 
+      })
     };
   }
 };
