@@ -429,18 +429,23 @@
       input.value = ''; 
       appendMessage('user', text); 
       
-      // Collect the entire conversation history from the UI
-      const messages = Array.from(document.querySelectorAll('.msg:not(.typing)')).map(msg => {
+      // Build a trimmed conversation history for the backend
+      const rawMsgs = Array.from(document.querySelectorAll('.msg:not(.typing)')).map(msg => {
           const role = msg.classList.contains('user') ? 'user' : 'assistant';
-          // Clone the bubble, remove feedback buttons, then get innerText
           const bubbleClone = msg.querySelector('.bubble').cloneNode(true);
           const feedbackDiv = bubbleClone.querySelector('.feedback-buttons');
           if (feedbackDiv) feedbackDiv.remove();
-          
           const content = bubbleClone.innerText;
           return { role, content };
       });
 
+      // Keep only user messages plus the most recent assistant message that looks like JSON
+      const lastAssistantJson = [...rawMsgs].reverse().find(m => m.role === 'assistant' && /\{[\s\S]*\}/.test(m.content));
+      const filtered = rawMsgs.filter(m => m.role === 'user');
+      if (lastAssistantJson) filtered.push(lastAssistantJson);
+
+      // Limit to the last 8 items to avoid long echoing history
+      const messages = filtered.slice(-8);;
       showTyping();
       
       try {

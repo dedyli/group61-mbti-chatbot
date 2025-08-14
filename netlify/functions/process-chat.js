@@ -22,35 +22,27 @@ const PREFERRED_MODELS = [
 ];
 
 // FIXED: More dynamic system prompt that encourages variety
-const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach. 
+const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach.
 
 CRITICAL RULES:
-1. ALWAYS respond with ONLY valid JSON - no explanations outside the JSON
-2. Give DIFFERENT responses each time, even for similar inputs
-3. Analyze the FULL conversation history, not just the last message
-4. Use simple, friendly language like talking to a friend
-5. Be encouraging and positive
+1) Output ONLY valid JSON (no code fences, no extra text)
+2) Base content on the conversation so far; DO NOT reuse placeholder values
+3) Vary wording and insights across turns; avoid repetition
+4) If information is thin, lower confidence and include one targeted follow-up in growth_tips
 
-CONTEXT AWARENESS:
-- Look at how the conversation has evolved
-- Notice what the person has already shared
-- Build on previous insights
-- If they ask for analysis, consider ALL their messages
-
-JSON FORMAT (required):
+OUTPUT SCHEMA (placeholders; do NOT copy them verbatim):
 {
-  "type": "ENFP",
-  "confidence": 0.85,
-  "strengths": ["You're energetic and inspiring", "You connect easily with people"],
-  "growth_tips": ["Try to finish projects you start", "Take time for quiet reflection"],
-  "one_liner": "An enthusiastic people-person who sparks creativity in others"
+  "type": "<ISTJ|ISFJ|INFJ|INTJ|ISTP|ISFP|INFP|INTP|ESTP|ESFP|ENFP|ENTP|ESTJ|ESFJ|ENFJ|ENTJ>",
+  "confidence": <float between 0.0 and 1.0>,
+  "strengths": ["<short bullet>", "<short bullet>", "<short bullet>"],
+  "growth_tips": ["<short bullet>", "<short bullet>", "<short bullet>"],
+  "one_liner": "<one-sentence summary>"
 }
 
-RESPONSE VARIETY:
-- Change your insights based on conversation depth
-- Early in conversation: Lower confidence, ask for more info
-- Later in conversation: Higher confidence, detailed analysis
-- Always provide fresh perspectives and different wording`;
+VARIETY LOGIC:
+- Early conversation: confidence ≤ 0.6, ask for a clarifying detail
+- Deeper conversation: higher confidence when warranted, diversify strengths/tips
+- Never return the same JSON twice even if the user repeats themselves.`;
 
 // FIXED: Better conversation analysis
 function analyzeConversationDepth(messages) {
@@ -75,20 +67,20 @@ function getModelParams(model, conversationDepth) {
   const baseParams = {
     'anthropic/claude-3.5-haiku': { 
       max_tokens: 250, 
-      temperature: 0.8 + (conversationDepth.messageCount * 0.1) // Increase creativity over time
+      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1)) // Increase creativity over time
     },
     'google/gemini-flash-1.5-8b': { 
       max_tokens: 200, 
-      temperature: 0.7 + (conversationDepth.messageCount * 0.1)
+      temperature: Math.min(1.1, 0.7 + (conversationDepth.messageCount * 0.1))
     },
     'meta-llama/llama-3.1-8b-instruct': { 
       max_tokens: 180, 
-      temperature: 0.6 + (conversationDepth.messageCount * 0.1),
+      temperature: Math.min(1.1, 0.6 + (conversationDepth.messageCount * 0.1)),
       top_p: 0.9 
     },
     'openai/gpt-4o-mini': { 
       max_tokens: 200, 
-      temperature: 0.8 + (conversationDepth.messageCount * 0.1)
+      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1))
     }
   };
   
@@ -161,7 +153,7 @@ function summarizeConversation(messages) {
   return {
     topicsCovered: [...new Set(topics)],
     conversationStyle: userMessages.length > 3 ? 'detailed' : 'brief',
-    personalityHints: recentMessages.join(' ').toLowerCase()
+    personalityHints: recentMessages.map(m => m.content).join(' ').toLowerCase()
   };
 }
 
@@ -195,8 +187,7 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
           ...messages
         ],
         ...params,
-        // Add randomness to prevent identical responses
-        seed: Math.floor(Math.random() * 1000000)
+* 1000000)
       };
       
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
