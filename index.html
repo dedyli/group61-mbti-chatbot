@@ -11,7 +11,6 @@
     :root{ --bg:#0b0a13; --fg:#f7f5ff; --muted:#bdb7e6; --accent:#8B5CF6; --accent-2:#F0A6FF; --gold:#EED972; --glass:rgba(255,255,255,.08); --glass-stroke:rgba(255,255,255,.12); }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    /* --- FIX 1: The body background is made transparent to see the sparkles behind it --- */
     body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
 
     /* Bilingual helpers */
@@ -19,7 +18,6 @@
     body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
     body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
 
-    /* --- FIX 2: The solid background color is moved to the rearmost element --- */
     .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
       radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
       radial-gradient(50vw 50vw at 110% 10%, rgba(240,166,255,.25), transparent 60%),
@@ -33,7 +31,6 @@
     @keyframes float{to{transform:translateY(-120vh)}}
     @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } }
 
-    /* Header */
     header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
     .brand{display:flex; align-items:center; gap:12px}
     .brand img{width:120px; height:40px; object-fit:contain; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,.35)}
@@ -48,7 +45,6 @@
 
     .container{max-width:1200px; margin:0 auto; padding:64px 16px}
 
-    /* Hero */
     .hero{display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:48px; padding-top:48px}
     .title{ font-family:'Playfair Display',serif; font-weight:800; font-size:clamp(36px,6vw,64px); line-height:1.04; letter-spacing:-.3px; margin:0 0 16px; position:relative; background:linear-gradient(180deg,#fff, #d7d0ff 60%, #b9b0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 8px 28px rgba(139,92,246,.15) }
     .subtitle{color:var(--muted); font-weight:600; font-size:18px; margin-bottom:20px}
@@ -63,7 +59,6 @@
     @keyframes reveal{to{transform:translate(0,0)}}
     .badge{position:absolute; right:16px; top:16px; padding:10px 14px; border-radius:12px; font-weight:700; color:#0b0a13; background:linear-gradient(90deg,#fff,#f7f5ff); box-shadow:0 10px 30px rgba(255,255,255,.25)}
 
-    /* Sections */
     .section{padding:72px 0}
     .section h2{font-family:'Playfair Display',serif; font-size:clamp(28px,3.2vw,40px); margin:0 0 24px}
     .muted{color:var(--muted)}
@@ -86,7 +81,6 @@
     .field input,.field textarea{ background:rgba(255,255,255,.04); border:1px solid var(--glass-stroke); color:var(--fg); padding:14px 16px; border-radius:12px }
     .btn{ border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; box-shadow:0 12px 34px rgba(139,92,246,.35) }
 
-    /* Chat widget */
     .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
     .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
     .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; z-index:9999; background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55) }
@@ -105,6 +99,12 @@
     .model-select{display:flex; gap:8px; align-items:center}
     .model-select select{background:transparent; color:var(--fg); border:1px solid var(--glass-stroke); padding:6px 8px; border-radius:8px}
     .notice{font-size:12px; color:#cfcaff; opacity:.8}
+    
+    /* NEW: Feedback buttons styling */
+    .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
+    .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; }
+    .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
+    .feedback-buttons button.selected { background: var(--accent); color: #0b0a13; border-color: transparent; }
 
     @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
   </style>
@@ -171,13 +171,13 @@
         </div>
         <div class="step">
           <span class="n">2</span>
-          <h3><span data-lang="en">Be yourself</span><span data-lang="vi">Hãy là chính mình</span></h3>
-          <p><span data-lang="en">The assistant listens for patterns across the four MBTI axes.</span><span data-lang="vi">Trợ lý lắng nghe các mẫu hành vi theo bốn trục MBTI.</span></p>
+          <h3><span data-lang="en">AI listens and learns</span><span data-lang="vi">AI lắng nghe và học hỏi</span></h3>
+          <p><span data-lang="en">Our AI assistant listens for patterns and compares them to past conversations to improve its insights.</span><span data-lang="vi">Trợ lý AI lắng nghe, nhận diện các mẫu hành vi và so sánh với các cuộc trò chuyện trước để cải thiện độ chính xác.</span></p>
         </div>
         <div class="step">
           <span class="n">3</span>
           <h3><span data-lang="en">Receive your profile</span><span data-lang="vi">Nhận hồ sơ của bạn</span></h3>
-          <p><span data-lang="en">Get a concise MBTI–style type with confidence, traits, and friendly development tips.</span><span data-lang="vi">Nhận kiểu MBTI, mức tự tin, đặc trưng nổi bật và gợi ý phát triển.</span></p>
+          <p><span data-lang-en">Get a concise MBTI–style type with confidence, traits, and friendly development tips.</span><span data-lang="vi">Nhận kiểu MBTI, mức tự tin, đặc trưng nổi bật và gợi ý phát triển.</span></p>
         </div>
       </div>
     </section>
@@ -206,7 +206,7 @@
       </details>
       <details>
         <summary><span data-lang="en">Is my data private and secure?</span><span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn?</span></summary>
-        <p><span data-lang="en">Your conversation data is sent securely to our cloud API. We don't store conversations permanently.</span><span data-lang="vi">Dữ liệu cuộc trò chuyện được gửi an toàn tới API đám mây. Chúng tôi không lưu trữ cuộc trò chuyện vĩnh viễn.</span></p>
+        <p><span data-lang="en">We securely save anonymized conversations to improve our AI's accuracy and insights. We do not store any personal identification information.</span><span data-lang="vi">Chúng tôi lưu trữ ẩn danh các cuộc trò chuyện một cách an toàn để cải thiện độ chính xác và thông tin chi tiết của AI. Chúng tôi không lưu trữ bất kỳ thông tin nhận dạng cá nhân nào.</span></p>
       </details>
       <details>
         <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span></summary>
@@ -254,21 +254,28 @@
     <div class="notice" style="padding:8px 12px">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
-    // --- FIX 3: Sparkle starting position is corrected ---
+    // --- 1. Supabase Project Configuration ---
+    // IMPORTANT: Replace with your actual Supabase URL and Anon Key
+    const supa_url = 'YOUR_SUPABASE_URL';
+    const supa_anon_key = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = supabase.createClient(supa_url, supa_anon_key);
+
+
+    // --- 2. Existing Page Functions (Sparkles, Tilt, Language) ---
     (function makeSparkles(){ 
       const host=document.getElementById('sparkles'); 
       for(let i=0;i<120;i++){ 
         const s=document.createElement('i'); 
         s.style.left=Math.random()*100+'vw';
-        // This now starts sparkles at the bottom of the screen to animate up into view.
         s.style.top = '100vh';
         s.style.animationDuration=(10+Math.random()*16)+'s'; 
         host.appendChild(s);
       } 
     })();
 
-    // 3D tilt
     (function tilt(){ 
       const card=document.getElementById('card3d'); 
       let b=card.getBoundingClientRect(); 
@@ -281,7 +288,6 @@
       card.addEventListener('mouseleave',()=>card.style.transform='perspective(1000px) rotateX(0) rotateY(0)'); 
     })();
 
-    // Language toggle + placeholders
     (function initLang(){
       const sel=document.getElementById('language');
       function applyPlaceholders(){ 
@@ -297,10 +303,8 @@
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
         
-        // Clear chat and restart with new language
         const chatBody = document.getElementById('chatBody');
         if (chatBody) {
-          // Remove all messages except keep one initial message in the new language
           chatBody.innerHTML = '';
           const initialMsg = document.createElement('div');
           initialMsg.className = 'msg ai';
@@ -308,9 +312,9 @@
           bubble.className = 'bubble';
           
           if (lang === 'vi') {
-            bubble.innerHTML = `<span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hành vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>`;
+            bubble.innerHTML = `<span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI...</span>`;
           } else {
-            bubble.innerHTML = `<span data-lang="en">Hi! I'm your MBTI–style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>`;
+            bubble.innerHTML = `<span data-lang="en">Hi! I'm your MBTI–style personality analyst...</span>`;
           }
           
           initialMsg.appendChild(bubble);
@@ -332,38 +336,68 @@
       } 
     };
 
-    // --- Chat + LLM logic ---
+    // --- 3. UPDATED Chat + Backend Logic ---
     const chatBody=document.getElementById('chatBody');
     const input=document.getElementById('chatInput');
     const sendBtn=document.getElementById('sendBtn');
     
-    function getSystemPrompt() {
-      const isVietnamese = document.body.classList.contains('lang-vi');
-      
-      if (isVietnamese) {
-        return `Bạn là Mind–Mapper AI, một chuyên gia phân tích tính cách ấm áp và sâu sắc dành cho học sinh, sinh viên.
-1) Đặt các câu hỏi ngắn gọn, đầy cảm thông để hiểu người dùng qua các trục MBTI: (E/I), (S/N), (T/F), (J/P).
-2) Phản ánh các mẫu hành vi mà bạn nhận thấy, trích dẫn các ví dụ từ tin nhắn của họ bằng ngôn ngữ đơn giản.
-3) Khi người dùng yêu cầu kết quả MBTI hoặc sau 6+ tin nhắn, suy luận kiểu 4 chữ cái với % độ tin cậy, và đưa ra 4–6 lời khuyên thực tế về học tập, làm việc nhóm và sức khỏe tinh thần.
-4) Trung lập và hỗ trợ. Giữ câu trả lời dưới 180 từ trừ khi được yêu cầu đi sâu hơn.
-QUAN TRỌNG: Luôn trả lời bằng tiếng Việt.`;
-      } else {
-        return `You are Mind–Mapper AI, a warm, insightful personality analyst for students.
-1) Ask brief, empathetic questions to understand the user across MBTI axes: (E/I), (S/N), (T/F), (J/P).
-2) Reflect patterns you notice, citing examples from their messages in plain language.
-3) When the user asks for their MBTI or after 6+ user messages, infer a 4–letter type with a confidence %, and give 4–6 practical tips for study, teamwork, and wellbeing.
-4) Be unbiased and supportive. Keep answers under 180 words unless asked to go deeper.
-IMPORTANT: Always respond in English.`;
-      }
-    }
-
-    function appendMessage(role, text){ 
+    // Appends a new message to the chat UI
+    function appendMessage(role, text, conversationId = null){ 
       const wrap=document.createElement('div'); 
-      wrap.className='msg '+(role==='user'?'user':'ai'); 
-      wrap.innerHTML=`<div class="bubble">${text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`; 
+      wrap.className='msg '+(role==='user'?'user':'ai');
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = text.replace(/</g,'&lt;').replace(/\n/g,'<br>');
+      
+      // If it's an AI message and has a conversationId, add feedback buttons
+      if (role === 'ai' && conversationId) {
+        const feedbackContainer = document.createElement('div');
+        feedbackContainer.className = 'feedback-buttons';
+        feedbackContainer.innerHTML = `
+          <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
+          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>
+        `;
+        bubble.appendChild(feedbackContainer);
+      }
+      
+      wrap.appendChild(bubble);
       chatBody.appendChild(wrap); 
       chatBody.scrollTop=chatBody.scrollHeight; 
     }
+
+    // Handles saving feedback to Supabase
+    async function handleFeedback(conversationId, isAccurate) {
+        if (!supabase) return alert('Supabase client not initialized.');
+        
+        const { error } = await supabase
+            .from('feedback')
+            .insert({ conversation_id: conversationId, is_accurate: isAccurate });
+
+        if (error) {
+            console.error('Error saving feedback:', error);
+            alert('Could not save feedback.');
+        } else {
+            // Visually disable the buttons for this feedback group
+            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.getAttribute('data-rating') == String(isAccurate)) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+    }
+
+    // Add a single event listener to the chat body for feedback buttons
+    chatBody.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
+            const conversationId = target.getAttribute('data-convo-id');
+            const isAccurate = target.getAttribute('data-rating') === 'true';
+            handleFeedback(conversationId, isAccurate);
+        }
+    });
 
     function showTyping() {
       const wrap=document.createElement('div');
@@ -379,50 +413,7 @@ IMPORTANT: Always respond in English.`;
       if (typing) typing.remove();
     }
 
-    async function respondOpenRouter(text){
-      showTyping();
-      
-      const messages=[{role:'system', content:getSystemPrompt()}];
-      
-      // Collect conversation history
-      document.querySelectorAll('.msg:not(.typing)').forEach(n=>{ 
-        const isUser=n.classList.contains('user'); 
-        const t=n.querySelector('.bubble').innerText; 
-        messages.push({role:isUser?'user':'assistant', content:t}); 
-      });
-      
-      messages.push({role:'user', content:text});
-      
-      // Try only DeepSeek model since it's working
-      try {
-        const res = await fetch('/.netlify/functions/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            model: 'deepseek/deepseek-r1-distill-llama-70b:free', 
-            messages, 
-            temperature: 0.7, 
-            max_tokens: 500 
-          })
-        });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
-        const json = await res.json();
-        hideTyping();
-        
-        const output = json.choices?.[0]?.message?.content || 'Sorry, no response received.';
-        appendMessage('assistant', output);
-        
-      } catch (err) {
-        hideTyping();
-        console.error('Chat error:', err);
-        appendMessage('assistant', 'Sorry, I encountered an error. Please check your connection and try again.');
-      }
-    }
-
+    // Sends the chat history to the backend and gets a response
     async function handleSend(){ 
       const text = input.value.trim(); 
       if (!text) return; 
@@ -430,7 +421,42 @@ IMPORTANT: Always respond in English.`;
       input.value = ''; 
       appendMessage('user', text); 
       
-      await respondOpenRouter(text);
+      // Collect the entire conversation history from the UI
+      const messages = Array.from(document.querySelectorAll('.msg:not(.typing)')).map(msg => {
+          const role = msg.classList.contains('user') ? 'user' : 'assistant';
+          // Clone the bubble, remove feedback buttons, then get innerText
+          const bubbleClone = msg.querySelector('.bubble').cloneNode(true);
+          const feedbackDiv = bubbleClone.querySelector('.feedback-buttons');
+          if (feedbackDiv) feedbackDiv.remove();
+          
+          const content = bubbleClone.innerText;
+          return { role, content };
+      });
+
+      showTyping();
+      
+      try {
+        const res = await fetch('/.netlify/functions/process-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages })
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        // Assumes your backend returns { response: "...", conversationId: 123 }
+        const data = await res.json();
+        hideTyping();
+        
+        appendMessage('assistant', data.response || 'Sorry, no response received.', data.conversationId);
+        
+      } catch (err) {
+        hideTyping();
+        console.error('Chat error:', err);
+        appendMessage('assistant', 'Sorry, I encountered an error. Please check your connection and try again.');
+      }
     }
 
     sendBtn.addEventListener('click', handleSend);
@@ -440,18 +466,6 @@ IMPORTANT: Always respond in English.`;
         handleSend(); 
       }
     });
-
-    // Auto-focus input when panel opens
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          if (panel.classList.contains('open') && input) {
-            setTimeout(() => input.focus(), 100);
-          }
-        }
-      });
-    });
-    observer.observe(panel, { attributes: true });
   </script>
 </body>
 </html>
