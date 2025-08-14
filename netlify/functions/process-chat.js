@@ -11,7 +11,7 @@ const OPENROUTER_HEADERS = {
   'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
   'Content-Type': 'application/json',
   // Recommended by OpenRouter: identify your app with a URL and title
-  'HTTP-Referer': 'YOUR_APP_URL', // e.g., https://mind-mapper-ai.netlify.app
+  'HTTP-Referer': 'https://group61project.netlify.app/', // e.g., https://mind-mapper-ai.netlify.app
   'X-Title': 'Mind-Mapper AI',
 };
 
