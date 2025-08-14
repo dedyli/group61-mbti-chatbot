@@ -142,7 +142,7 @@
       <div>
         <h2 class="title">
           <span data-lang="en">Conversational MBTI Personality Insights – refined for students</span>
-          <span data-lang="vi">Trò chuyện MBTI tinh tế – dành cho học sinh, sinh viên</span>
+          <span data--lang="vi">Trò chuyện MBTI tinh tế – dành cho học sinh, sinh viên</span>
         </h2>
         <p class="subtitle">
           <span data-lang="en">A warm, human-like conversation that reveals strengths, tendencies, and growth tips.</span>
@@ -341,7 +341,9 @@
     const input=document.getElementById('chatInput');
     const sendBtn=document.getElementById('sendBtn');
     
-    // Enhanced appendMessage function with markdown-style formatting
+    // **FIX**: Use a clean JavaScript array to track conversation history
+    let conversationHistory = [];
+
     function appendMessage(role, text, conversationId = null){ 
       const wrap=document.createElement('div'); 
       wrap.className='msg '+(role==='user'?'user':'ai');
@@ -349,16 +351,14 @@
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
       
-      // Enhanced text processing for better formatting
       let processedText = text
         .replace(/</g,'&lt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-        .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
-        .replace(/\n/g,'<br>'); // Line breaks
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g,'<br>');
       
       bubble.innerHTML = processedText;
       
-      // If it's an AI message and has a conversationId, add feedback buttons
       if (role === 'ai' && conversationId) {
         const feedbackContainer = document.createElement('div');
         feedbackContainer.className = 'feedback-buttons';
@@ -374,7 +374,6 @@
       chatBody.scrollTop=chatBody.scrollHeight; 
     }
 
-    // Handles saving feedback to Supabase
     async function handleFeedback(conversationId, isAccurate) {
         if (!supabaseClient) return alert('Supabase client not initialized.');
         
@@ -386,7 +385,6 @@
             console.error('Error saving feedback:', error);
             alert('Could not save feedback.');
         } else {
-            // Visually disable the buttons for this feedback group
             const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
             buttons.forEach(btn => {
                 btn.disabled = true;
@@ -397,7 +395,6 @@
         }
     }
 
-    // Add a single event listener to the chat body for feedback buttons
     chatBody.addEventListener('click', (event) => {
         const target = event.target;
         if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
@@ -421,34 +418,20 @@
       if (typing) typing.remove();
     }
 
-    // FIXED: Main chat function with proper response handling
     async function handleSend(){ 
       const text = input.value.trim(); 
       if (!text) return; 
       
       input.value = ''; 
-      appendMessage('user', text); 
+      appendMessage('user', text);
+      // **FIX**: Add user message to our clean history
+      conversationHistory.push({ role: 'user', content: text });
       
-      // Build a trimmed conversation history for the backend
-      const rawMsgs = Array.from(document.querySelectorAll('.msg:not(.typing)')).map(msg => {
-          const role = msg.classList.contains('user') ? 'user' : 'assistant';
-          const bubbleClone = msg.querySelector('.bubble').cloneNode(true);
-          const feedbackDiv = bubbleClone.querySelector('.feedback-buttons');
-          if (feedbackDiv) feedbackDiv.remove();
-          const content = bubbleClone.innerText;
-          return { role, content };
-      });
-
-      // Keep only user messages plus the most recent assistant message that looks like JSON
-      const lastAssistantJson = [...rawMsgs].reverse().find(m => m.role === 'assistant' && /\{[\s\S]*\}/.test(m.content));
-      const filtered = rawMsgs.filter(m => m.role === 'user');
-      if (lastAssistantJson) filtered.push(lastAssistantJson);
-
-      // Limit to the last 8 items to avoid long echoing history
-      const messages = filtered.slice(-8);;
       showTyping();
       
       try {
+        // **FIX**: Use the clean history, limited to the last 8 messages
+        const messages = conversationHistory.slice(-8);
         console.log('Sending messages to backend:', messages);
         
         const res = await fetch('/.netlify/functions/process-chat', {
@@ -456,9 +439,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages })
         });
-        
-        console.log('Response status:', res.status);
-        console.log('Response ok:', res.ok);
         
         if (!res.ok) {
           const errorText = await res.text();
@@ -471,51 +451,41 @@
         
         hideTyping();
         
-        // FIXED: Your backend returns { reply: "stringified-json" }
-        // We need to parse data.reply to get the actual MBTI analysis
         if (data.reply) {
           try {
-            // Parse the JSON string from data.reply
             const mbtiResult = JSON.parse(data.reply);
-            console.log('Parsed MBTI result:', mbtiResult);
             
-            // Format the MBTI response nicely
+            // **FIX**: Add the raw AI response to our clean history
+            conversationHistory.push({ role: 'assistant', content: data.reply });
+
             let responseText = '';
             
             if (mbtiResult.type && mbtiResult.type !== 'Unknown') {
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              
               if (mbtiResult.one_liner) {
                 responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
               }
-              
               if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
                 responseText += `✨ **Your Strengths:**\n`;
-                mbtiResult.strengths.forEach(strength => {
-                  responseText += `• ${strength}\n`;
-                });
+                mbtiResult.strengths.forEach(strength => { responseText += `• ${strength}\n`; });
                 responseText += '\n';
               }
-              
               if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
                 responseText += `🌱 **Growth Tips:**\n`;
-                mbtiResult.growth_tips.forEach(tip => {
-                  responseText += `• ${tip}\n`;
-                });
+                mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
               }
             } else {
-              // Fallback for unknown or incomplete results
               responseText = mbtiResult.one_liner || 'I need a bit more information to give you a good analysis. Can you tell me more about how you prefer to make decisions or spend your free time?';
             }
             
-            appendMessage('ai', responseText);
+            // **FIX**: Pass the conversation_id from the backend to the message display
+            appendMessage('ai', responseText, data.conversation_id);
             
           } catch (parseError) {
             console.error('Failed to parse MBTI result:', parseError);
-            console.error('Raw reply content:', data.reply);
-            // Fallback: just show the raw reply
             appendMessage('ai', data.reply || 'Sorry, I received an unexpected response format.');
+            conversationHistory.push({ role: 'assistant', content: data.reply });
           }
         } else if (data.error) {
           console.error('API returned error:', data.error);
@@ -537,6 +507,14 @@
       if (e.key === 'Enter' && !e.shiftKey) { 
         e.preventDefault(); 
         handleSend(); 
+      }
+    });
+
+    // **FIX**: Initialize history with the first AI message on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const initialBubble = document.querySelector('#chatBody .msg.ai .bubble');
+      if (initialBubble) {
+        conversationHistory.push({ role: 'assistant', content: initialBubble.innerText });
       }
     });
   </script>
