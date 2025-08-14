@@ -12,6 +12,7 @@ const OPENROUTER_HEADERS = {
   'Content-Type': 'application/json',
   'HTTP-Referer': 'https://group61project.netlify.app/', // Make sure this is your correct Netlify URL
   'X-Title': 'Mind-Mapper AI',
+  'User-Agent': 'Mind-Mapper-AI/1.0'
 };
 
 // Preferred models in order of preference (all free)
@@ -25,15 +26,29 @@ const PREFERRED_MODELS = [
 // Helper function to robustly handle API responses
 async function getJsonResponse(response) {
     const responseText = await response.text(); // Read the body as text ONCE
+    
+    // Log response details for debugging
+    console.log(`Response status: ${response.status}`);
+    console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`Response URL: ${response.url}`);
+    console.log(`Response text preview: ${responseText.substring(0, 200)}...`);
+    
     if (!response.ok) {
-        // If the response is not OK, log the raw text and throw an error
-        console.error("API request failed. Raw text from API:", responseText);
-        throw new Error(`API request failed with status ${response.status}`);
+        console.error("API request failed. Status:", response.status);
+        console.error("Full response text:", responseText);
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
     }
+    
+    // Check if response looks like HTML (indicates wrong endpoint)
+    if (responseText.trim().startsWith('<!DOCTYPE html')) {
+        console.error("Received HTML instead of JSON - likely wrong endpoint or authentication issue");
+        throw new Error("Received HTML instead of JSON from API - check authentication and endpoint");
+    }
+    
     try {
-        return JSON.parse(responseText); // Try to parse the text as JSON
+        return JSON.parse(responseText);
     } catch (e) {
-        console.error("Failed to parse response as JSON. Raw text from API:", responseText);
+        console.error("Failed to parse response as JSON. Raw text:", responseText);
         throw new Error("Invalid JSON response from API.");
     }
 }
@@ -77,46 +92,23 @@ export const handler = async (event) => {
     const { messages } = JSON.parse(event.body);
     const latestMessage = messages[messages.length - 1].content;
 
-    // 1. Create an embedding
-    const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
-      method: 'POST',
-      headers: OPENROUTER_HEADERS,
-      body: JSON.stringify({
-        model: 'sentence-transformers/all-minilm-l6-v2',
-        input: latestMessage,
-      }),
-    });
-    const embeddingJson = await getJsonResponse(embeddingResponse);
-    const queryEmbedding = embeddingJson.data[0].embedding;
+    console.log('Processing chat request with message:', latestMessage);
+    console.log('Using API key:', process.env.OPENROUTER_API_KEY ? 'API key found' : 'API key missing');
 
-    // 2. Search Supabase
-    const { data: similarConversations } = await supabase.rpc('match_conversations', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.7,
-      match_count: 2,
-    });
+    // Skip embeddings for now to test chat functionality
+    console.log('Skipping embeddings step for debugging...');
 
     // 3. Construct prompt
     const systemPrompt = `You are Mind-Mapper AI, a helpful personality analyst assistant.`; 
     const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
     // 4. Get chat response using fallback model strategy
+    console.log('Attempting to get chat response...');
     const aiResponse = await tryModelsInOrder(finalMessages);
 
-    // 5. Save to Supabase
-    const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
-    const { data: newConversation, error: insertError } = await supabase
-      .from('conversations')
-      .insert({ conversation_history: fullConversation, embedding: queryEmbedding })
-      .select('id')
-      .single();
+    console.log('Successfully got AI response:', aiResponse.substring(0, 100) + '...');
 
-    if (insertError) {
-        console.error('Supabase insert error:', insertError);
-        // Don't throw here - still return the AI response even if saving fails
-    }
-
-    // 6. Return success response
+    // 6. Return success response (skip Supabase for now)
     return {
       statusCode: 200,
       headers: {
@@ -126,12 +118,13 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({ 
         response: aiResponse, 
-        conversationId: newConversation?.id || null 
+        conversationId: null // Skip for debugging
       }),
     };
 
   } catch (error) {
     console.error('Error in process-chat function:', error.message);
+    console.error('Full error:', error);
     return {
       statusCode: 500,
       headers: {
