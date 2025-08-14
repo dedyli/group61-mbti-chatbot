@@ -1,14 +1,9 @@
-// File Location: netlify/functions/process-chat.js
+// Fixed process-chat.js with proper conversation handling
+
 import { createClient } from '@supabase/supabase-js';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Supabase (optional; safe to keep even if not configured)
-// ─────────────────────────────────────────────────────────────────────────────
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OpenRouter setup
-// ─────────────────────────────────────────────────────────────────────────────
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_HEADERS = {
   Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -18,182 +13,191 @@ const OPENROUTER_HEADERS = {
   'X-Title': 'Mind-Mapper AI'
 };
 
-// Models ordered by reliability and quality for MBTI analysis
+// UPDATED: More diverse models and better parameters
 const PREFERRED_MODELS = [
-  'anthropic/claude-3-haiku',
-  'google/gemini-flash-1.5',
+  'anthropic/claude-3.5-haiku',  // Updated to newer version
+  'google/gemini-flash-1.5-8b',
   'meta-llama/llama-3.1-8b-instruct',
-  'deepseek/deepseek-chat'
+  'openai/gpt-4o-mini'  // Added GPT model as alternative
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MBTI-optimized system prompt (STRICT JSON output)
-// ─────────────────────────────────────────────────────────────────────────────
-const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach who helps people understand themselves better.
+// FIXED: More dynamic system prompt that encourages variety
+const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach. 
 
-CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no text before or after.
+CRITICAL RULES:
+1. ALWAYS respond with ONLY valid JSON - no explanations outside the JSON
+2. Give DIFFERENT responses each time, even for similar inputs
+3. Analyze the FULL conversation history, not just the last message
+4. Use simple, friendly language like talking to a friend
+5. Be encouraging and positive
 
-INSTRUCTIONS:
-1) Use simple, everyday language a high school student uses.
-2) Keep responses short and conversational.
-3) Avoid complex psychology terms—explain things simply.
-4) Be warm, friendly, and encouraging—like talking to a friend.
-5) Use relatable examples from daily life, school, or social situations.
+CONTEXT AWARENESS:
+- Look at how the conversation has evolved
+- Notice what the person has already shared
+- Build on previous insights
+- If they ask for analysis, consider ALL their messages
 
-LANGUAGE RULES:
-- Instead of "Extraverted Feeling (Fe)" → say "caring about group harmony".
-- Instead of "Introverted Sensing (Si)" → say "remembering details and past experiences".
-- Instead of "cognitive functions" → say "how your mind works".
-- Instead of "preferences" → say "what you're naturally good at".
-- Use "you might be someone who..." rather than clinical labels.
-
-RESPONSE FORMAT (STRICT):
-Respond with ONLY this JSON structure:
+JSON FORMAT (required):
 {
-  "type": "INTJ",
-  "confidence": 0.8,
-  "strengths": ["You're great at seeing the big picture", "You think things through carefully"],
-  "growth_tips": ["Try sharing your ideas more often", "Don't be afraid to ask for help"],
-  "one_liner": "A thoughtful planner who sees possibilities others miss"
+  "type": "ENFP",
+  "confidence": 0.85,
+  "strengths": ["You're energetic and inspiring", "You connect easily with people"],
+  "growth_tips": ["Try to finish projects you start", "Take time for quiet reflection"],
+  "one_liner": "An enthusiastic people-person who sparks creativity in others"
 }
 
-RESPONSE REQUIREMENTS:
-- type: Must be a 4-letter MBTI code (like "INTJ", "ESFP", etc.)
-- confidence: Number between 0.0 and 1.0
-- strengths: Array of 2-5 friendly, encouraging statements
-- growth_tips: Array of 2-5 practical, supportive suggestions
-- one_liner: Max 20 words, friendly personality summary`;
+RESPONSE VARIETY:
+- Change your insights based on conversation depth
+- Early in conversation: Lower confidence, ask for more info
+- Later in conversation: Higher confidence, detailed analysis
+- Always provide fresh perspectives and different wording`;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────────────────────────────────────
-function isValidText(text) {
-  if (!text || typeof text !== 'string' || text.length < 5) return false;
-  if (text.includes('<!DOCTYPE') || text.includes('<html')) return false;
-  if (/(.)\1{10,}/.test(text)) return false;
-  if (/[A-Za-z]{80,}/.test(text)) return false;
-  return true;
+// FIXED: Better conversation analysis
+function analyzeConversationDepth(messages) {
+  const userMessages = messages.filter(m => m.role === 'user');
+  const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
+  const avgLength = totalLength / userMessages.length;
+  
+  return {
+    messageCount: userMessages.length,
+    totalLength,
+    avgLength,
+    hasPersonalityRequest: userMessages.some(m => 
+      m.content.toLowerCase().includes('mbti') || 
+      m.content.toLowerCase().includes('personality') ||
+      m.content.toLowerCase().includes('type')
+    )
+  };
 }
 
-// Enhanced JSON response handler with better error logging
+// FIXED: Dynamic model parameters based on conversation
+function getModelParams(model, conversationDepth) {
+  const baseParams = {
+    'anthropic/claude-3.5-haiku': { 
+      max_tokens: 250, 
+      temperature: 0.8 + (conversationDepth.messageCount * 0.1) // Increase creativity over time
+    },
+    'google/gemini-flash-1.5-8b': { 
+      max_tokens: 200, 
+      temperature: 0.7 + (conversationDepth.messageCount * 0.1)
+    },
+    'meta-llama/llama-3.1-8b-instruct': { 
+      max_tokens: 180, 
+      temperature: 0.6 + (conversationDepth.messageCount * 0.1),
+      top_p: 0.9 
+    },
+    'openai/gpt-4o-mini': { 
+      max_tokens: 200, 
+      temperature: 0.8 + (conversationDepth.messageCount * 0.1)
+    }
+  };
+  
+  return baseParams[model] || { max_tokens: 200, temperature: 0.8 };
+}
+
+// FIXED: Enhanced JSON response handler
 async function getJsonResponse(response) {
   const responseText = await response.text();
-  const ct = (response.headers && response.headers.get && response.headers.get('content-type')) || '';
   
-  console.log('=== API Response Debug Info ===');
+  console.log('=== API Response Debug ===');
   console.log('Status:', response.status);
-  console.log('Content-Type:', ct);
-  console.log('Response Length:', responseText.length);
-  console.log('Response Preview:', responseText.substring(0, 500));
-  console.log('================================');
+  console.log('Response:', responseText.substring(0, 500));
   
   if (!response.ok) {
-    console.error('API request failed. Full response:', responseText);
-    if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-      throw new Error('API returned HTML instead of JSON - possible rate limit or server error');
-    }
-    if (response.status === 401) throw new Error('Invalid API key');
-    if (response.status === 429) throw new Error('Rate limit exceeded');
-    if (response.status === 503) throw new Error('Service temporarily unavailable');
-    throw new Error(`API error ${response.status}: ${responseText.substring(0, 200)}`);
+    console.error('API request failed:', responseText);
+    if (response.status === 429) throw new Error('Rate limit exceeded - trying next model');
+    if (response.status === 503) throw new Error('Service unavailable - trying next model');
+    throw new Error(`API error ${response.status}`);
   }
   
-  // Try parsing as JSON first
-  if (ct.includes('application/json')) {
-    try {
-      const parsed = JSON.parse(responseText);
-      console.log('Successfully parsed JSON response');
-      return parsed;
-    } catch (e) {
-      console.error('Failed to parse JSON despite JSON content-type:', e.message);
-      console.error('Raw response:', responseText);
-    }
-  }
-  
-  // Fallback: try to extract JSON from mixed content
   try {
-    // Try to find JSON code blocks
-    const fenceMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/i);
-    if (fenceMatch) {
-      console.log('Found JSON in code fence');
-      return JSON.parse(fenceMatch[1]);
-    }
-    
-    // Try to find JSON object
-    const start = responseText.indexOf('{');
-    const end = responseText.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      const jsonStr = responseText.slice(start, end + 1);
-      console.log('Extracted JSON:', jsonStr);
-      return JSON.parse(jsonStr);
-    }
-    
-    // Last resort: try parsing the whole thing
-    return JSON.parse(responseText);
+    // Try parsing as JSON first
+    const parsed = JSON.parse(responseText);
+    console.log('Successfully parsed JSON response');
+    return parsed;
   } catch (e) {
-    console.error('All JSON parsing attempts failed:', e.message);
-    console.error('Final response text:', responseText);
+    console.log('Direct JSON parse failed, trying extraction...');
+    
+    // Try to extract JSON from various formats
+    const jsonPatterns = [
+      /```json\s*([\s\S]*?)\s*```/i,
+      /```\s*([\s\S]*?)\s*```/i,
+      /\{[\s\S]*\}/
+    ];
+    
+    for (const pattern of jsonPatterns) {
+      const match = responseText.match(pattern);
+      if (match) {
+        try {
+          const extracted = JSON.parse(match[1] || match[0]);
+          console.log('Successfully extracted JSON');
+          return { choices: [{ message: { content: JSON.stringify(extracted) } }] };
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+    
+    throw new Error('Could not extract valid JSON from response');
   }
-  
-  throw new Error('Could not extract valid JSON from API response');
 }
 
-async function createEmbedding(text) {
-  try {
-    console.log('Creating embedding for text length:', text.length);
-    const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
-      method: 'POST',
-      headers: OPENROUTER_HEADERS,
-      body: JSON.stringify({
-        model: 'openai/text-embedding-3-small',
-        input: text.substring(0, 8000) // Limit input length
-      })
+// FIXED: Better conversation summarization for context
+function summarizeConversation(messages) {
+  const userMessages = messages.filter(m => m.role === 'user');
+  const recentMessages = userMessages.slice(-5); // Last 5 user messages
+  
+  const topics = [];
+  const keywords = ['study', 'friend', 'decision', 'feel', 'think', 'prefer', 'like', 'enjoy'];
+  
+  recentMessages.forEach(msg => {
+    keywords.forEach(keyword => {
+      if (msg.content.toLowerCase().includes(keyword)) {
+        topics.push(keyword);
+      }
     });
-    
-    if (!embeddingResponse.ok) {
-      const preview = await embeddingResponse.text();
-      console.log('Embedding error:', embeddingResponse.status, preview.substring(0, 200));
-      return null;
-    }
-    
-    const json = await embeddingResponse.json();
-    if (json && json.data && json.data[0] && json.data[0].embedding) {
-      console.log('Successfully created embedding');
-      return json.data[0].embedding;
-    } else {
-      console.log('Invalid embedding response structure:', json);
-    }
-  } catch (err) {
-    console.log('Embedding creation failed:', err.message);
-  }
-  return null;
+  });
+  
+  return {
+    topicsCovered: [...new Set(topics)],
+    conversationStyle: userMessages.length > 3 ? 'detailed' : 'brief',
+    personalityHints: recentMessages.join(' ').toLowerCase()
+  };
 }
 
 async function tryModelsInOrder(messages) {
-  const modelParams = {
-    'anthropic/claude-3-haiku': { max_tokens: 200, temperature: 0.7 },
-    'google/gemini-flash-1.5': { max_tokens: 200, temperature: 0.7 },
-    'meta-llama/llama-3.1-8b-instruct': { max_tokens: 180, temperature: 0.6, top_p: 0.9 },
-    'deepseek/deepseek-chat': { max_tokens: 160, temperature: 0.6 }
-  };
+  const conversationDepth = analyzeConversationDepth(messages);
+  const summary = summarizeConversation(messages);
+  
+  console.log('Conversation analysis:', conversationDepth);
+  console.log('Conversation summary:', summary);
   
   let lastError = null;
   
   for (const model of PREFERRED_MODELS) {
     try {
       console.log(`\n=== Trying model: ${model} ===`);
-      const params = modelParams[model] || { max_tokens: 200, temperature: 0.7 };
+      const params = getModelParams(model, conversationDepth);
       
+      // FIXED: Add conversation context to the system prompt
+      const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
+- Messages exchanged: ${conversationDepth.messageCount}
+- Topics covered: ${summary.topicsCovered.join(', ')}
+- Style: ${summary.conversationStyle}
+- Analysis readiness: ${conversationDepth.hasPersonalityRequest ? 'Ready for full analysis' : 'Still gathering info'}
+
+IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide a UNIQUE response that builds on what was already discussed.`;
+
       const requestBody = {
         model,
-        messages,
-        ...params
+        messages: [
+          { role: 'system', content: contextualSystemPrompt },
+          ...messages
+        ],
+        ...params,
+        // Add randomness to prevent identical responses
+        seed: Math.floor(Math.random() * 1000000)
       };
-      
-      // Only add response_format for models that support it
-      if (model.includes('gpt-') || model.includes('claude-')) {
-        requestBody.response_format = { type: 'json_object' };
-      }
       
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
       
@@ -204,16 +208,14 @@ async function tryModelsInOrder(messages) {
       });
       
       const chatJson = await getJsonResponse(chatResponse);
-      console.log('Raw API response:', JSON.stringify(chatJson, null, 2));
       
       if (!chatJson?.choices?.[0]) {
-        console.log(`${model}: invalid response structure - no choices`);
+        console.log(`${model}: invalid response structure`);
         lastError = new Error('Invalid response structure');
         continue;
       }
       
       let content = chatJson.choices[0].message?.content;
-      console.log('Content from API:', typeof content, content);
       
       if (!content) {
         console.log(`${model}: no content in response`);
@@ -221,42 +223,30 @@ async function tryModelsInOrder(messages) {
         continue;
       }
       
-      // Handle object content
-      if (typeof content === 'object') {
-        console.log('Content is object, stringifying');
-        content = JSON.stringify(content);
-      }
-      
-      if (!isValidText(content)) {
-        console.log(`${model}: content failed validation`);
-        lastError = new Error('Content failed validation');
-        continue;
-      }
-      
-      // Validate and clean up JSON
+      // Parse and validate the JSON content
       try {
         let parsed;
         if (typeof content === 'string') {
-          // Remove any markdown formatting
           const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
           parsed = JSON.parse(cleanContent);
         } else {
           parsed = content;
         }
         
-        // Validate required fields and add defaults
-        if (!parsed || typeof parsed !== 'object') {
-          throw new Error('Parsed content is not an object');
-        }
-        
-        // Ensure all required fields exist with proper types
+        // FIXED: Better validation and enrichment
         const result = {
-          type: typeof parsed.type === 'string' ? parsed.type : 'Unknown',
-          confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths : ['Analysis pending'],
-          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips : ['Try again later'],
-          one_liner: typeof parsed.one_liner === 'string' ? parsed.one_liner : 'Personality analysis in progress'
+          type: parsed.type || 'Unknown',
+          confidence: Math.min(Math.max(parsed.confidence || 0.5, 0.0), 1.0),
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Analysis in progress'],
+          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Keep sharing more about yourself'],
+          one_liner: parsed.one_liner || 'Getting to know your personality'
         };
+        
+        // Add variety based on conversation depth
+        if (conversationDepth.messageCount < 3 && result.type !== 'Unknown') {
+          result.confidence = Math.min(result.confidence, 0.6); // Lower confidence early on
+          result.growth_tips.unshift("Share more about yourself for better accuracy");
+        }
         
         console.log(`✓ Success with ${model}`);
         console.log('Final result:', result);
@@ -264,160 +254,109 @@ async function tryModelsInOrder(messages) {
         
       } catch (e) {
         console.log(`${model}: JSON validation failed:`, e.message);
-        console.log('Content that failed:', content);
         lastError = e;
         continue;
       }
       
     } catch (err) {
-      console.log(`${model} failed with error:`, err.message);
+      console.log(`${model} failed:`, err.message);
       lastError = err;
       continue;
     }
   }
   
-  // If all models fail, return a safe fallback
-  console.log('All models failed. Last error:', lastError?.message);
+  // Fallback with conversation-aware message
+  console.log('All models failed. Providing contextual fallback...');
   const fallback = {
     type: "Unknown",
     confidence: 0.0,
-    strengths: ["Unable to analyze at this time"],
-    growth_tips: ["Please try again in a moment"],
-    one_liner: "Analysis temporarily unavailable"
+    strengths: conversationDepth.messageCount > 2 
+      ? ["You're sharing thoughtfully", "You're engaging in self-reflection"]
+      : ["You're curious about self-discovery"],
+    growth_tips: conversationDepth.messageCount > 2
+      ? ["Try describing a recent decision you made", "Share what energizes you most"]
+      : ["Tell me more about how you like to spend your free time"],
+    one_liner: conversationDepth.messageCount > 2 
+      ? "Building a deeper understanding of your personality"
+      : "Just getting started on your personality journey"
   };
   
   return JSON.stringify(fallback);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Netlify handler
-// ─────────────────────────────────────────────────────────────────────────────
 export const handler = async (event) => {
-  console.log('\n🚀 Function invoked with method:', event.httpMethod);
-  console.log('Headers:', JSON.stringify(event.headers, null, 2));
+  console.log('\n🚀 Function invoked');
   
-  // CORS preflight
+  // CORS
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+  
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: ''
-    };
+    return { statusCode: 200, headers: corsHeaders, body: '' };
   }
   
   if (event.httpMethod !== 'POST') {
-    console.log('❌ Method not allowed:', event.httpMethod);
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { 
+      statusCode: 405, 
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
   }
   
   try {
-    // Environment variable checks
-    console.log('🔧 Checking environment variables...');
-    console.log('Available env vars:', Object.keys(process.env).filter(key => key.includes('API') || key.includes('KEY')));
-    console.log('OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
-    console.log('OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY?.length || 0);
-    
     if (!process.env.OPENROUTER_API_KEY) {
-      console.error('❌ Missing OPENROUTER_API_KEY environment variable');
-      console.error('All environment variables:', Object.keys(process.env));
-      throw new Error('Configuration error: API key not set');
+      throw new Error('API key not configured');
     }
-    console.log('✓ API key is set');
     
-    // Parse request body
-    console.log('📥 Parsing request body...');
-    const body = event.body || '{}';
-    console.log('Raw body:', body);
-    
-    const { messages } = JSON.parse(body);
-    console.log('Parsed messages:', messages);
+    const body = JSON.parse(event.body || '{}');
+    const { messages } = body;
     
     if (!Array.isArray(messages) || messages.length === 0) {
-      console.log('❌ Invalid messages payload');
       return {
         statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Invalid payload: messages[] required' })
       };
     }
     
-    const latest = messages[messages.length - 1]?.content || '';
-    console.log('📝 Processing MBTI analysis for message:', latest.substring(0, 100));
+    console.log('📝 Processing conversation with', messages.length, 'messages');
     
-    // Optional embedding creation (non-blocking)
-    let queryEmbedding = null;
-    try {
-      queryEmbedding = await createEmbedding(latest);
-    } catch (err) {
-      console.log('⚠️ Embedding creation failed (non-critical):', err.message);
-    }
+    const aiResponse = await tryModelsInOrder(messages);
+    console.log('✅ AI response generated successfully');
     
-    // Build final messages
-    const finalMessages = [
-      { role: 'system', content: MBTI_SYSTEM_PROMPT },
-      ...messages
-    ];
-    
-    console.log('🤖 Sending to AI models...');
-    const aiResponse = await tryModelsInOrder(finalMessages);
-    console.log('✅ AI response generated:', aiResponse.substring(0, 200));
-    
-    // Optional database save (non-blocking)
-    if (supabase && queryEmbedding) {
+    // Optional: Save conversation (non-blocking)
+    if (supabase) {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
         await supabase.from('conversations').insert({
           conversation_history: fullConversation,
-          embedding: queryEmbedding
+          created_at: new Date().toISOString()
         });
-        console.log('✅ Conversation saved to database');
+        console.log('✅ Conversation saved');
       } catch (e) {
         console.log('⚠️ Database save failed (non-critical):', e.message);
       }
     }
     
-    console.log('🎉 Request completed successfully');
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ reply: aiResponse })
     };
     
   } catch (error) {
-    console.error('💥 Critical error in process-chat:', error);
-    console.error('Stack trace:', error.stack);
-    
-    // Return detailed error for debugging
-    const errorResponse = {
-      error: 'Service temporarily unavailable',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Add more details in development
-    if (process.env.NODE_ENV === 'development') {
-      errorResponse.stack = error.stack;
-      errorResponse.details = error.toString();
-    }
+    console.error('💥 Error:', error);
     
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(errorResponse)
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        error: 'Service temporarily unavailable',
+        message: error.message
+      })
     };
   }
 };
