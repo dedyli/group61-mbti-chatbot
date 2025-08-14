@@ -31,7 +31,7 @@
     .sparkles{position:fixed; inset:0; z-index:-1; pointer-events:none}
     .sparkles i{position:absolute; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.85); filter:blur(.3px); opacity:.7; animation:float 16s linear infinite, twinkle 2.5s ease-in-out infinite alternate}
     @keyframes float{to{transform:translateY(-120vh)}}
-    @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } } 100%{opacity:1; transform:scale(1.2)}}
+    @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } }
 
     /* Header */
     header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
