@@ -1,23 +1,4 @@
-// Function to validate AI response quality
-function isValidResponse(response) {
-    if (!response || response.length < 10) return false;
-    
-    // Check for garbled text patterns
-    const garbledPatterns = [
-        /[^\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, // Non-printable characters
-        /(.)\1{10,}/g, // Repeated characters
-        /[A-Za-z]{50,}/g, // Extremely long words
-    ];
-    
-    for (const pattern of garbledPatterns) {
-        if (pattern.test(response)) {
-            console.log('Detected garbled response pattern');
-            return false;
-        }
-    }
-    
-    return true;
-}// File Location: netlify/functions/process-chat.js
+// File Location: netlify/functions/process-chat.js
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -29,15 +10,60 @@ const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_HEADERS = {
   'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
   'Content-Type': 'application/json',
-  'HTTP-Referer': 'https://group61project.netlify.app/', // Make sure this is your correct Netlify URL
-  'X-Title': 'Mind-Mapper AI',
-  'User-Agent': 'Mind-Mapper-AI/1.0'
+  'HTTP-Referer': 'https://group61project.netlify.app/',
+  'X-Title': 'Mind-Mapper AI'
 };
 
-// Using only DeepSeek Chat for ultra-low cost MBTI analysis
+// Models ordered by reliability and quality for MBTI analysis
 const PREFERRED_MODELS = [
-    'deepseek/deepseek-chat'  // Single model: Ultra cheap, good MBTI analysis
+    'anthropic/claude-3-haiku',           // Best quality, very fast, low cost
+    'google/gemini-flash-1.5',            // Free tier, good quality
+    'meta-llama/llama-3.1-8b-instruct',  // Ultra cheap fallback
+    'deepseek/deepseek-chat'              // Last resort fallback
 ];
+
+// MBTI-optimized system prompt
+const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, an expert in MBTI personality analysis.
+
+INSTRUCTIONS:
+1. Provide clear, concise responses (2-3 sentences maximum)
+2. Focus on actionable insights about personality traits
+3. Use specific MBTI terminology when relevant (e.g., cognitive functions: Ti, Fe, Ni, Se)
+4. Be encouraging and constructive
+5. If asked about MBTI type, explain briefly WHY you see those traits
+
+RESPONSE FORMAT:
+- Direct and practical
+- No fluff or unnecessary elaboration
+- Specific examples when helpful
+- Always under 50 words unless explicitly asked for more detail`;
+
+// Function to validate AI response quality
+function isValidResponse(response) {
+    if (!response || response.length < 10) return false;
+    
+    // Check for garbled text patterns
+    const garbledPatterns = [
+        /[^\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF\u4E00-\u9FFF]/g, // Allow common unicode
+        /(.)\1{10,}/g, // Repeated characters
+        /[A-Za-z]{50,}/g, // Extremely long words
+    ];
+    
+    for (const pattern of garbledPatterns) {
+        if (pattern.test(response)) {
+            console.log('Detected garbled response pattern');
+            return false;
+        }
+    }
+    
+    // Check if response seems MBTI-relevant
+    const mbtiKeywords = ['personality', 'type', 'trait', 'prefer', 'tend', 'cognitive', 'function'];
+    const hasRelevance = mbtiKeywords.some(keyword => 
+        response.toLowerCase().includes(keyword)
+    );
+    
+    return true; // Accept even without keywords for general questions
+}
 
 // Helper function to robustly handle API responses
 async function getJsonResponse(response) {
@@ -45,174 +71,232 @@ async function getJsonResponse(response) {
     
     if (!response.ok) {
         console.error("API request failed. Status:", response.status);
-        console.error("Response text:", responseText.substring(0, 500));
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-    }
-    
-    // Check if response looks like HTML (indicates wrong endpoint)
-    if (responseText.trim().startsWith('<!DOCTYPE html')) {
-        console.error("Received HTML instead of JSON - likely wrong endpoint or authentication issue");
-        throw new Error("Received HTML instead of JSON from API - check authentication and endpoint");
+        console.error("Response preview:", responseText.substring(0, 200));
+        
+        // Check for specific error patterns
+        if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+            throw new Error("Authentication failed - check API key");
+        }
+        if (response.status === 401) {
+            throw new Error("Invalid API key");
+        }
+        if (response.status === 429) {
+            throw new Error("Rate limit exceeded");
+        }
+        
+        throw new Error(`API error ${response.status}`);
     }
     
     try {
         return JSON.parse(responseText);
     } catch (e) {
-        console.error("Failed to parse response as JSON. Raw text:", responseText);
-        throw new Error("Invalid JSON response from API.");
+        console.error("Failed to parse JSON:", responseText.substring(0, 200));
+        throw new Error("Invalid JSON response from API");
     }
 }
 
-// Function to use DeepSeek Chat only
+// Enhanced model fallback with specific parameters for each
 async function tryModelsInOrder(messages) {
-    const model = 'deepseek/deepseek-chat';
+    for (const model of PREFERRED_MODELS) {
+        try {
+            console.log(`Trying model: ${model}`);
+            
+            // Model-specific parameters
+            const modelParams = {
+                'anthropic/claude-3-haiku': {
+                    max_tokens: 150,
+                    temperature: 0.7,
+                    top_p: 0.9
+                },
+                'google/gemini-flash-1.5': {
+                    max_tokens: 150,
+                    temperature: 0.7,
+                    top_p: 0.95
+                },
+                'meta-llama/llama-3.1-8b-instruct': {
+                    max_tokens: 100,
+                    temperature: 0.6,
+                    top_p: 0.9,
+                    repetition_penalty: 1.1
+                },
+                'deepseek/deepseek-chat': {
+                    max_tokens: 100,
+                    temperature: 0.6
+                }
+            };
+            
+            const params = modelParams[model] || { max_tokens: 150, temperature: 0.7 };
+            
+            const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
+                method: 'POST',
+                headers: OPENROUTER_HEADERS,
+                body: JSON.stringify({
+                    model: model,
+                    messages: messages,
+                    ...params
+                })
+            });
+            
+            if (chatResponse.ok) {
+                const chatJson = await getJsonResponse(chatResponse);
+                
+                if (!chatJson.choices || !chatJson.choices[0]) {
+                    console.log(`${model}: Invalid response structure`);
+                    continue;
+                }
+                
+                const aiResponse = chatJson.choices[0].message.content;
+                
+                if (isValidResponse(aiResponse)) {
+                    console.log(`Success with ${model}`);
+                    return aiResponse;
+                } else {
+                    console.log(`${model}: Response validation failed`);
+                    continue;
+                }
+            } else {
+                const errorText = await chatResponse.text();
+                console.log(`${model} failed (${chatResponse.status}):`, errorText.substring(0, 100));
+                continue;
+            }
+        } catch (error) {
+            console.log(`${model} error:`, error.message);
+            continue;
+        }
+    }
     
+    // All models failed
+    return "I'm having difficulty analyzing your personality query right now. Please try rephrasing your question, or ask me about specific MBTI traits like introversion/extraversion.";
+}
+
+// Embedding function with better error handling
+async function createEmbedding(text) {
     try {
-        console.log(`Using DeepSeek Chat...`);
-        const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
+        const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
             method: 'POST',
             headers: OPENROUTER_HEADERS,
             body: JSON.stringify({
-                model: model,
-                messages: messages,
-                max_tokens: 200, // Shorter limit for concise responses
-                temperature: 0.7,
-            })
+                model: 'openai/text-embedding-3-small', // More reliable model name
+                input: text,
+            }),
         });
         
-        if (chatResponse.ok) {
-            const chatJson = await getJsonResponse(chatResponse);
-            const aiResponse = chatJson.choices[0].message.content;
-            
-            // Validate the response quality
-            if (isValidResponse(aiResponse)) {
-                console.log(`Success with DeepSeek Chat`);
-                return aiResponse;
-            } else {
-                console.log(`DeepSeek Chat returned garbled response`);
-                return "I apologize, but I'm having difficulty processing your request right now. Please try rephrasing your question.";
-            }
-        } else {
-            console.log(`DeepSeek Chat failed with status: ${chatResponse.status}`);
-            return "I'm experiencing technical difficulties. Please try again in a moment.";
+        if (embeddingResponse.ok) {
+            const embeddingJson = await getJsonResponse(embeddingResponse);
+            return embeddingJson.data[0].embedding;
         }
     } catch (error) {
-        console.log(`DeepSeek Chat error:`, error.message);
-        return "I apologize, but I'm having trouble connecting right now. Please try again shortly.";
+        console.log('Embedding creation failed:', error.message);
     }
+    return null;
 }
 
 export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
-  try {
-    const { messages } = JSON.parse(event.body);
-    const latestMessage = messages[messages.length - 1].content;
-
-    console.log('Processing chat request...');
-
-    // 1. Create an embedding for semantic search
-    let queryEmbedding = null;
-    let similarConversations = null;
+    // Handle CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: ''
+        };
+    }
     
-    try {
-      console.log('Creating embedding...');
-      const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
-        method: 'POST',
-        headers: OPENROUTER_HEADERS,
-        body: JSON.stringify({
-          model: 'text-embedding-3-small', // Use a more reliable embedding model
-          input: latestMessage,
-        }),
-      });
-      
-      if (embeddingResponse.ok) {
-        const embeddingJson = await getJsonResponse(embeddingResponse);
-        queryEmbedding = embeddingJson.data[0].embedding;
-        console.log('Embedding created successfully');
+    if (event.httpMethod !== 'POST') {
+        return { statusCode: 405, body: 'Method Not Allowed' };
+    }
 
-        // 2. Search Supabase for similar conversations
-        try {
-          const { data } = await supabase.rpc('match_conversations', {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.7,
-            match_count: 2,
-          });
-          similarConversations = data;
-          console.log('Found', similarConversations?.length || 0, 'similar conversations');
-        } catch (supabaseError) {
-          console.log('Supabase search failed, continuing without context:', supabaseError.message);
+    try {
+        const { messages } = JSON.parse(event.body);
+        const latestMessage = messages[messages.length - 1].content;
+
+        console.log('Processing MBTI analysis request...');
+
+        // 1. Try to create embedding for semantic search (optional enhancement)
+        const queryEmbedding = await createEmbedding(latestMessage);
+        
+        let similarConversations = null;
+        if (queryEmbedding) {
+            try {
+                const { data } = await supabase.rpc('match_conversations', {
+                    query_embedding: queryEmbedding,
+                    match_threshold: 0.7,
+                    match_count: 2,
+                });
+                similarConversations = data;
+                console.log('Found', similarConversations?.length || 0, 'similar conversations');
+            } catch (error) {
+                console.log('Supabase search skipped:', error.message);
+            }
         }
-      } else {
-        console.log('Embedding API failed, continuing without semantic search');
-      }
-    } catch (embeddingError) {
-      console.log('Embedding step failed, continuing without semantic search:', embeddingError.message);
+
+        // 2. Construct messages with MBTI-focused system prompt
+        let systemContent = MBTI_SYSTEM_PROMPT;
+        
+        if (similarConversations && similarConversations.length > 0) {
+            systemContent += "\n\nNote: You've discussed similar personality topics before. Build on previous insights if relevant.";
+        }
+        
+        const finalMessages = [
+            { role: "system", content: systemContent },
+            ...messages
+        ];
+
+        // 3. Get AI response with fallback chain
+        const aiResponse = await tryModelsInOrder(finalMessages);
+        console.log('MBTI analysis generated successfully');
+
+        // 4. Save conversation to Supabase
+        try {
+            const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
+            const { data: newConversation } = await supabase
+                .from('conversations')
+                .insert({ 
+                    conversation_history: fullConversation, 
+                    embedding: queryEmbedding,
+                    model_used: 'multi-model-fallback',
+                    timestamp: new Date().toISOString()
+                })
+                .select('id')
+                .single();
+
+            if (newConversation) {
+                console.log('Conversation saved with ID:', newConversation.id);
+            }
+        } catch (saveError) {
+            console.error('Failed to save conversation:', saveError.message);
+        }
+
+        // 5. Return success response
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                response: aiResponse,
+                model: 'optimized-mbti-analyzer'
+            }),
+        };
+
+    } catch (error) {
+        console.error('Critical error in process-chat:', error);
+        return {
+            statusCode: 500,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                error: 'Service temporarily unavailable. Please try again.',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            })
+        };
     }
-
-    // 3. Construct enhanced prompt with context if available
-    let systemPrompt = `You are Mind-Mapper AI. Help users understand their personality. Keep responses short, clear, and helpful. Aim for 2-3 sentences maximum.`;
-    
-    if (similarConversations && similarConversations.length > 0) {
-      systemPrompt += `\n\nContext: You've had similar conversations before.`;
-    }
-    
-    const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
-
-    // 4. Get chat response using fallback model strategy
-    console.log('Getting AI response...');
-    const aiResponse = await tryModelsInOrder(finalMessages);
-    console.log('AI response generated successfully');
-
-    // 5. Save conversation to Supabase (regardless of embedding success)
-    try {
-      const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
-      const { data: newConversation, error: insertError } = await supabase
-        .from('conversations')
-        .insert({ 
-          conversation_history: fullConversation, 
-          embedding: queryEmbedding // This can be null if embeddings failed
-        })
-        .select('id')
-        .single();
-
-      if (insertError) {
-        console.error('Failed to save conversation:', insertError.message);
-      } else {
-        console.log('Conversation saved with ID:', newConversation.id);
-      }
-    } catch (saveError) {
-      console.error('Conversation saving failed:', saveError.message);
-    }
-
-    // 6. Return success response
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        response: aiResponse,
-        conversationId: null // Set to actual ID if saving succeeded
-      }),
-    };
-
-  } catch (error) {
-    console.error('Error in process-chat function:', error.message);
-    return {
-      statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        error: error.message || 'An internal server error occurred.' 
-      })
-    };
-  }
 };
