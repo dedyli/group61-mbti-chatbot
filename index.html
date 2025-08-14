@@ -257,11 +257,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // --- 1. Supabase Project Configuration ---
-    // IMPORTANT: Replace with your actual Supabase URL and Anon Key
-    const supa_url = 'YOUR_SUPABASE_URL';
-    const supa_anon_key = 'YOUR_SUPABASE_ANON_KEY';
-    const supabase = supabase.createClient(supa_url, supa_anon_key);
+// --- 1. Supabase Project Configuration ---
+// IMPORTANT: You have the correct URL and Key here.
+const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
+const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
+
+// CORRECTED: Create the client and assign it to a new variable name
+const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
 
     // --- 2. Existing Page Functions (Sparkles, Tilt, Language) ---
