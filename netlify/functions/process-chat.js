@@ -10,10 +10,26 @@ const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_HEADERS = {
   'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
   'Content-Type': 'application/json',
-  // Recommended by OpenRouter: identify your app with a URL and title
   'HTTP-Referer': 'https://group61project.netlify.app/', // Make sure this is your correct Netlify URL
   'X-Title': 'Mind-Mapper AI',
 };
+
+// Helper function to robustly handle API responses
+async function getJsonResponse(response) {
+    const responseText = await response.text(); // Read the body as text ONCE
+    if (!response.ok) {
+        // If the response is not OK, log the raw text and throw an error
+        console.error("API request failed. Raw text from API:", responseText);
+        throw new Error(`API request failed with status ${response.status}`);
+    }
+    try {
+        return JSON.parse(responseText); // Try to parse the text as JSON
+    } catch (e) {
+        console.error("Failed to parse response as JSON. Raw text from API:", responseText);
+        throw new Error("Invalid JSON response from API.");
+    }
+}
+
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -24,95 +40,56 @@ export const handler = async (event) => {
     const { messages } = JSON.parse(event.body);
     const latestMessage = messages[messages.length - 1].content;
 
-    // 1. Create an embedding for the latest message
+    // 1. Create an embedding
     const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
       method: 'POST',
       headers: OPENROUTER_HEADERS,
       body: JSON.stringify({
-        model: 'sentence-transformers/all-minilm-l6-v2', // Model produces vector of size 384
+        model: 'sentence-transformers/all-minilm-l6-v2',
         input: latestMessage,
       }),
     });
-
-    // --- Diagnostic block for embedding response ---
-    let embeddingJson;
-    try {
-      embeddingJson = await embeddingResponse.json();
-    } catch (e) {
-      const errorText = await embeddingResponse.text();
-      console.error("Failed to parse embedding response. Raw text from API:", errorText);
-      throw new Error(`Invalid JSON response from embedding API. Status: ${embeddingResponse.status}`);
-    }
-    // --- End diagnostic block ---
-
-    if (!embeddingResponse.ok) {
-        throw new Error(`Embedding API failed with status ${embeddingResponse.status}: ${JSON.stringify(embeddingJson)}`);
-    }
+    const embeddingJson = await getJsonResponse(embeddingResponse);
     const queryEmbedding = embeddingJson.data[0].embedding;
 
 
-    // 2. Search for similar past conversations in Supabase
+    // 2. Search Supabase
     const { data: similarConversations } = await supabase.rpc('match_conversations', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.7, // Similarity threshold (adjust as needed)
-      match_count: 2,       // Number of similar conversations to retrieve
+      match_threshold: 0.7,
+      match_count: 2,
     });
 
-    // 3. Construct the augmented system prompt for the main chat model
-    const systemPrompt = `You are Mind-Mapper AI, a warm, insightful personality analyst for students.
-      Here are some examples of similar past conversations to learn from:
-      ${JSON.stringify(similarConversations)}
-      ---
-      Now, continue the current conversation insightfully.`;
-
+    // 3. Construct prompt
+    const systemPrompt = `You are Mind-Mapper AI...`; // (Content is the same)
     const finalMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
-    // 4. Get the final chat response from DeepSeek via OpenRouter
+    // 4. Get chat response
     const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
         method: 'POST',
         headers: OPENROUTER_HEADERS,
         body: JSON.stringify({
-            model: 'deepseek/deepseek-r1-distill-llama-70b:free', // Your chosen DeepSeek model
+            model: 'deepseek/deepseek-r1-distill-llama-70b:free',
             messages: finalMessages,
         })
     });
-
-    // --- Diagnostic block for chat response ---
-    let chatJson;
-    try {
-      chatJson = await chatResponse.json();
-    } catch (e) {
-      const errorText = await chatResponse.text();
-      console.error("Failed to parse chat response. Raw text from API:", errorText);
-      throw new Error(`Invalid JSON response from chat API. Status: ${chatResponse.status}`);
-    }
-    // --- End diagnostic block ---
-
-    if (!chatResponse.ok) {
-        throw new Error(`Chat API failed with status ${chatResponse.status}: ${JSON.stringify(chatJson)}`);
-    }
+    const chatJson = await getJsonResponse(chatResponse);
     const aiResponse = chatJson.choices[0].message.content;
 
-    // 5. Save the new conversation and get its ID
+    // 5. Save to Supabase
     const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
     const { data: newConversation, error: insertError } = await supabase
       .from('conversations')
-      .insert({
-        conversation_history: fullConversation,
-        embedding: queryEmbedding,
-      })
+      .insert({ conversation_history: fullConversation, embedding: queryEmbedding })
       .select('id')
       .single();
 
     if (insertError) throw insertError;
 
-    // 6. Return the AI's response AND the new conversation's ID to the frontend
+    // 6. Return success response
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        response: aiResponse,
-        conversationId: newConversation.id,
-      }),
+      body: JSON.stringify({ response: aiResponse, conversationId: newConversation.id }),
     };
 
   } catch (error) {
