@@ -11,7 +11,7 @@ const OPENROUTER_HEADERS = {
   'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
   'Content-Type': 'application/json',
   // Recommended by OpenRouter: identify your app with a URL and title
-  'HTTP-Referer': 'https://group61project.netlify.app/', // e.g., https://mind-mapper-ai.netlify.app
+  'HTTP-Referer': 'https://group61project.netlify.app/', // Make sure this is your correct Netlify URL
   'X-Title': 'Mind-Mapper AI',
 };
 
@@ -24,7 +24,7 @@ export const handler = async (event) => {
     const { messages } = JSON.parse(event.body);
     const latestMessage = messages[messages.length - 1].content;
 
-    // 1. Create an embedding for the latest message using an OpenRouter model
+    // 1. Create an embedding for the latest message
     const embeddingResponse = await fetch(`${OPENROUTER_API_BASE}/embeddings`, {
       method: 'POST',
       headers: OPENROUTER_HEADERS,
@@ -33,9 +33,23 @@ export const handler = async (event) => {
         input: latestMessage,
       }),
     });
-    if (!embeddingResponse.ok) throw new Error('Failed to get embeddings');
-    const embeddingJson = await embeddingResponse.json();
+
+    // --- Diagnostic block for embedding response ---
+    let embeddingJson;
+    try {
+      embeddingJson = await embeddingResponse.json();
+    } catch (e) {
+      const errorText = await embeddingResponse.text();
+      console.error("Failed to parse embedding response. Raw text from API:", errorText);
+      throw new Error(`Invalid JSON response from embedding API. Status: ${embeddingResponse.status}`);
+    }
+    // --- End diagnostic block ---
+
+    if (!embeddingResponse.ok) {
+        throw new Error(`Embedding API failed with status ${embeddingResponse.status}: ${JSON.stringify(embeddingJson)}`);
+    }
     const queryEmbedding = embeddingJson.data[0].embedding;
+
 
     // 2. Search for similar past conversations in Supabase
     const { data: similarConversations } = await supabase.rpc('match_conversations', {
@@ -62,8 +76,21 @@ export const handler = async (event) => {
             messages: finalMessages,
         })
     });
-    if (!chatResponse.ok) throw new Error('Failed to get chat completion');
-    const chatJson = await chatResponse.json();
+
+    // --- Diagnostic block for chat response ---
+    let chatJson;
+    try {
+      chatJson = await chatResponse.json();
+    } catch (e) {
+      const errorText = await chatResponse.text();
+      console.error("Failed to parse chat response. Raw text from API:", errorText);
+      throw new Error(`Invalid JSON response from chat API. Status: ${chatResponse.status}`);
+    }
+    // --- End diagnostic block ---
+
+    if (!chatResponse.ok) {
+        throw new Error(`Chat API failed with status ${chatResponse.status}: ${JSON.stringify(chatJson)}`);
+    }
     const aiResponse = chatJson.choices[0].message.content;
 
     // 5. Save the new conversation and get its ID
@@ -89,7 +116,7 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Error in process-chat function:', error);
+    console.error('Error in process-chat function:', error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'An internal server error occurred.' })
