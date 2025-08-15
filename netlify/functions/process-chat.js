@@ -13,15 +13,15 @@ const OPENROUTER_HEADERS = {
   'X-Title': 'Mind-Mapper AI'
 };
 
-// UPDATED: More diverse models and better parameters
+// Updated models and better parameters
 const PREFERRED_MODELS = [
-  'anthropic/claude-3.5-haiku',  // Updated to newer version
+  'anthropic/claude-3.5-haiku',
   'google/gemini-flash-1.5-8b',
   'meta-llama/llama-3.1-8b-instruct',
-  'openai/gpt-4o-mini'  // Added GPT model as alternative
+  'openai/gpt-4o-mini'
 ];
 
-// FIXED: More dynamic system prompt that encourages variety
+// Fixed system prompt
 const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach.
 
 CRITICAL RULES:
@@ -44,7 +44,7 @@ VARIETY LOGIC:
 - Deeper conversation: higher confidence when warranted, diversify strengths/tips
 - Never return the same JSON twice even if the user repeats themselves.`;
 
-// FIXED: Better conversation analysis
+// Better conversation analysis
 function analyzeConversationDepth(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
   const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
@@ -62,12 +62,12 @@ function analyzeConversationDepth(messages) {
   };
 }
 
-// FIXED: Dynamic model parameters based on conversation
+// Dynamic model parameters based on conversation
 function getModelParams(model, conversationDepth) {
   const baseParams = {
     'anthropic/claude-3.5-haiku': { 
       max_tokens: 250, 
-      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1)) // Increase creativity over time
+      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1))
     },
     'google/gemini-flash-1.5-8b': { 
       max_tokens: 200, 
@@ -87,7 +87,7 @@ function getModelParams(model, conversationDepth) {
   return baseParams[model] || { max_tokens: 200, temperature: 0.8 };
 }
 
-// FIXED: Enhanced JSON response handler
+// Enhanced JSON response handler
 async function getJsonResponse(response) {
   const responseText = await response.text();
   
@@ -134,10 +134,10 @@ async function getJsonResponse(response) {
   }
 }
 
-// FIXED: Better conversation summarization for context
+// Better conversation summarization for context
 function summarizeConversation(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
-  const recentMessages = userMessages.slice(-5); // Last 5 user messages
+  const recentMessages = userMessages.slice(-5);
   
   const topics = [];
   const keywords = ['study', 'friend', 'decision', 'feel', 'think', 'prefer', 'like', 'enjoy'];
@@ -171,7 +171,7 @@ async function tryModelsInOrder(messages) {
       console.log(`\n=== Trying model: ${model} ===`);
       const params = getModelParams(model, conversationDepth);
       
-      // FIXED: Add conversation context to the system prompt
+      // Add conversation context to the system prompt
       const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
 - Messages exchanged: ${conversationDepth.messageCount}
 - Topics covered: ${summary.topicsCovered.join(', ')}
@@ -186,8 +186,7 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
           { role: 'system', content: contextualSystemPrompt },
           ...messages
         ],
-        ...params,
-* 1000000)
+        ...params
       };
       
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
@@ -224,7 +223,7 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
           parsed = content;
         }
         
-        // FIXED: Better validation and enrichment
+        // Better validation and enrichment
         const result = {
           type: parsed.type || 'Unknown',
           confidence: Math.min(Math.max(parsed.confidence || 0.5, 0.0), 1.0),
@@ -235,7 +234,7 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
         
         // Add variety based on conversation depth
         if (conversationDepth.messageCount < 3 && result.type !== 'Unknown') {
-          result.confidence = Math.min(result.confidence, 0.6); // Lower confidence early on
+          result.confidence = Math.min(result.confidence, 0.6);
           result.growth_tips.unshift("Share more about yourself for better accuracy");
         }
         
@@ -313,16 +312,20 @@ export const handler = async (event) => {
       };
     }
     
-    console.log('📝 Processing conversation with', messages.length, 'messages');
+    console.log('🔍 Processing conversation with', messages.length, 'messages');
     
     const aiResponse = await tryModelsInOrder(messages);
     console.log('✅ AI response generated successfully');
+    
+    // Generate conversation ID for feedback tracking
+    const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Optional: Save conversation (non-blocking)
     if (supabase) {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
         await supabase.from('conversations').insert({
+          id: conversationId,
           conversation_history: fullConversation,
           created_at: new Date().toISOString()
         });
@@ -335,7 +338,10 @@ export const handler = async (event) => {
     return {
       statusCode: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reply: aiResponse })
+      body: JSON.stringify({ 
+        reply: aiResponse,
+        conversation_id: conversationId
+      })
     };
     
   } catch (error) {
