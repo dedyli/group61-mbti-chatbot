@@ -1,6 +1,6 @@
-// Fixed process-chat.js with proper conversation handling
+// Fixed process-chat.js using CommonJS syntax for Netlify Functions
 
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -274,7 +274,8 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
   return JSON.stringify(fallback);
 }
 
-export const handler = async (event) => {
+// Using CommonJS exports instead of ES6 export
+exports.handler = async (event) => {
   console.log('\n🚀 Function invoked');
   
   // CORS
