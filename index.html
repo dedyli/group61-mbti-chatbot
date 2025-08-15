@@ -571,49 +571,110 @@
     }
 
     function initializeChatControls() {
-      // Get DOM elements
+      // Get DOM elements with error checking
       chatBody = document.getElementById('chatBody');
       chatInputArea = document.getElementById('chatInputArea');
       resetBtn = document.getElementById('resetBtn');
       input = document.getElementById('chatInput');
       sendBtn = document.getElementById('sendBtn');
       
+      console.log('Chat elements found:', {
+        chatBody: !!chatBody,
+        chatInputArea: !!chatInputArea,
+        resetBtn: !!resetBtn,
+        input: !!input,
+        sendBtn: !!sendBtn
+      });
+      
       if (!chatBody || !input || !sendBtn || !resetBtn) {
-        console.error('Chat elements not found');
+        console.error('Critical chat elements not found:', {
+          chatBody: !!chatBody,
+          input: !!input,
+          sendBtn: !!sendBtn,
+          resetBtn: !!resetBtn
+        });
+        
+        // Try again after a delay
+        setTimeout(() => {
+          console.log('Retrying chat initialization...');
+          initializeChatControls();
+        }, 500);
         return;
       }
       
-      // Add event listeners
-      sendBtn.addEventListener('click', handleSend);
-      resetBtn.addEventListener('click', resetChat);
-      
-      input.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' && !e.shiftKey) { 
-          e.preventDefault(); 
-          handleSend(); 
-        }
-      });
-      
-      // Initialize feedback handler
-      initializeFeedbackHandler();
-      
-      // Display initial message
-      displayInitialMessage();
+      try {
+        // Add event listeners
+        sendBtn.addEventListener('click', handleSend);
+        resetBtn.addEventListener('click', resetChat);
+        
+        input.addEventListener('keydown', e => { 
+          if (e.key === 'Enter' && !e.shiftKey) { 
+            e.preventDefault(); 
+            handleSend(); 
+          }
+        });
+        
+        // Initialize feedback handler
+        initializeFeedbackHandler();
+        
+        // Display initial message
+        displayInitialMessage();
+        
+        console.log('Chat controls initialized successfully');
+      } catch (error) {
+        console.error('Error setting up chat controls:', error);
+      }
     }
 
     // --- 5. Initialize Everything When DOM is Ready ---
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM loaded, initializing...');
       
-      // Initialize page features
-      initializeSparkles();
-      initializeTilt();
-      initializeLanguage();
-      initializeChatPanel();
-      
-      // Initialize chat (this must happen after DOM is ready)
-      initializeChatControls();
+      try {
+        // Initialize page features
+        initializeSparkles();
+        initializeTilt();
+        initializeLanguage();
+        initializeChatPanel();
+        
+        // Initialize chat (this must happen after DOM is ready)
+        initializeChatControls();
+        
+        console.log('All systems initialized successfully');
+      } catch (error) {
+        console.error('Initialization error:', error);
+        
+        // Fallback initialization for chat
+        setTimeout(() => {
+          try {
+            initializeChatControls();
+            console.log('Fallback chat initialization completed');
+          } catch (e) {
+            console.error('Fallback initialization failed:', e);
+          }
+        }, 1000);
+      }
     });
+
+    // Backup initialization in case DOMContentLoaded already fired
+    if (document.readyState === 'loading') {
+      // DOM is still loading, event listener will handle it
+    } else {
+      // DOM already loaded, initialize immediately
+      setTimeout(() => {
+        console.log('Late initialization...');
+        try {
+          initializeSparkles();
+          initializeTilt();
+          initializeLanguage();
+          initializeChatPanel();
+          initializeChatControls();
+          console.log('Late initialization completed');
+        } catch (error) {
+          console.error('Late initialization error:', error);
+        }
+      }, 100);
+    }
   </script>
 </body>
 </html>
