@@ -1,221 +1,547 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Group 61 — Chat</title>
-  <meta name="description" content="Group 61 Project Chat" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mind-Mapper AI – Sophisticated MBTI Personality Analyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --bg: #0f172a; --card: #111827; --muted: #94a3b8; --text: #e5e7eb; --accent: #22d3ee; --ok: #22c55e; --err: #ef4444;
-      --border: rgba(255,255,255,0.08);
-    }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
-    .container { max-width: 900px; margin: 0 auto; padding: 24px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-    .row { display: flex; gap: 12px; align-items: stretch; }
-    .col { flex: 1; }
-    textarea, input[type="text"] {
-      width: 100%; background: #0b1220; color: var(--text); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px; outline: none;
-    }
-    textarea { min-height: 100px; resize: vertical; }
-    button {
-      appearance: none; border: 1px solid var(--border); background: #0b1220; color: var(--text);
-      padding: 12px 16px; border-radius: 12px; cursor: pointer;
-    }
-    button:hover { border-color: rgba(255,255,255,0.2); }
-    .btn-primary { background: linear-gradient(180deg, #0ea5e9, #22d3ee); color: #001018; border: none; }
-    .btn-sm { padding: 6px 10px; font-size: 12px; }
-    .stack { display: grid; gap: 12px; }
-    .messages { display: grid; gap: 12px; padding: 8px; max-height: 60vh; overflow-y: auto; }
-    .bubble { background: #0b1220; border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
-    .bubble.user { border-left: 3px solid var(--accent); }
-    .bubble.ai { border-left: 3px solid #a78bfa; }
-    .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
-    .feedback { display: inline-flex; gap: 6px; margin-top: 8px; }
-    .pill { font-size: 11px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
-    .ok { color: var(--ok); }
-    .err { color: var(--err); }
-    .hidden { display: none; }
+    :root{ --bg:#0b0a13; --fg:#f7f5ff; --muted:#bdb7e6; --accent:#8B5CF6; --accent-2:#F0A6FF; --gold:#EED972; --glass:rgba(255,255,255,.08); --glass-stroke:rgba(255,255,255,.12); }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
+
+    /* Bilingual helpers */
+    [data-lang]{display:none}
+    body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
+    body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
+
+    .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
+      radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
+      radial-gradient(50vw 50vw at 110% 10%, rgba(240,166,255,.25), transparent 60%),
+      radial-gradient(40vw 40vw at 50% 110%, rgba(238,217,114,.18), transparent 60%),
+      radial-gradient(25vw 25vw at 20% 70%, rgba(139,92,246,.18), transparent 70%),
+      var(--bg);
+      filter:saturate(120%) blur(10px); animation:auroraShift 24s ease-in-out infinite alternate; }
+    @keyframes auroraShift{to{transform:translateY(-2%) scale(1.02)}}
+    .sparkles{position:fixed; inset:0; z-index:-1; pointer-events:none}
+    .sparkles i{position:absolute; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.85); filter:blur(.3px); opacity:.7; animation:float 16s linear infinite, twinkle 2.5s ease-in-out infinite alternate}
+    @keyframes float{to{transform:translateY(-120vh)}}
+    @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } }
+
+    header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
+    .brand{display:flex; align-items:center; gap:12px}
+    .brand img{width:120px; height:40px; object-fit:contain; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,.35)}
+    .brand h1{margin:0; font-family:'Playfair Display',serif; font-weight:800; font-size:20px; letter-spacing:.3px}
+    nav ul{margin:0; padding:0; list-style:none; display:flex; gap:8px; align-items:center}
+    nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:999px; position:relative; overflow:hidden; }
+    nav a:after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:0; transition:.35s}
+    nav a:hover:after, nav a.active:after{opacity:.25}
+    .lang{display:flex; align-items:center; gap:8px}
+    .pill{border:1px solid var(--glass-stroke); background:var(--glass); padding:8px 10px; border-radius:999px; display:flex; align-items:center; gap:8px}
+    .pill select{background:transparent; border:none; color:var(--fg); font-weight:600}
+
+    .container{max-width:1200px; margin:0 auto; padding:64px 16px}
+
+    .hero{display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:48px; padding-top:48px}
+    .title{ font-family:'Playfair Display',serif; font-weight:800; font-size:clamp(36px,6vw,64px); line-height:1.04; letter-spacing:-.3px; margin:0 0 16px; position:relative; background:linear-gradient(180deg,#fff, #d7d0ff 60%, #b9b0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 8px 28px rgba(139,92,246,.15) }
+    .subtitle{color:var(--muted); font-weight:600; font-size:18px; margin-bottom:20px}
+    .lead{color:#dbd7ff; opacity:.9; max-width:56ch; line-height:1.8; margin-bottom:28px}
+    .cta{ display:inline-flex; gap:10px; align-items:center; padding:14px 18px; border-radius:14px; font-weight:700; text-decoration:none; color:#0b0a13; background:linear-gradient(90deg, var(--gold), #FFEBA4); box-shadow:0 10px 30px rgba(238,217,114,.35); transition:transform .2s ease, box-shadow .2s ease }
+    .cta:hover{transform:translateY(-2px); box-shadow:0 16px 36px rgba(238,217,114,.45)}
+
+    .illustrationWrap{position:relative}
+    .card3d{ position:relative; border-radius:24px; overflow:hidden; border:1px solid var(--glass-stroke); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); box-shadow:0 30px 80px rgba(0,0,0,.35); transform:perspective(1000px) rotateX(0) rotateY(0); transition:transform .2s ease }
+    .hero-img{display:block; width:100%; height:auto; aspect-ratio:4/3; object-fit:cover}
+    .revealMask{ position:absolute; inset:0; background:conic-gradient(from 45deg at 0% 0%, transparent 0 10%, black 10% 20%, transparent 20% 30%, black 30% 40%, transparent 40% 50%, black 50% 60%, transparent 60% 70%, black 70% 80%, transparent 80% 90%, black 90% 100%); transform:translate(-120%, -120%) rotate(0.0001deg); filter:blur(1.2px) contrast(120%); animation:reveal 2.8s cubic-bezier(.2,.8,.2,1) .3s forwards }
+    @keyframes reveal{to{transform:translate(0,0)}}
+    .badge{position:absolute; right:16px; top:16px; padding:10px 14px; border-radius:12px; font-weight:700; color:#0b0a13; background:linear-gradient(90deg,#fff,#f7f5ff); box-shadow:0 10px 30px rgba(255,255,255,.25)}
+
+    .section{padding:72px 0}
+    .section h2{font-family:'Playfair Display',serif; font-size:clamp(28px,3.2vw,40px); margin:0 0 24px}
+    .muted{color:var(--muted)}
+
+    .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+    .step{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:20px; padding:22px; position:relative; overflow:hidden; transition:transform .25s ease, box-shadow .25s ease }
+    .step:hover{transform:translateY(-6px); box-shadow:0 24px 60px rgba(0,0,0,.35)}
+    .step .n{width:38px; height:38px; display:grid; place-items:center; border-radius:999px; font-weight:800; color:#0b0a13; background:linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 8px 22px rgba(139,92,246,.45)}
+    .step h3{margin:12px 0 8px; font-weight:800}
+    .step p{margin:0; color:#e9e7ff; opacity:.9}
+
+    .faq{max-width:920px}
+    details{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:16px; padding:18px 20px; margin:10px 0}
+    summary{cursor:pointer; font-weight:700}
+    details[open]{box-shadow:0 16px 40px rgba(0,0,0,.35)}
+
+    form{max-width:760px}
+    input,textarea,select,button{font-family:inherit}
+    .field{display:grid; gap:8px}
+    .field input,.field textarea{ background:rgba(255,255,255,.04); border:1px solid var(--glass-stroke); color:var(--fg); padding:14px 16px; border-radius:12px }
+    .btn{ border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; box-shadow:0 12px 34px rgba(139,92,246,.35) }
+
+    .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
+    .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
+    .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; z-index:9999; background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55) }
+    .chat-panel.open{display:block}
+    .chat-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--glass-stroke)}
+    .chat-head h3{margin:0; font-family:'Playfair Display',serif; letter-spacing:.3px}
+    .chat-body{padding:14px; height:calc(100% - 124px); overflow:auto; display:flex; flex-direction:column; gap:12px}
+    .msg{display:flex; gap:10px; align-items:flex-start}
+    .msg .bubble{max-width:85%; padding:12px 14px; border-radius:14px; line-height:1.6}
+    .msg.user{justify-content:flex-end}
+    .msg.user .bubble{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; border-top-right-radius:4px}
+    .msg.ai .bubble{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); border-top-left-radius:4px}
+    .chat-foot{padding:12px; border-top:1px solid var(--glass-stroke); display:grid; grid-template-columns:1fr auto; gap:8px}
+    .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
+    .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
+    .model-select{display:flex; gap:8px; align-items:center}
+    .model-select select{background:transparent; color:var(--fg); border:1px solid var(--glass-stroke); padding:6px 8px; border-radius:8px}
+    .notice{font-size:12px; color:#cfcaff; opacity:.8}
+    
+    /* Feedback buttons styling */
+    .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
+    .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; font-size: 12px; }
+    .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
+    .feedback-buttons button.selected { background: var(--accent); color: #0b0a13; border-color: transparent; }
+    .feedback-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
   </style>
 </head>
 <body>
-  <div class="container stack">
-    <header class="stack">
-      <h1 style="margin:0">Group 61 — Chat</h1>
-      <p class="pill">Netlify + Supabase (feedback saved server-side)</p>
-    </header>
+  <div class="aurora"></div>
+  <div class="sparkles" id="sparkles"></div>
 
-    <!-- Conversation area -->
-    <section class="card stack">
-      <div id="messages" class="messages" aria-live="polite"></div>
+  <header>
+    <div class="brand">
+      <img src="Tsinghua_University_logo_and_wordmark_in_Chinese_and_English_characters.svg.png" alt="Tsinghua" />
+      <h1>Mind-Mapper AI</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a class="active" href="#home"><span data-lang="en">Home</span><span data-lang="vi">Trang chủ</span></a></li>
+        <li><a href="#how"><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span></a></li>
+        <li><a href="#about"><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></a></li>
+        <li><a href="#faq"><span>FAQ</span></a></li>
+        <li><a href="#contact"><span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span></a></li>
+      </ul>
+    </nav>
+    <div class="lang pill">
+      <span>🌎</span>
+      <select id="language">
+        <option value="en" selected>English</option>
+        <option value="vi">Tiếng Việt</option>
+      </select>
+    </div>
+  </header>
 
-      <!-- Composer -->
-      <form id="chat-form" class="stack" autocomplete="off">
-        <label for="user-input" class="meta">Your message</label>
-        <textarea id="user-input" name="user-input" placeholder="Ask something…"></textarea>
-        <div class="row">
-          <div class="col">
-            <input id="system-prompt" type="text" placeholder="(Optional) system prompt" />
-          </div>
-          <div>
-            <button id="send-btn" class="btn-primary" type="submit">Send</button>
-          </div>
+  <main class="container" id="home">
+    <section class="hero">
+      <div>
+        <h2 class="title">
+          <span data-lang="en">Conversational MBTI Personality Insights – refined for students</span>
+          <span data-lang="vi">Trò chuyện MBTI tinh tế – dành cho học sinh, sinh viên</span>
+        </h2>
+        <p class="subtitle">
+          <span data-lang="en">A warm, human-like conversation that reveals strengths, tendencies, and growth tips.</span>
+          <span data-lang="vi">Một cuộc trò chuyện ấm áp, tự nhiên để hé lộ thế mạnh, xu hướng và gợi ý phát triển.</span>
+        </p>
+        <p class="lead">
+          <span data-lang="en">No rigid multiple-choice. Just natural chat. When you're ready, open the assistant below and start talking. After a brief exchange, you'll get a thoughtful MBTI-style profile, confidence level, and practical suggestions.</span>
+          <span data-lang="vi">Không cần trắc nghiệm cứng nhắc – chỉ trò chuyện tự nhiên. Khi sẵn sàng, mở trợ lý và bắt đầu. Chỉ sau vài tin nhắn, bạn sẽ nhận được hồ sơ MBTI ngắn gọn, mức độ tự tin và các gợi ý thực tiễn.</span>
+        </p>
+        <a class="cta" href="#how"><span data-lang="en">Begin your journey</span><span data-lang="vi">Bắt đầu hành trình</span> →</a>
+      </div>
+      <div class="illustrationWrap">
+        <div class="card3d" id="card3d">
+          <img class="hero-img" src="vietnam_students.png"/>
         </div>
-      </form>
+      </div>
     </section>
 
-    <!-- Status -->
-    <div id="status" class="meta"></div>
+    <section class="section" id="how">
+      <h2><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span></h2>
+      <p class="muted"><span data-lang="en">Simple, elegant, respectful of your time.</span><span data-lang="vi">Đơn giản, tinh tế, tôn trọng thời gian của bạn.</span></p>
+      <div class="steps">
+        <div class="step">
+          <span class="n">1</span>
+          <h3><span data-lang="en">Start a natural chat</span><span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span></h3>
+          <p><span data-lang="en">Say hello and share how you like to study, socialize, and make decisions.</span><span data-lang="vi">Hãy chào và chia sẻ cách bạn học, giao tiếp và ra quyết định.</span></p>
+        </div>
+        <div class="step">
+          <span class="n">2</span>
+          <h3><span data-lang="en">AI listens and learns</span><span data-lang="vi">AI lắng nghe và học hỏi</span></h3>
+          <p><span data-lang="en">Our AI assistant listens for patterns and compares them to past conversations to improve its insights.</span><span data-lang="vi">Trợ lý AI lắng nghe, nhận diện các mẫu hành vi và so sánh với các cuộc trò chuyện trước để cải thiện độ chính xác.</span></p>
+        </div>
+        <div class="step">
+          <span class="n">3</span>
+          <h3><span data-lang="en">Receive your profile</span><span data-lang="vi">Nhận hồ sơ của bạn</span></h3>
+          <p><span data-lang="en">Get a concise MBTI-style type with confidence, traits, and friendly development tips.</span><span data-lang="vi">Nhận kiểu MBTI, mức tự tin, đặc trưng nổi bật và gợi ý phát triển.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <h2><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></h2>
+      <p class="muted">
+        <span data-lang="en">We are Group 61 from Tsinghua University's IEDE 2025 program. Mind-Mapper AI was born from our passion to use technology for self-awareness and growth.</span>
+        <span data-lang="vi">Chúng tôi là Nhóm 61 của chương trình IEDE 2025 (ĐH Thanh Hoa). Mind-Mapper AI xuất phát từ niềm đam mê ứng dụng công nghệ để thúc đẩy tự nhận thức và phát triển bản thân.</span>
+      </p>
+      <p class="muted" style="margin-top:10px">
+        <span data-lang="en">Our goal is to make personality analysis accessible, engaging, and modern for students.</span>
+        <span data-lang="vi">Mục tiêu của chúng tôi là khiến phân tích tính cách trở nên gần gũi, thú vị và hiện đại cho học sinh, sinh viên.</span>
+      </p>
+    </section>
+
+    <section class="section faq" id="faq">
+      <h2>FAQ</h2>
+      <details>
+        <summary><span data-lang="en">What is the MBTI?</span><span data-lang="vi">MBTI là gì?</span></summary>
+        <p><span data-lang="en">The Myers-Briggs Type Indicator describes preferences in how people perceive information and make decisions, grouping into 16 types.</span><span data-lang="vi">MBTI mô tả khuynh hướng trong cách con người tiếp nhận thông tin và ra quyết định, phân loại thành 16 kiểu tính cách.</span></p>
+      </details>
+      <details>
+        <summary><span data-lang="en">Is this a clinical assessment?</span><span data-lang="vi">Đây có phải đánh giá lâm sàng?</span></summary>
+        <p><span data-lang="en">No—it's a self-reflection tool powered by AI. Use it for guidance, not diagnosis.</span><span data-lang="vi">Không—đây là công cụ tự phản chiếu do AI hỗ trợ. Dùng để tham khảo, không phải chẩn đoán.</span></p>
+      </details>
+      <details>
+        <summary><span data-lang="en">Is my data private and secure?</span><span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn?</span></summary>
+        <p><span data-lang="en">We securely save anonymized conversations to improve our AI's accuracy and insights. We do not store any personal identification information.</span><span data-lang="vi">Chúng tôi lưu trữ ẩn danh các cuộc trò chuyện một cách an toàn để cải thiện độ chính xác và thông tin chi tiết của AI. Chúng tôi không lưu trữ bất kỳ thông tin nhận dạng cá nhân nào.</span></p>
+      </details>
+      <details>
+        <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span></summary>
+        <p><span data-lang="en">Usually 5–10 minutes to get a first profile.</span><span data-lang="vi">Thường 5–10 phút để có hồ sơ đầu tiên.</span></p>
+      </details>
+    </section>
+
+    <section class="section" id="contact">
+      <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span></h2>
+      <form onsubmit="event.preventDefault(); this.reset(); alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi sẽ liên hệ.' : 'Thanks! We\'ll be in touch.');">
+        <div class="field">
+          <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span></label>
+          <input required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" />
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label><span data-lang="en">Email</span><span data-lang="vi">Email</span></label>
+          <input type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" />
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span></label>
+          <textarea rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?…"></textarea>
+        </div>
+        <button class="btn" style="margin-top:12px"><span data-lang="en">Send message</span><span data-lang="vi">Gửi tin nhắn</span></button>
+      </form>
+    </section>
+  </main>
+
+  <button class="chat-launch" id="chatOpen" title="Open Mind-Mapper AI">🧠 <b><span data-lang="en">Chat</span><span data-lang="vi">Trò chuyện</span></b></button>
+  <div class="chat-panel" id="chatPanel" aria-live="polite">
+    <div class="chat-head">
+      <h3>Mind-Mapper AI – Personality Analyst</h3>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="msg ai">
+        <div class="bubble">
+          <span data-lang="en">Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>
+          <span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-foot">
+      <input id="chatInput" placeholder="Type your message…" />
+      <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+    </div>
+    <div class="notice" style="padding:8px 12px">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
   </div>
 
-  <!-- Your existing client-side logic for calling /.netlify/functions/process-chat -->
-  <!-- If you already have a process-chat.js, keep this script tag and it will still work. -->
-  <script src="/process-chat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    /**
-     * Minimal helpers in case your existing process-chat.js isn't present.
-     * If you DO have process-chat.js, these helpers won't conflict — they
-     * only run the same happy path: POST to /.netlify/functions/process-chat
-     * and render messages with feedback buttons tied to handleFeedback().
-     */
+    // --- 1. Supabase Project Configuration ---
+    const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
+    const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
 
-    const $ = (s, r = document) => r.querySelector(s);
-    const messagesEl = $('#messages');
-    const statusEl = $('#status');
+    const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
-    // Render a message bubble
-    function renderMessage({ role, text, conversationId, idx }) {
-      const wrap = document.createElement('div');
-      wrap.className = `bubble ${role}`;
-      wrap.innerHTML = `
-        <div class="meta">
-          <span>${role === 'user' ? 'You' : 'AI'}</span>
-          ${typeof idx === 'number' ? `<span class="pill">#${idx}</span>` : ''}
-          ${conversationId ? `<span class="pill">conv ${conversationId}</span>` : ''}
-        </div>
-        <div class="content">${escapeHtml(text).replace(/\n/g,'<br>')}</div>
-        ${role === 'ai' && conversationId ? `
-          <div class="feedback">
-            <button class="btn-sm" onclick="handleFeedback(${conversationId}, true, this)">👍</button>
-            <button class="btn-sm" onclick="handleFeedback(${conversationId}, false, this)">👎</button>
-          </div>` : ''}
-      `;
-      messagesEl.appendChild(wrap);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function escapeHtml(s='') {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    // Wire up the chat form if process-chat.js isn't handling it
-    (function attachFormIfNeeded() {
-      const form = $('#chat-form');
-      if (!form) return;
-
-      // If process-chat.js is already listening, we won't double-submit.
-      let handlerAttached = false;
-      form.addEventListener('submit', (e) => {
-        if (handlerAttached) return;
-        e.preventDefault();
-        sendChat();
-      }, { once: true });
+    // --- 2. Existing Page Functions (Sparkles, Tilt, Language) ---
+    (function makeSparkles(){ 
+      const host=document.getElementById('sparkles'); 
+      for(let i=0;i<120;i++){ 
+        const s=document.createElement('i'); 
+        s.style.left=Math.random()*100+'vw';
+        s.style.top = '100vh';
+        s.style.animationDuration=(10+Math.random()*16)+'s'; 
+        host.appendChild(s);
+      } 
     })();
 
-    async function sendChat() {
-      const input = $('#user-input');
-      const system = $('#system-prompt');
-      const sendBtn = $('#send-btn');
+    (function tilt(){ 
+      const card=document.getElementById('card3d'); 
+      let b=card.getBoundingClientRect(); 
+      window.addEventListener('resize',()=>b=card.getBoundingClientRect()); 
+      card.addEventListener('mousemove',e=>{ 
+        const x=(e.clientX-b.left)/b.width-0.5; 
+        const y=(e.clientY-b.top)/b.height-0.5; 
+        card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`; 
+      }); 
+      card.addEventListener('mouseleave',()=>card.style.transform='perspective(1000px) rotateX(0) rotateY(0)'); 
+    })();
 
-      const text = (input.value || '').trim();
-      if (!text) return;
+    (function initLang(){
+      const sel=document.getElementById('language');
+      function applyPlaceholders(){ 
+        const lang=document.body.classList.contains('lang-vi')?'vi':'en'; 
+        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el=>{ 
+          const txt=el.getAttribute(`data-lang-${lang}-placeholder`); 
+          if(txt) el.placeholder=txt; 
+        }); 
+      }
+      function setLang(lang){ 
+        document.body.classList.remove('lang-en','lang-vi'); 
+        document.body.classList.add('lang-'+lang); 
+        localStorage.setItem('preferredLanguage', lang); 
+        applyPlaceholders();
+        
+        const chatBody = document.getElementById('chatBody');
+        if (chatBody) {
+          chatBody.innerHTML = '';
+          const initialMsg = document.createElement('div');
+          initialMsg.className = 'msg ai';
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+          
+          if (lang === 'vi') {
+            bubble.innerHTML = `<span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>`;
+          } else {
+            bubble.innerHTML = `<span data-lang="en">Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>`;
+          }
+          
+          initialMsg.appendChild(bubble);
+          chatBody.appendChild(initialMsg);
+        }
+      }
+      const saved=localStorage.getItem('preferredLanguage')||'en'; 
+      sel.value=saved; 
+      setLang(saved); 
+      sel.addEventListener('change', e=> setLang(e.target.value));
+    })();
 
+    // Chat widget open/close
+    const panel=document.getElementById('chatPanel');
+    document.getElementById('chatOpen').onclick=()=>{ 
+      panel.classList.toggle('open'); 
+      if(panel.classList.contains('open')){ 
+        document.getElementById('chatInput')?.focus(); 
+      } 
+    };
+
+    // --- 3. FIXED Chat + Backend Logic ---
+    const chatBody=document.getElementById('chatBody');
+    const input=document.getElementById('chatInput');
+    const sendBtn=document.getElementById('sendBtn');
+    
+    // **FIX**: Use a clean JavaScript array to track conversation history
+    let conversationHistory = [];
+
+    function appendMessage(role, text, conversationId = null, showFeedback = false){ 
+      const wrap=document.createElement('div'); 
+      wrap.className='msg '+(role==='user'?'user':'ai');
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      let processedText = text
+        .replace(/</g,'&lt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g,'<br>');
+      
+      bubble.innerHTML = processedText;
+      
+      // Only show feedback buttons for MBTI analysis results
+      if (role === 'ai' && conversationId && showFeedback) {
+        const feedbackContainer = document.createElement('div');
+        feedbackContainer.className = 'feedback-buttons';
+        feedbackContainer.innerHTML = `
+          <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
+          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>
+        `;
+        bubble.appendChild(feedbackContainer);
+      }
+      
+      wrap.appendChild(bubble);
+      chatBody.appendChild(wrap); 
+      chatBody.scrollTop=chatBody.scrollHeight; 
+    }
+
+    
+async function handleFeedback(conversationId, isAccurate) {
+  try {
+    // Optimistic UI: disable the two buttons for this conversation
+    const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+    buttons.forEach(b => b.disabled = true);
+
+    const res = await fetch('/.netlify/functions/save-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation_id: Number(conversationId),
+        is_accurate: Boolean(isAccurate)
+      })
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    // Success UI
+    buttons.forEach(btn => {
+      if (btn.getAttribute('data-rating') === String(isAccurate)) {
+        btn.classList.add('selected');
+        btn.innerHTML = isAccurate ? '✅ Thanks!' : '📝 Noted';
+      }
+    });
+  } catch (err) {
+    console.error('Error saving feedback:', err);
+    alert('Could not save feedback: ' + (err.message || String(err)));
+    // Re-enable on failure
+    const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+    buttons.forEach(b => b.disabled = false);
+  }
+}
+
+
+    }
+
+    chatBody.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
+            const conversationId = target.getAttribute('data-convo-id');
+            const isAccurate = target.getAttribute('data-rating') === 'true';
+            handleFeedback(conversationId, isAccurate);
+        }
+    });
+
+    function showTyping() {
+      const wrap=document.createElement('div');
+      wrap.className='msg ai typing';
+      wrap.innerHTML=`<div class="bubble">Typing...</div>`;
+      wrap.id = 'typing-indicator';
+      chatBody.appendChild(wrap);
+      chatBody.scrollTop=chatBody.scrollHeight;
+    }
+
+    function hideTyping() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
+
+    async function handleSend(){ 
+      const text = input.value.trim(); 
+      if (!text) return; 
+      
+      input.value = ''; 
+      appendMessage('user', text);
+      // **FIX**: Add user message to our clean history
+      conversationHistory.push({ role: 'user', content: text });
+      
+      showTyping();
+      
       try {
-        sendBtn.disabled = true;
-        statusEl.textContent = 'Sending…';
-        renderMessage({ role: 'user', text });
-
+        // **FIX**: Use the clean history, limited to the last 8 messages
+        const messages = conversationHistory.slice(-8);
+        console.log('Sending messages to backend:', messages);
+        
         const res = await fetch('/.netlify/functions/process-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            system_prompt: system.value || null
-          })
+          body: JSON.stringify({ messages })
         });
-
-        const ok = res.ok;
-        const payload = await (async () => { try { return await res.json(); } catch { return {}; } })();
-
-        if (!ok) {
-          const msg = typeof payload === 'object' && payload.message ? payload.message : await res.text();
-          throw new Error(msg || `HTTP ${res.status}`);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('API Error Response:', errorText);
+          throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`);
         }
+        
+        const data = await res.json();
+        console.log('Raw API response:', data);
+        
+        hideTyping();
+        
+        if (data.reply) {
+          try {
+            const mbtiResult = JSON.parse(data.reply);
+            
+            // **FIX**: Add the raw AI response to our clean history
+            conversationHistory.push({ role: 'assistant', content: data.reply });
 
-        // Expecting payload: { reply: string, conversation_id: number }
-        const reply = payload.reply ?? '(no reply)';
-        const conversationId = Number(payload.conversation_id) || undefined;
-
-        renderMessage({ role: 'ai', text: reply, conversationId, idx: (payload.turn_index ?? undefined) });
-        statusEl.textContent = 'Done.';
+            let responseText = '';
+            let isActualResult = false; // Track if this is an MBTI result or just a question
+            
+            if (mbtiResult.type && mbtiResult.type !== 'Unknown') {
+              // This is an actual MBTI analysis result
+              isActualResult = true;
+              responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
+              responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
+              if (mbtiResult.one_liner) {
+                responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              }
+              if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
+                responseText += `✨ **Your Strengths:**\n`;
+                mbtiResult.strengths.forEach(strength => { responseText += `• ${strength}\n`; });
+                responseText += '\n';
+              }
+              if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
+                responseText += `🌱 **Growth Tips:**\n`;
+                mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
+              }
+            } else {
+              // This is just a question or gathering info, not a final result
+              isActualResult = false;
+              responseText = mbtiResult.one_liner || 'I need a bit more information to give you a good analysis. Can you tell me more about how you prefer to make decisions or spend your free time?';
+            }
+            
+            // Only show feedback buttons for actual MBTI results
+            appendMessage('ai', responseText, data.conversation_id, isActualResult);
+            
+          } catch (parseError) {
+            console.error('Failed to parse MBTI result:', parseError);
+            appendMessage('ai', data.reply || 'Sorry, I received an unexpected response format.');
+            conversationHistory.push({ role: 'assistant', content: data.reply });
+          }
+        } else if (data.error) {
+          console.error('API returned error:', data.error);
+          appendMessage('ai', `Sorry, there was an error: ${data.error}`);
+        } else {
+          console.error('Unexpected response format:', data);
+          appendMessage('ai', 'Sorry, I received an unexpected response format.');
+        }
+        
       } catch (err) {
-        console.error(err);
-        statusEl.innerHTML = `<span class="err">Error:</span> ${escapeHtml(err.message || String(err))}`;
-      } finally {
-        $('#send-btn').disabled = false;
-        $('#user-input').value = '';
+        hideTyping();
+        console.error('Chat error:', err);
+        appendMessage('ai', `Sorry, I encountered an error: ${err.message}. Please check your connection and try again.`);
       }
     }
 
-    /**
-     * >>> FEEDBACK: now saved via Netlify function (service key) <<<
-     * Exposed globally so your message templates can call: handleFeedback(id, true|false, btn)
-     */
-    window.handleFeedback = async function handleFeedback(conversationId, isAccurate, btnEl) {
-      const buttons = btnEl?.parentElement?.querySelectorAll('button');
-
-      try {
-        // Optimistic UI
-        buttons?.forEach(b => b.disabled = true);
-        btnEl?.classList.add('pill');
-
-        const res = await fetch('/.netlify/functions/save-feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            conversation_id: Number(conversationId),
-            is_accurate: Boolean(isAccurate)
-          })
-        });
-
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt || `HTTP ${res.status}`);
-        }
-
-        // Success UI
-        const wrap = btnEl.closest('.bubble');
-        const stamp = document.createElement('div');
-        stamp.className = 'meta';
-        stamp.innerHTML = isAccurate
-          ? `<span class="ok">✅ Thanks for the feedback!</span>`
-          : `<span class="err">❌ Feedback received — we'll improve.</span>`;
-        wrap.appendChild(stamp);
-
-        // Hide buttons after success
-        btnEl.parentElement?.classList.add('hidden');
-      } catch (err) {
-        console.error('Error saving feedback:', err);
-        alert('Could not save feedback: ' + (err.message || String(err)));
-        // Re-enable on failure
-        buttons?.forEach(b => b.disabled = false);
-        btnEl?.classList.remove('pill');
+    sendBtn.addEventListener('click', handleSend);
+    input.addEventListener('keydown', e => { 
+      if (e.key === 'Enter' && !e.shiftKey) { 
+        e.preventDefault(); 
+        handleSend(); 
       }
-    };
+    });
+
+    // **FIX**: Initialize history with the first AI message on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const initialBubble = document.querySelector('#chatBody .msg.ai .bubble');
+      if (initialBubble) {
+        conversationHistory.push({ role: 'assistant', content: initialBubble.innerText });
+      }
+    });
   </script>
 </body>
 </html>
