@@ -369,6 +369,12 @@
       if (chatInputArea) chatInputArea.style.display = 'grid';
       if (resetBtn) resetBtn.style.display = 'none';
       if (input) input.focus();
+      
+      // Clear progress bar
+      const progressContainer = document.getElementById('progress-container');
+      if (progressContainer) {
+        progressContainer.remove();
+      }
     }
 
     function appendMessage(role, text, conversationId = null, showFeedback = false) { 
@@ -463,6 +469,44 @@
       if (typing) typing.remove();
     }
 
+    function updateProgressBar(progress) {
+      let progressContainer = document.getElementById('progress-container');
+      if (!progressContainer) {
+        // Create progress bar container
+        progressContainer = document.createElement('div');
+        progressContainer.id = 'progress-container';
+        progressContainer.style.cssText = `
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--glass-stroke);
+          background: rgba(255,255,255,.03);
+        `;
+        
+        const chatHead = document.querySelector('.chat-head');
+        if (chatHead && chatHead.parentNode) {
+          chatHead.parentNode.insertBefore(progressContainer, chatHead.nextSibling);
+        }
+      }
+      
+      if (progress) {
+        const percentage = (progress.current_step / progress.total_steps) * 100;
+        const dimensionsCount = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
+        
+        progressContainer.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 12px; color: var(--muted); font-weight: 600;">
+              Step ${progress.current_step}/${progress.total_steps}: ${progress.step_description}
+            </span>
+          </div>
+          <div style="background: rgba(255,255,255,.1); border-radius: 8px; height: 6px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
+          </div>
+          <div style="font-size: 11px; color: var(--muted); margin-top: 4px; opacity: 0.8;">
+            📊 Personality dimensions explored: ${dimensionsCount}/4
+          </div>
+        `;
+      }
+    }
+
     async function handleSend() { 
       if (!input || !chatBody) return;
       
@@ -476,7 +520,7 @@
       showTyping();
       
       try {
-        const messages = conversationHistory.slice(-8);
+        const messages = conversationHistory.slice(-10); // Keep more context
         const res = await fetch('/.netlify/functions/process-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -496,10 +540,12 @@
             const mbtiResult = JSON.parse(data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
 
-            console.log('MBTI Result received:', mbtiResult);
-            console.log('Ready for analysis:', mbtiResult.ready_for_analysis);
-            console.log('Type:', mbtiResult.type);
-            console.log('Confidence:', mbtiResult.confidence);
+            console.log('Enhanced MBTI Result:', mbtiResult);
+            
+            // Update progress bar
+            if (mbtiResult.progress) {
+              updateProgressBar(mbtiResult.progress);
+            }
 
             let responseText = '';
             let isActualResult = false;
@@ -529,15 +575,18 @@
                 responseText += '\n';
               }
               
-              responseText += `📈 **Analysis Complete!**\nBased on our conversation about your preferences and natural tendencies.`;
+              responseText += `🎉 **Analysis Complete!**\nThank you for sharing your authentic preferences with me. This assessment is based on our natural conversation about how you approach energy, information, decisions, and lifestyle.`;
               
               if (chatInputArea) chatInputArea.style.display = 'none';
               if (resetBtn) resetBtn.style.display = 'block';
             } else {
+              // Continuing conversation
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
               
-              if (mbtiResult.ready_for_analysis === false) {
-                responseText += `\n\n💬 Keep sharing your thoughts - I'm learning about your personality style!`;
+              // Add encouraging progress message
+              if (mbtiResult.progress && mbtiResult.progress.current_step <= 4) {
+                const dimensionsCount = Object.values(mbtiResult.progress.dimensions_explored || {}).filter(Boolean).length;
+                responseText += `\n\n💫 Great! We're making good progress (${dimensionsCount}/4 areas explored). Keep sharing what feels natural to you!`;
               }
             }
             

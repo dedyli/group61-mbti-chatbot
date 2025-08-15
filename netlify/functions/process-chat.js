@@ -1,4 +1,4 @@
-// Simplified but reliable process-chat.js
+// Enhanced process-chat.js with natural conversation flow and progress tracking
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -35,33 +35,50 @@ const PREFERRED_MODELS = [
   'openai/gpt-4o-mini'
 ];
 
-// Streamlined system prompt focused on getting results
-const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a conversational MBTI personality analyst.
+// Enhanced system prompt with natural conversation flow
+const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a conversational MBTI personality analyst focused on natural, engaging dialogue.
 
 CRITICAL RULES:
 1) Output ONLY valid JSON (no code fences, no extra text)
-2) Ask meaningful questions to understand personality preferences
-3) After 4-5 exchanges OR when user asks for results, provide MBTI analysis
-4) Be conversational and encouraging
+2) Have natural conversations - don't rush to conclusions
+3) Ask follow-up questions to understand context and nuance
+4) Only provide MBTI analysis when you have sufficient insight (typically 6-8+ meaningful exchanges)
+5) Be warm, encouraging, and genuinely curious about the person
 
-CORE DIMENSIONS TO EXPLORE:
-1. Energy source: People (Extraversion) vs Solitude (Introversion)
-2. Information processing: Details/Facts (Sensing) vs Patterns/Possibilities (Intuition)  
-3. Decision making: Logic/Analysis (Thinking) vs Values/Feelings (Feeling)
-4. Lifestyle: Structure/Planning (Judging) vs Flexibility/Spontaneity (Perceiving)
+CONVERSATION PHILOSOPHY:
+- Quality over quantity: Better to have fewer, deeper insights than surface-level answers
+- Build rapport before analysis
+- Ask follow-up questions when answers are vague
+- Show genuine interest in their experiences
+- Validate their sharing before moving to next topic
+
+CORE DIMENSIONS TO EXPLORE (with depth):
+1. Energy source: Where do they get/lose energy? What recharges them? How do they process experiences?
+2. Information processing: How do they learn best? What details matter to them? How do they approach new information?
+3. Decision making: What factors matter most? How do they weigh options? What guides their choices?
+4. Lifestyle preferences: How do they organize their world? What feels natural vs. stressful?
 
 CONVERSATION STRATEGY:
-- Ask ONE clear question at a time about preferences
-- Use examples to make questions easier to answer
-- If user gives vague answer, gently ask for clarification
-- After 4+ meaningful exchanges, be ready to provide analysis
-- If user explicitly asks for results, provide them
+- Start with one dimension and explore it thoroughly
+- Ask follow-up questions: "Can you tell me more about..." "What does that look like for you?" "How do you typically..."
+- Connect to their specific examples and experiences
+- Validate their responses before moving on
+- Only move to analysis after exploring ALL four dimensions meaningfully
 
-QUESTION EXAMPLES:
-- "After a busy day, what helps you recharge: spending time with friends or having quiet time alone?"
-- "When learning something new, do you prefer step-by-step instructions or exploring the big picture first?"
-- "In decision-making, do you rely more on logical analysis or on how it affects people's feelings?"
-- "Do you prefer having a planned schedule or keeping things flexible and spontaneous?"
+NATURAL QUESTION FLOW:
+Instead of rigid questions, use conversational starters:
+- "I'm curious about..." 
+- "That's interesting! Can you tell me more about..."
+- "What does that look like in your daily life?"
+- "How do you typically handle..."
+- "I'd love to understand..."
+
+ANALYSIS CRITERIA (ALL must be met):
+- Has meaningfully discussed ALL 4 MBTI dimensions
+- Provided specific examples or details (not just yes/no answers)
+- At least 6-8 substantial exchanges
+- Clear patterns are emerging
+- User explicitly requests results OR conversation feels naturally complete
 
 OUTPUT SCHEMA:
 {
@@ -70,34 +87,79 @@ OUTPUT SCHEMA:
   "strengths": ["<strength>", "<strength>", "<strength>"],
   "growth_tips": ["<tip>", "<tip>", "<tip>"],
   "one_liner": "<question_or_personality_summary>",
-  "ready_for_analysis": <boolean>
+  "ready_for_analysis": <boolean>,
+  "progress": {
+    "current_step": <1-5>,
+    "total_steps": 5,
+    "step_description": "<what we're exploring now>",
+    "dimensions_explored": {
+      "energy_source": <boolean>,
+      "information_processing": <boolean>, 
+      "decision_making": <boolean>,
+      "lifestyle_preferences": <boolean>
+    }
+  }
 }
 
-ANALYSIS TRIGGERS:
-- User has answered 4+ questions with specific preferences
-- User explicitly asks for their type/results ("what's my type", "give me results", etc.)
-- Conversation has covered multiple personality dimensions
-- User seems ready for analysis based on engagement
+STEP PROGRESSION:
+1. "Getting to know you" - Initial rapport building
+2. "Understanding your energy" - Explore extraversion/introversion deeply
+3. "How you process information" - Explore sensing/intuition with examples
+4. "Your decision-making style" - Explore thinking/feeling with scenarios
+5. "Your lifestyle preferences" - Explore judging/perceiving, then analysis
 
 When providing analysis:
 - Set ready_for_analysis: true
 - Choose most likely MBTI type based on conversation
-- Set confidence between 0.6-0.8 (be realistic)
-- Provide 3-4 relevant strengths
-- Give 3-4 practical growth tips
-- Include encouraging one-liner summary
+- Set confidence between 0.65-0.85 (realistic based on conversation depth)
+- Provide 3-4 specific strengths based on what they shared
+- Give 3-4 practical, personalized growth tips
+- Include encouraging summary of their type
 
-When asking questions:
+When continuing conversation:
 - Set ready_for_analysis: false
-- Set type: "Unknown"
+- Set type: "Unknown" 
 - Set confidence: 0.0
-- Use one_liner for the next question
+- Use one_liner for natural next question or follow-up
+- Update progress appropriately
 - Keep strengths/tips encouraging but general`;
 
-// Smart conversation analysis with context awareness
+// Enhanced conversation analysis with dimension tracking
 function analyzeConversation(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
   const conversation = messages.map(m => m.content.toLowerCase()).join(' ');
+  
+  // Track which dimensions have been meaningfully explored
+  const dimensions = {
+    energy_source: false,
+    information_processing: false,
+    decision_making: false,
+    lifestyle_preferences: false
+  };
+  
+  // Energy source indicators
+  const energyKeywords = ['recharge', 'energy', 'alone', 'people', 'social', 'quiet', 'friends', 'solitude', 'group', 'party', 'tired', 'drained', 'energized'];
+  if (energyKeywords.some(keyword => conversation.includes(keyword))) {
+    dimensions.energy_source = true;
+  }
+  
+  // Information processing indicators  
+  const infoKeywords = ['learn', 'details', 'big picture', 'step-by-step', 'instructions', 'creative', 'practical', 'abstract', 'concrete', 'possibilities', 'facts', 'innovative'];
+  if (infoKeywords.some(keyword => conversation.includes(keyword))) {
+    dimensions.information_processing = true;
+  }
+  
+  // Decision making indicators
+  const decisionKeywords = ['decide', 'choice', 'logical', 'feelings', 'analysis', 'emotions', 'rational', 'values', 'pros and cons', 'heart', 'head', 'impact'];
+  if (decisionKeywords.some(keyword => conversation.includes(keyword))) {
+    dimensions.decision_making = true;
+  }
+  
+  // Lifestyle indicators
+  const lifestyleKeywords = ['plan', 'flexible', 'schedule', 'spontaneous', 'organized', 'adapt', 'structure', 'routine', 'deadline', 'last minute', 'prepared'];
+  if (lifestyleKeywords.some(keyword => conversation.includes(keyword))) {
+    dimensions.lifestyle_preferences = true;
+  }
   
   // Check for explicit requests for results
   const resultRequests = [
@@ -112,197 +174,287 @@ function analyzeConversation(messages) {
     conversation.includes(phrase.toLowerCase())
   );
   
-  // Check if this is the very first message asking for results
-  const firstMessageIsResultRequest = userMessages.length === 1 && hasResultRequest;
-  
-  // Check if we have enough content for analysis
+  // Calculate total conversation depth
   const totalLength = userMessages.reduce((sum, msg) => sum + msg.content.length, 0);
-  const hasSubstantialContent = totalLength > 50;
+  const avgMessageLength = totalLength / Math.max(userMessages.length, 1);
   
-  // Check for personality-related keywords that show actual sharing
-  const personalityKeywords = [
-    'prefer', 'like', 'enjoy', 'feel', 'think', 'decide', 'choose',
-    'friends', 'alone', 'quiet', 'social', 'plan', 'flexible', 
-    'logical', 'emotional', 'details', 'big picture', 'creative',
-    'practical', 'recharge', 'energy', 'usually', 'tend to',
-    'comfortable', 'naturally', 'often', 'most of the time'
-  ];
+  // Count dimensions explored
+  const dimensionsExplored = Object.values(dimensions).filter(Boolean).length;
   
-  const keywordCount = personalityKeywords.filter(keyword => 
-    conversation.includes(keyword)
-  ).length;
+  // Calculate progress step
+  let currentStep = 1;
+  let stepDescription = "Getting to know you";
   
-  // Check for actual personality sharing vs just asking
-  const hasPersonalitySharing = keywordCount >= 2 && hasSubstantialContent;
+  if (dimensionsExplored === 0 && userMessages.length <= 2) {
+    currentStep = 1;
+    stepDescription = "Getting to know you";
+  } else if (dimensions.energy_source && dimensionsExplored === 1) {
+    currentStep = 2;
+    stepDescription = "Understanding your energy";
+  } else if (dimensions.information_processing && dimensionsExplored >= 2) {
+    currentStep = 3;
+    stepDescription = "How you process information";
+  } else if (dimensions.decision_making && dimensionsExplored >= 3) {
+    currentStep = 4;
+    stepDescription = "Your decision-making style";
+  } else if (dimensionsExplored >= 4) {
+    currentStep = 5;
+    stepDescription = "Your lifestyle preferences";
+  } else {
+    // Still working on earlier dimensions
+    if (!dimensions.energy_source) {
+      currentStep = 2;
+      stepDescription = "Understanding your energy";
+    } else if (!dimensions.information_processing) {
+      currentStep = 3;
+      stepDescription = "How you process information";
+    } else if (!dimensions.decision_making) {
+      currentStep = 4;
+      stepDescription = "Your decision-making style";
+    } else {
+      currentStep = 5;
+      stepDescription = "Your lifestyle preferences";
+    }
+  }
   
   return {
     messageCount: userMessages.length,
     hasResultRequest,
-    hasSubstantialContent,
-    keywordCount,
     totalLength,
-    firstMessageIsResultRequest,
-    hasPersonalitySharing,
+    avgMessageLength,
+    dimensionsExplored,
+    dimensions,
+    currentStep,
+    stepDescription,
+    
     shouldProvideAnalysis: function() {
-      // Don't give results on first message even if they ask
-      if (this.firstMessageIsResultRequest) {
-        return false;
-      }
+      // Only provide analysis if:
+      // 1. All dimensions explored AND sufficient conversation depth
+      // 2. OR explicit request + substantial conversation + most dimensions covered
+      const hasDepth = this.messageCount >= 6 && this.avgMessageLength > 20;
+      const allDimensionsCovered = this.dimensionsExplored >= 4;
+      const substiantialConversation = this.messageCount >= 4 && this.avgMessageLength > 15;
+      const mostDimensionsCovered = this.dimensionsExplored >= 3;
       
-      // Smart conditions - need both request AND actual conversation
-      return (
-        (this.hasResultRequest && this.hasPersonalitySharing) || // Asked + shared info
-        (this.messageCount >= 4 && this.keywordCount >= 3) || // Enough conversation 
-        (this.messageCount >= 3 && this.hasResultRequest && this.keywordCount >= 1) // Asked after some sharing
-      );
+      return (allDimensionsCovered && hasDepth) || 
+             (this.hasResultRequest && substiantialConversation && mostDimensionsCovered && this.messageCount >= 5);
     },
+    
+    needsMoreDepth: function() {
+      // Need more depth if we've touched dimensions but answers are shallow
+      return this.dimensionsExplored >= 2 && this.avgMessageLength < 15;
+    },
+    
     shouldExplainProcess: function() {
       // Explain process if they ask for results too early
-      return this.firstMessageIsResultRequest || 
-             (this.hasResultRequest && !this.hasPersonalitySharing && this.messageCount <= 2);
+      return this.hasResultRequest && this.messageCount <= 2;
     }
   };
 }
 
-// Get appropriate question based on conversation stage
-function getNextQuestion(messageCount, conversation) {
-  const lowerConv = conversation.toLowerCase();
-  
-  // Energy source (E/I)
-  if (messageCount <= 2 && !lowerConv.includes('recharge') && !lowerConv.includes('energy')) {
-    return "After a busy day at school or work, what helps you recharge your energy: spending time with friends and family, or having some quiet time alone?";
-  }
-  
-  // Information processing (S/N)
-  if (messageCount <= 3 && !lowerConv.includes('learn') && !lowerConv.includes('instruction')) {
-    return "When learning something new (like a new app or skill), do you prefer detailed step-by-step instructions, or do you like to explore and figure out the big picture yourself?";
-  }
-  
-  // Decision making (T/F)
-  if (messageCount <= 4 && !lowerConv.includes('decision') && !lowerConv.includes('choose')) {
-    return "When making important decisions, what do you rely on more: logical analysis of pros and cons, or considering how it will affect people and relationships?";
-  }
-  
-  // Lifestyle (J/P)
-  if (messageCount <= 5 && !lowerConv.includes('plan') && !lowerConv.includes('schedule')) {
-    return "Do you prefer having a clear plan and schedule for your day, or do you like to keep things flexible and adapt as you go?";
-  }
-  
-  // Ready for analysis prompts
-  return "I'm getting a good sense of your preferences! Would you like me to analyze your personality type, or is there anything else you'd like to share about how you approach life?";
-}
-
-// Simplified MBTI type inference
-function inferMBTIType(conversation) {
+// Get contextual follow-up questions
+function getContextualQuestion(analysis, conversation) {
   const conv = conversation.toLowerCase();
   
-  // E vs I
-  const extraversionWords = ['friends', 'people', 'social', 'group', 'team', 'others', 'collaborate'];
-  const introversionWords = ['alone', 'quiet', 'myself', 'independent', 'solitude', 'private'];
-  const eScore = extraversionWords.filter(w => conv.includes(w)).length;
-  const iScore = introversionWords.filter(w => conv.includes(w)).length;
+  // If they asked for results too early
+  if (analysis.shouldExplainProcess()) {
+    return "I'd love to help you discover your MBTI type! I'll need to learn about your personality through conversation first. This usually takes about 5-7 questions to get a good read. Let's start: After a busy day, what helps you recharge - being around people or having some quiet time alone?";
+  }
+  
+  // If we need more depth on current topic
+  if (analysis.needsMoreDepth()) {
+    return "That's helpful! Can you tell me a bit more about that? I'd love to understand what that looks like in your daily life.";
+  }
+  
+  // Based on current step and what's been explored
+  if (!analysis.dimensions.energy_source) {
+    if (conv.includes('recharge') || conv.includes('energy')) {
+      return "Interesting! Can you give me an example of a time when you felt really energized vs. a time when you felt drained? What was different about those situations?";
+    }
+    return "Let's start with something fundamental: After a busy day at school or work, what helps you recharge your energy - spending time with friends and talking, or having some quiet time alone to process?";
+  }
+  
+  if (!analysis.dimensions.information_processing) {
+    if (conv.includes('learn') || conv.includes('information')) {
+      return "That makes sense! When you're learning something new - like a new app, hobby, or subject - do you prefer detailed step-by-step instructions, or do you like to explore and figure out the big picture yourself?";
+    }
+    return "Now I'm curious about how you process information. When learning something completely new, what approach works best for you - having detailed instructions to follow, or exploring and discovering patterns yourself?";
+  }
+  
+  if (!analysis.dimensions.decision_making) {
+    if (conv.includes('decision') || conv.includes('choice')) {
+      return "Can you walk me through a recent important decision you made? What factors mattered most to you - the logical pros and cons, or how it would affect people and relationships?";
+    }
+    return "Let's talk about decision-making. When you have an important choice to make, what do you find yourself relying on more - logical analysis of the facts and outcomes, or considering how it will impact people and align with your values?";
+  }
+  
+  if (!analysis.dimensions.lifestyle_preferences) {
+    if (conv.includes('plan') || conv.includes('schedule')) {
+      return "That's revealing! How do you typically handle unexpected changes to your plans? Do you find them stressful or kind of exciting?";
+    }
+    return "Almost done! I'm curious about your lifestyle approach - do you prefer having a clear plan and schedule for your day, or do you like keeping things flexible and adapting as opportunities come up?";
+  }
+  
+  // All dimensions covered, ready for analysis
+  if (analysis.hasResultRequest) {
+    return "Perfect! I think I have a good sense of your personality now. Let me analyze your type...";
+  }
+  
+  return "I'm getting a clear picture of your personality style! Based on our conversation, I can see some interesting patterns emerging. Would you like me to share your MBTI analysis, or is there anything else about your preferences you'd like to discuss?";
+}
+
+// Enhanced MBTI type inference with conversation context
+function inferMBTIType(conversation, messages) {
+  const conv = conversation.toLowerCase();
+  const userResponses = messages.filter(m => m.role === 'user').map(m => m.content.toLowerCase());
+  
+  // E vs I - Look for energy patterns
+  let eScore = 0, iScore = 0;
+  
+  const eIndicators = ['friends', 'people', 'social', 'group', 'team', 'talking', 'party', 'energized by others', 'discussion'];
+  const iIndicators = ['alone', 'quiet', 'myself', 'independent', 'solitude', 'private', 'think first', 'recharge alone'];
+  
+  eIndicators.forEach(word => { if (conv.includes(word)) eScore++; });
+  iIndicators.forEach(word => { if (conv.includes(word)) iScore++; });
+  
+  // Context-based scoring
+  if (conv.includes('recharge') && conv.includes('alone')) iScore += 2;
+  if (conv.includes('recharge') && conv.includes('people')) eScore += 2;
+  if (conv.includes('drained') && conv.includes('social')) iScore += 1;
+  if (conv.includes('energized') && conv.includes('group')) eScore += 1;
+  
   const EI = iScore > eScore ? 'I' : 'E';
   
-  // S vs N
-  const sensingWords = ['details', 'step-by-step', 'specific', 'practical', 'concrete', 'facts', 'instructions'];
-  const intuitionWords = ['big picture', 'creative', 'possibilities', 'innovative', 'abstract', 'future', 'patterns'];
-  const sScore = sensingWords.filter(w => conv.includes(w)).length;
-  const nScore = intuitionWords.filter(w => conv.includes(w)).length;
+  // S vs N - Look for information processing patterns
+  let sScore = 0, nScore = 0;
+  
+  const sIndicators = ['details', 'step-by-step', 'specific', 'practical', 'concrete', 'facts', 'instructions', 'hands-on', 'examples'];
+  const nIndicators = ['big picture', 'creative', 'possibilities', 'innovative', 'abstract', 'future', 'patterns', 'concepts', 'theory'];
+  
+  sIndicators.forEach(word => { if (conv.includes(word)) sScore++; });
+  nIndicators.forEach(word => { if (conv.includes(word)) nScore++; });
+  
+  // Context scoring
+  if (conv.includes('learn') && conv.includes('step')) sScore += 1;
+  if (conv.includes('learn') && conv.includes('explore')) nScore += 1;
+  if (conv.includes('instructions') && conv.includes('prefer')) sScore += 2;
+  if (conv.includes('figure out') && conv.includes('myself')) nScore += 1;
+  
   const SN = nScore > sScore ? 'N' : 'S';
   
-  // T vs F
-  const thinkingWords = ['logical', 'analysis', 'rational', 'objective', 'facts', 'pros and cons', 'efficient'];
-  const feelingWords = ['feelings', 'people', 'values', 'harmony', 'emotions', 'relationships', 'impact'];
-  const tScore = thinkingWords.filter(w => conv.includes(w)).length;
-  const fScore = feelingWords.filter(w => conv.includes(w)).length;
+  // T vs F - Look for decision-making patterns
+  let tScore = 0, fScore = 0;
+  
+  const tIndicators = ['logical', 'analysis', 'rational', 'objective', 'facts', 'pros and cons', 'efficient', 'fair'];
+  const fIndicators = ['feelings', 'people', 'values', 'harmony', 'emotions', 'relationships', 'impact', 'care'];
+  
+  tIndicators.forEach(word => { if (conv.includes(word)) tScore++; });
+  fIndicators.forEach(word => { if (conv.includes(word)) fScore++; });
+  
+  // Context scoring
+  if (conv.includes('decision') && conv.includes('logical')) tScore += 2;
+  if (conv.includes('decision') && conv.includes('feel')) fScore += 2;
+  if (conv.includes('important') && conv.includes('people')) fScore += 1;
+  if (conv.includes('important') && conv.includes('facts')) tScore += 1;
+  
   const TF = fScore > tScore ? 'F' : 'T';
   
-  // J vs P
-  const judgingWords = ['plan', 'schedule', 'organized', 'structure', 'deadline', 'routine', 'early'];
-  const perceivingWords = ['flexible', 'spontaneous', 'adapt', 'open', 'last minute', 'improvise'];
-  const jScore = judgingWords.filter(w => conv.includes(w)).length;
-  const pScore = perceivingWords.filter(w => conv.includes(w)).length;
+  // J vs P - Look for lifestyle patterns
+  let jScore = 0, pScore = 0;
+  
+  const jIndicators = ['plan', 'schedule', 'organized', 'structure', 'deadline', 'routine', 'prepared', 'list'];
+  const pIndicators = ['flexible', 'spontaneous', 'adapt', 'open', 'last minute', 'improvise', 'go with flow', 'change'];
+  
+  jIndicators.forEach(word => { if (conv.includes(word)) jScore++; });
+  pIndicators.forEach(word => { if (conv.includes(word)) pScore++; });
+  
+  // Context scoring
+  if (conv.includes('prefer') && conv.includes('plan')) jScore += 2;
+  if (conv.includes('prefer') && conv.includes('flexible')) pScore += 2;
+  if (conv.includes('stressful') && conv.includes('change')) jScore += 1;
+  if (conv.includes('exciting') && conv.includes('change')) pScore += 1;
+  
   const JP = pScore > jScore ? 'P' : 'J';
   
   return EI + SN + TF + JP;
 }
 
-// Get strengths and tips for MBTI type
-function getTypeInsights(type) {
+// Enhanced type insights with personalization
+function getTypeInsights(type, conversation) {
   const insights = {
     'INTJ': {
-      strengths: ['Strategic thinking and long-term planning', 'Independent and self-motivated', 'Strong analytical abilities'],
-      tips: ['Practice explaining ideas to others simply', 'Make time for social connections', 'Be open to feedback and alternative approaches']
+      strengths: ['Strategic thinking and long-term vision', 'Independent and self-directed learning', 'Strong analytical and problem-solving abilities', 'Confident in your convictions'],
+      tips: ['Practice explaining complex ideas in simple terms', 'Make time for meaningful social connections', 'Be open to others\' perspectives and feedback', 'Balance planning with flexibility for unexpected opportunities']
     },
     'INTP': {
-      strengths: ['Logical analysis and problem-solving', 'Creative and innovative thinking', 'Adaptable and open-minded'],
-      tips: ['Set deadlines to complete projects', 'Practice communicating ideas clearly', 'Focus on practical applications of your ideas']
+      strengths: ['Logical analysis and creative problem-solving', 'Adaptable and open to new ideas', 'Independent thinking and learning', 'Ability to see connections others miss'],
+      tips: ['Set deadlines and accountability systems for projects', 'Practice communicating ideas clearly to others', 'Focus on practical applications of your theories', 'Develop routines for important daily tasks']
     },
     'ENTJ': {
-      strengths: ['Natural leadership and organization', 'Strategic planning abilities', 'Confident decision-making'],
-      tips: ['Listen to others\' perspectives more', 'Show appreciation for team contributions', 'Balance work with personal relationships']
+      strengths: ['Natural leadership and organizational skills', 'Strategic planning and execution', 'Confident decision-making under pressure', 'Ability to motivate and direct others'],
+      tips: ['Practice active listening and empathy', 'Show appreciation for others\' contributions', 'Balance work achievements with personal relationships', 'Consider the emotional impact of your decisions']
     },
     'ENTP': {
-      strengths: ['Creative problem-solving', 'Enthusiasm and energy', 'Ability to see connections and possibilities'],
-      tips: ['Follow through on commitments', 'Create structured plans for goals', 'Practice active listening in conversations']
+      strengths: ['Creative problem-solving and innovation', 'Enthusiastic and inspiring to others', 'Adaptable and quick-thinking', 'Excellent at seeing possibilities and connections'],
+      tips: ['Follow through on commitments and projects', 'Create structured plans to achieve your goals', 'Practice patience with routine tasks', 'Focus on completing before starting new projects']
     },
     'INFJ': {
-      strengths: ['Deep empathy and understanding', 'Visionary thinking', 'Strong personal values'],
-      tips: ['Set boundaries to avoid burnout', 'Express your needs more directly', 'Take time for practical, hands-on activities']
+      strengths: ['Deep empathy and understanding of others', 'Visionary thinking and long-term perspective', 'Strong personal values and integrity', 'Ability to inspire and guide others'],
+      tips: ['Set clear boundaries to prevent burnout', 'Express your needs and opinions more directly', 'Take time for practical, hands-on activities', 'Practice self-care and stress management']
     },
     'INFP': {
-      strengths: ['Authentic and values-driven', 'Creative and imaginative', 'Supportive of others\' growth'],
-      tips: ['Practice asserting yourself in groups', 'Set structured goals with deadlines', 'Share your ideas more confidently']
+      strengths: ['Authentic and values-driven approach to life', 'Creative and imaginative thinking', 'Deep empathy and support for others', 'Adaptable and open-minded'],
+      tips: ['Practice asserting yourself in groups and discussions', 'Set structured goals with specific deadlines', 'Share your ideas and insights more confidently', 'Develop practical skills alongside creative pursuits']
     },
     'ENFJ': {
-      strengths: ['Inspiring and motivating others', 'Strong communication skills', 'Organized and goal-oriented'],
-      tips: ['Take time for self-care', 'Accept that you can\'t help everyone', 'Practice receiving feedback gracefully']
+      strengths: ['Inspiring and motivating others toward growth', 'Excellent communication and interpersonal skills', 'Organized and goal-oriented', 'Natural ability to understand and help others'],
+      tips: ['Take regular time for self-care and reflection', 'Accept that you can\'t help everyone', 'Practice receiving feedback and criticism gracefully', 'Balance others\' needs with your own priorities']
     },
     'ENFP': {
-      strengths: ['Enthusiastic and inspiring', 'Great at building relationships', 'Adaptable and spontaneous'],
-      tips: ['Create routines and stick to them', 'Focus on completing projects', 'Practice patience with detailed tasks']
+      strengths: ['Enthusiastic and inspiring to be around', 'Excellent at building relationships and connections', 'Creative and adaptable problem-solving', 'Natural ability to see potential in people and situations'],
+      tips: ['Create routines and systems to stay organized', 'Focus on completing projects before starting new ones', 'Practice patience with detailed, methodical tasks', 'Develop time management and planning skills']
     },
     'ISTJ': {
-      strengths: ['Reliable and responsible', 'Excellent attention to detail', 'Strong work ethic'],
-      tips: ['Be open to new approaches', 'Express appreciation for others more', 'Try brainstorming creative solutions']
+      strengths: ['Reliable and responsible in all commitments', 'Excellent attention to detail and accuracy', 'Strong work ethic and perseverance', 'Practical and logical approach to problems'],
+      tips: ['Be open to new approaches and methods', 'Express appreciation and recognition for others', 'Try brainstorming creative solutions occasionally', 'Practice flexibility when plans need to change']
     },
     'ISFJ': {
-      strengths: ['Caring and supportive', 'Detail-oriented and thorough', 'Loyal and dependable'],
-      tips: ['Practice saying no when needed', 'Share your accomplishments more', 'Try new experiences outside your comfort zone']
+      strengths: ['Caring and supportive of others\' well-being', 'Detail-oriented and thorough in work', 'Loyal and dependable in relationships', 'Practical help and service to others'],
+      tips: ['Practice saying no when you\'re overcommitted', 'Share your accomplishments and successes more', 'Try new experiences outside your comfort zone', 'Express your own needs and preferences clearly']
     },
     'ESTJ': {
-      strengths: ['Organized and efficient', 'Natural leadership abilities', 'Goal-oriented and decisive'],
-      tips: ['Listen to different perspectives', 'Show flexibility when plans change', 'Acknowledge others\' contributions more']
+      strengths: ['Organized and efficient in managing tasks', 'Natural leadership and coordination abilities', 'Goal-oriented and results-focused', 'Decisive and confident in decision-making'],
+      tips: ['Listen actively to different perspectives', 'Show flexibility when plans need adjustment', 'Acknowledge and appreciate others\' contributions', 'Consider the personal impact of decisions on people']
     },
     'ESFJ': {
-      strengths: ['Great at supporting others', 'Strong interpersonal skills', 'Organized and dependable'],
-      tips: ['Take time for your own needs', 'Practice handling conflict directly', 'Trust your own judgment more']
+      strengths: ['Excellent at supporting and encouraging others', 'Strong interpersonal and communication skills', 'Organized and dependable in commitments', 'Ability to create harmony in groups'],
+      tips: ['Take time to focus on your own needs and goals', 'Practice handling conflict directly rather than avoiding it', 'Trust your own judgment more confidently', 'Set boundaries to prevent overcommitting to others']
     },
     'ISTP': {
-      strengths: ['Practical problem-solving', 'Calm under pressure', 'Hands-on learning approach'],
-      tips: ['Practice expressing emotions', 'Plan ahead for important goals', 'Engage more in group discussions']
+      strengths: ['Practical problem-solving with hands-on approach', 'Calm and composed under pressure', 'Adaptable and flexible in changing situations', 'Independent and self-reliant'],
+      tips: ['Practice expressing emotions and feelings more openly', 'Plan ahead for important long-term goals', 'Engage more actively in group discussions', 'Share your expertise and knowledge with others']
     },
     'ISFP': {
-      strengths: ['Authentic and genuine', 'Sensitive to others\' needs', 'Adaptable and flexible'],
-      tips: ['Speak up for your ideas', 'Set clearer boundaries', 'Practice planning and organization']
+      strengths: ['Authentic and true to your personal values', 'Sensitive and caring toward others\' feelings', 'Adaptable and flexible in approach', 'Creative and artistic sensibilities'],
+      tips: ['Speak up more confidently for your ideas and opinions', 'Set clearer boundaries in relationships', 'Practice planning and organization skills', 'Take leadership roles in areas you care about']
     },
     'ESTP': {
-      strengths: ['Energetic and action-oriented', 'Great at reading people', 'Adaptable and resourceful'],
-      tips: ['Think before acting in important situations', 'Create long-term goals', 'Practice patience with theoretical concepts']
+      strengths: ['Energetic and action-oriented approach', 'Excellent at reading people and social situations', 'Adaptable and resourceful in problem-solving', 'Ability to motivate others through enthusiasm'],
+      tips: ['Think through consequences before acting in important situations', 'Create and work toward longer-term goals', 'Practice patience with theoretical or abstract concepts', 'Develop planning and organizational systems']
     },
     'ESFP': {
-      strengths: ['Enthusiastic and fun-loving', 'Great at encouraging others', 'Spontaneous and flexible'],
-      tips: ['Practice planning ahead', 'Focus on completing tasks', 'Take time for quiet reflection']
+      strengths: ['Enthusiastic and fun-loving personality', 'Excellent at encouraging and supporting others', 'Spontaneous and flexible in approach', 'Strong interpersonal and social skills'],
+      tips: ['Practice planning ahead for important commitments', 'Focus on completing tasks before starting new ones', 'Take regular time for quiet reflection and introspection', 'Develop systems for managing details and deadlines']
     }
   };
   
   return insights[type] || {
-    strengths: ['Self-aware and growth-oriented', 'Open to new experiences', 'Thoughtful in approach'],
-    tips: ['Continue exploring your preferences', 'Practice self-reflection', 'Stay open to personal growth']
+    strengths: ['Self-aware and committed to personal growth', 'Open to new experiences and learning', 'Thoughtful in your approach to life', 'Willing to engage in meaningful self-reflection'],
+    tips: ['Continue exploring your personality preferences', 'Practice self-reflection regularly', 'Stay open to feedback and growth opportunities', 'Build on your natural strengths while developing new skills']
   };
 }
 
-// Enhanced JSON response handler
+// Enhanced JSON response handler (same as before)
 async function getJsonResponse(response) {
   const responseText = await response.text();
   
@@ -351,12 +503,14 @@ async function tryModelsInOrder(messages) {
   const conversationAnalysis = analyzeConversation(messages);
   const fullConversation = messages.map(m => m.content).join(' ');
   
-  console.log('Conversation analysis:', {
+  console.log('Enhanced conversation analysis:', {
     messageCount: conversationAnalysis.messageCount,
+    dimensionsExplored: conversationAnalysis.dimensionsExplored,
+    dimensions: conversationAnalysis.dimensions,
+    currentStep: conversationAnalysis.currentStep,
+    stepDescription: conversationAnalysis.stepDescription,
     shouldProvideAnalysis: conversationAnalysis.shouldProvideAnalysis(),
-    hasResultRequest: conversationAnalysis.hasResultRequest,
-    hasSubstantialContent: conversationAnalysis.hasSubstantialContent,
-    keywordCount: conversationAnalysis.keywordCount
+    needsMoreDepth: conversationAnalysis.needsMoreDepth()
   });
   
   let lastError = null;
@@ -365,21 +519,27 @@ async function tryModelsInOrder(messages) {
     try {
       console.log(`\n=== Trying model: ${model} ===`);
       
-      // Build context for the AI
-      const contextualPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
+      // Build enhanced context for the AI
+      const contextualPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION ANALYSIS:
 - Message count: ${conversationAnalysis.messageCount}
+- Current step: ${conversationAnalysis.currentStep}/5 - ${conversationAnalysis.stepDescription}
+- Dimensions explored: ${conversationAnalysis.dimensionsExplored}/4
+- Energy source explored: ${conversationAnalysis.dimensions.energy_source}
+- Information processing explored: ${conversationAnalysis.dimensions.information_processing}
+- Decision making explored: ${conversationAnalysis.dimensions.decision_making}
+- Lifestyle preferences explored: ${conversationAnalysis.dimensions.lifestyle_preferences}
 - Should provide analysis: ${conversationAnalysis.shouldProvideAnalysis()}
+- Needs more depth: ${conversationAnalysis.needsMoreDepth()}
 - Should explain process: ${conversationAnalysis.shouldExplainProcess()}
-- User requested results: ${conversationAnalysis.hasResultRequest}
-- Has personality sharing: ${conversationAnalysis.hasPersonalitySharing}
-- First message is result request: ${conversationAnalysis.firstMessageIsResultRequest}
 
 INSTRUCTION:
 ${conversationAnalysis.shouldExplainProcess() ? 
-  'The user asked for results too early. Politely explain that you need to learn about their preferences first through conversation. Ask an engaging personality question. Set ready_for_analysis: false.' :
+  'User asked for results too early. Explain the process warmly and ask the first meaningful question about energy/recharge. Set ready_for_analysis: false, current_step: 1.' :
   conversationAnalysis.shouldProvideAnalysis() ? 
-    'The user is ready for MBTI analysis. Provide a complete personality assessment with type, confidence 0.7-0.8, strengths, and growth tips. Set ready_for_analysis: true.' :
-    'Continue the conversation with a thoughtful question about personality preferences. Set ready_for_analysis: false, type: "Unknown", confidence: 0.0.'
+    'Provide complete MBTI analysis. User has shared enough meaningful information across dimensions. Set ready_for_analysis: true, current_step: 5.' :
+    conversationAnalysis.needsMoreDepth() ?
+      'Ask a follow-up question to get more depth on the current topic. Don\'t move to next dimension yet.' :
+      'Continue exploring dimensions naturally. Ask about the next unexplored dimension or deepen current one. Set ready_for_analysis: false.'
 }`;
 
       const requestBody = {
@@ -388,7 +548,7 @@ ${conversationAnalysis.shouldExplainProcess() ?
           { role: 'system', content: contextualPrompt },
           ...messages
         ],
-        max_tokens: 400,
+        max_tokens: 450,
         temperature: 0.7
       };
       
@@ -411,200 +571,3 @@ ${conversationAnalysis.shouldExplainProcess() ?
         lastError = new Error('No content in response');
         continue;
       }
-      
-      // Parse and build result
-      try {
-        let parsed;
-        if (typeof content === 'string') {
-          const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
-          parsed = JSON.parse(cleanContent);
-        } else {
-          parsed = content;
-        }
-        
-        // Build final result
-        let result;
-        
-        if (conversationAnalysis.shouldExplainProcess()) {
-          // Explain that we need conversation first
-          result = {
-            type: 'Unknown',
-            confidence: 0.0,
-            strengths: ['Curious about self-discovery', 'Taking initiative in personal growth'],
-            growth_tips: ['Share your authentic preferences', 'Think about what feels most natural to you'],
-            one_liner: "I'd love to help you discover your MBTI type! But first, I need to learn about your personality through conversation. " + 
-                      getNextQuestion(1, fullConversation),
-            ready_for_analysis: false
-          };
-        } else if (conversationAnalysis.shouldProvideAnalysis()) {
-          // ALWAYS force analysis if conditions are met - no relying on AI decision
-          const inferredType = inferMBTIType(fullConversation);
-          const insights = getTypeInsights(inferredType);
-          
-          result = {
-            type: inferredType, // Always use inferred type
-            confidence: 0.75, // Fixed confidence
-            strengths: insights.strengths,
-            growth_tips: insights.tips,
-            one_liner: `You show strong ${inferredType} characteristics in your approach to life and decision-making.`,
-            ready_for_analysis: true
-          };
-          
-          console.log('FORCING ANALYSIS with inferred type:', inferredType);
-        } else {
-          // Continue questioning
-          result = {
-            type: 'Unknown',
-            confidence: 0.0,
-            strengths: ['Engaging in meaningful self-reflection', 'Open to exploring your personality'],
-            growth_tips: ['Continue sharing your authentic preferences', 'Think about what feels most natural to you'],
-            one_liner: parsed.one_liner || getNextQuestion(conversationAnalysis.messageCount, fullConversation),
-            ready_for_analysis: false
-          };
-        }
-        
-        console.log(`✅ Success with ${model}`);
-        console.log('Final result:', result);
-        return JSON.stringify(result);
-        
-      } catch (e) {
-        console.log(`${model}: JSON validation failed:`, e.message);
-        lastError = e;
-        continue;
-      }
-      
-    } catch (err) {
-      console.log(`${model} failed:`, err.message);
-      lastError = err;
-      continue;
-    }
-  }
-  
-  // Reliable fallback
-  console.log('All models failed. Providing reliable fallback...');
-  
-  if (conversationAnalysis.shouldExplainProcess()) {
-    return JSON.stringify({
-      type: "Unknown",
-      confidence: 0.0,
-      strengths: ["Eager to learn about yourself", "Taking steps toward self-awareness"],
-      growth_tips: ["Share your natural preferences honestly", "Think about what energizes you"],
-      one_liner: "I'd love to help discover your personality type! First, let me ask: " + 
-                getNextQuestion(1, fullConversation),
-      ready_for_analysis: false
-    });
-  }
-  
-  if (conversationAnalysis.shouldProvideAnalysis()) {
-    const inferredType = inferMBTIType(fullConversation);
-    const insights = getTypeInsights(inferredType);
-    
-    return JSON.stringify({
-      type: inferredType,
-      confidence: 0.65,
-      strengths: insights.strengths,
-      growth_tips: insights.tips,
-      one_liner: `Based on our conversation, you show ${inferredType} characteristics.`,
-      ready_for_analysis: true
-    });
-  } else {
-    return JSON.stringify({
-      type: "Unknown",
-      confidence: 0.0,
-      strengths: ["You're taking time for self-discovery", "You're engaging thoughtfully"],
-      growth_tips: ["Keep sharing your authentic preferences", "Think about what feels most natural"],
-      one_liner: getNextQuestion(conversationAnalysis.messageCount, fullConversation),
-      ready_for_analysis: false
-    });
-  }
-}
-
-exports.handler = async (event) => {
-  console.log('\n🚀 Function invoked');
-  
-  // CORS
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
-  
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
-  }
-  
-  if (event.httpMethod !== 'POST') {
-    return { 
-      statusCode: 405, 
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
-  }
-  
-  try {
-    if (!process.env.OPENROUTER_API_KEY) {
-      throw new Error('API key not configured');
-    }
-    
-    const body = JSON.parse(event.body || '{}');
-    const { messages } = body;
-    
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Invalid payload: messages[] required' })
-      };
-    }
-    
-    const conversationId = Date.now();
-    let actualConversationId = conversationId;
-    
-    console.log('🔍 Processing conversation with', messages.length, 'messages');
-    
-    const aiResponse = await tryModelsInOrder(messages);
-    console.log('✅ AI response generated successfully');
-    
-    // Save conversation
-    if (supabase) {
-      try {
-        const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
-        
-        const { data, error } = await supabase.from('conversations').insert({
-          conversation_history: fullConversation,
-          created_at: new Date().toISOString()
-        }).select('id');
-        
-        if (error) {
-          console.error('❌ Supabase insert error:', error);
-        } else if (data && data[0] && data[0].id) {
-          actualConversationId = data[0].id;
-          console.log('✅ Conversation saved successfully with ID:', actualConversationId);
-        }
-      } catch (e) {
-        console.error('💥 Database save failed:', e.message);
-      }
-    }
-    
-    return {
-      statusCode: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        reply: aiResponse,
-        conversation_id: actualConversationId
-      })
-    };
-    
-  } catch (error) {
-    console.error('💥 Error:', error);
-    
-    return {
-      statusCode: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        error: 'Service temporarily unavailable',
-        message: error.message
-      })
-    };
-  }
-};
