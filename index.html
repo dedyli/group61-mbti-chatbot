@@ -232,24 +232,21 @@
     </section>
   </main>
 
-  <button class="chat-launch" id="chatOpen" title="Open Mind-Mapper AI">🧠 <b><span data-lang="en">Chat</span><span data-lang="vi">Trò chuyện</span></b></button>
+  <button class="chat-launch" id="chatOpen" title="Take MBTI Assessment">🧠 <b><span data-lang="en">Take Test</span><span data-lang="vi">Làm bài test</span></b></button>
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
-      <h3>Mind-Mapper AI – Personality Analyst</h3>
+      <h3>MBTI Personality Assessment</h3>
+      <button id="closeChat" style="background: none; border: none; color: var(--fg); cursor: pointer; font-size: 18px;">✕</button>
     </div>
-    <div class="chat-body" id="chatBody">
-      </div>
-    <div class="chat-foot" id="chatFoot">
-      <div id="chatInputArea" style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
-        <input id="chatInput" placeholder="Type your message…" />
-        <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
-      </div>
-      <button class="btn" id="resetBtn" style="display: none; width: 100%;">
-        <span data-lang="en">Start New Analysis</span>
-        <span data-lang="vi">Bắt đầu phân tích mới</span>
-      </button>
+    <div class="chat-body" id="chatBody" style="padding: 0; height: calc(100% - 60px);">
+      <iframe 
+        id="mbtiFrame"
+        src="https://www.16personalities.com/free-personality-test" 
+        style="width: 100%; height: 100%; border: none; border-radius: 0 0 24px 24px;"
+        title="16Personalities MBTI Test">
+      </iframe>
     </div>
-    <div class="notice">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
+    <div class="notice" style="display: none;">Powered by 16Personalities - The world's most accurate personality test</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -324,335 +321,50 @@
       sel.addEventListener('change', e => setLang(e.target.value));
     }
 
-    // --- 3. Chat Panel Logic ---
+    // --- 3. Chat Panel Logic (Updated for 16personalities) ---
     function initializeChatPanel() {
       const panel = document.getElementById('chatPanel');
       const chatOpen = document.getElementById('chatOpen');
+      const closeChat = document.getElementById('closeChat');
       
       if (!panel || !chatOpen) return;
       
       chatOpen.onclick = () => { 
         panel.classList.toggle('open'); 
-        if(panel.classList.contains('open') && input){ 
-          input.focus(); 
+        if(panel.classList.contains('open')){ 
+          // Optional: Reset iframe when opening
+          const iframe = document.getElementById('mbtiFrame');
+          if (iframe) {
+            // Refresh the test each time for a clean start
+            iframe.src = iframe.src;
+          }
         } 
       };
-    }
 
-    // --- 4. Chat Functions ---
-    function displayInitialMessage() {
-      if (!chatBody) return;
-      
-      const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en';
-      chatBody.innerHTML = ''; 
-      
-      const initialMsg = document.createElement('div');
-      initialMsg.className = 'msg ai';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      
-      let welcomeText;
-      if (lang === 'vi') {
-        welcomeText = `Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.`;
-      } else {
-        welcomeText = `Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.`;
+      if (closeChat) {
+        closeChat.onclick = () => {
+          panel.classList.remove('open');
+        };
       }
-      
-      bubble.innerHTML = `<span>${welcomeText}</span>`;
-      initialMsg.appendChild(bubble);
-      chatBody.appendChild(initialMsg);
-      conversationHistory = [{ role: 'assistant', content: welcomeText }];
-    }
 
-    function resetChat() {
-      displayInitialMessage();
-      if (chatInputArea) chatInputArea.style.display = 'grid';
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (input) input.focus();
-      
-      // Clear progress bar
-      const progressContainer = document.getElementById('progress-container');
-      if (progressContainer) {
-        progressContainer.remove();
-      }
-    }
-
-    function appendMessage(role, text, conversationId = null, showFeedback = false) { 
-      if (!chatBody) return;
-      
-      const wrap = document.createElement('div'); 
-      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      
-      let processedText = text
-        .replace(/</g,'&lt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n/g,'<br>');
-      bubble.innerHTML = processedText;
-      
-      if (role === 'ai' && conversationId && showFeedback) {
-        const feedbackContainer = document.createElement('div');
-        feedbackContainer.className = 'feedback-buttons';
-        feedbackContainer.innerHTML = `
-          <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
-          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>
-        `;
-        bubble.appendChild(feedbackContainer);
-      }
-      
-      wrap.appendChild(bubble);
-      chatBody.appendChild(wrap); 
-      chatBody.scrollTop = chatBody.scrollHeight; 
-    }
-
-    async function handleFeedback(conversationId, isAccurate) {
-        try {
-            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-            buttons.forEach(b => b.disabled = true);
-            
-            const res = await fetch('/.netlify/functions/save-feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    conversation_id: Number(conversationId),
-                    is_accurate: Boolean(isAccurate)
-                })
-            });
-            
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || `HTTP ${res.status}`);
-            }
-            
-            buttons.forEach(btn => {
-                if (btn.getAttribute('data-rating') === String(isAccurate)) {
-                    btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
-                    btn.classList.add('selected');
-                }
-            });
-        } catch (error) {
-            console.error('Error saving feedback:', error);
-            alert('Could not save feedback: ' + (error.message || String(error)));
-            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-            buttons.forEach(b => b.disabled = false);
+      // Listen for messages from the iframe (if 16personalities sends completion data)
+      window.addEventListener('message', function(event) {
+        // Check if message is from 16personalities
+        if (event.origin === 'https://www.16personalities.com') {
+          console.log('Message from 16personalities:', event.data);
+          // You could handle completion events here if needed
         }
-    }
-
-    function initializeFeedbackHandler() {
-      if (!chatBody) return;
-      
-      chatBody.addEventListener('click', (event) => {
-          const target = event.target;
-          if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
-              const conversationId = target.getAttribute('data-convo-id');
-              const isAccurate = target.getAttribute('data-rating') === 'true';
-              handleFeedback(conversationId, isAccurate);
-          }
       });
     }
 
-    function showTyping() {
-      if (!chatBody) return;
+    // Simplified initialization - remove all the complex chat logic
+    function initializeSimpleControls() {
+      console.log('Initializing 16personalities integration...');
       
-      const wrap = document.createElement('div');
-      wrap.className = 'msg ai typing';
-      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
-      wrap.id = 'typing-indicator';
-      chatBody.appendChild(wrap);
-      chatBody.scrollTop = chatBody.scrollHeight;
-    }
-
-    function hideTyping() {
-      const typing = document.getElementById('typing-indicator');
-      if (typing) typing.remove();
-    }
-
-    function updateProgressBar(progress) {
-      let progressContainer = document.getElementById('progress-container');
-      if (!progressContainer) {
-        // Create progress bar container
-        progressContainer = document.createElement('div');
-        progressContainer.id = 'progress-container';
-        progressContainer.style.cssText = `
-          padding: 12px 14px;
-          border-bottom: 1px solid var(--glass-stroke);
-          background: rgba(255,255,255,.03);
-        `;
-        
-        const chatHead = document.querySelector('.chat-head');
-        if (chatHead && chatHead.parentNode) {
-          chatHead.parentNode.insertBefore(progressContainer, chatHead.nextSibling);
-        }
-      }
+      // Just need basic panel controls now
+      initializeChatPanel();
       
-      if (progress) {
-        const percentage = (progress.current_step / progress.total_steps) * 100;
-        const dimensionsCount = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        
-        progressContainer.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <span style="font-size: 12px; color: var(--muted); font-weight: 600;">
-              Step ${progress.current_step}/${progress.total_steps}: ${progress.step_description}
-            </span>
-          </div>
-          <div style="background: rgba(255,255,255,.1); border-radius: 8px; height: 6px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
-          </div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 4px; opacity: 0.8;">
-            📊 Personality dimensions explored: ${dimensionsCount}/4
-          </div>
-        `;
-      }
-    }
-
-    async function handleSend() { 
-      if (!input || !chatBody) return;
-      
-      const text = input.value.trim(); 
-      if (!text) return; 
-      
-      input.value = ''; 
-      appendMessage('user', text);
-      conversationHistory.push({ role: 'user', content: text });
-      
-      showTyping();
-      
-      try {
-        const messages = conversationHistory.slice(-10); // Keep more context
-        const res = await fetch('/.netlify/functions/process-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages })
-        });
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`);
-        }
-        
-        const data = await res.json();
-        hideTyping();
-        
-        if (data.reply) {
-          try {
-            const mbtiResult = JSON.parse(data.reply);
-            conversationHistory.push({ role: 'assistant', content: data.reply });
-
-            console.log('Enhanced MBTI Result:', mbtiResult);
-            
-            // Update progress bar
-            if (mbtiResult.progress) {
-              updateProgressBar(mbtiResult.progress);
-            }
-
-            let responseText = '';
-            let isActualResult = false;
-            
-            if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
-              isActualResult = true;
-              responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
-              responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              
-              if (mbtiResult.one_liner) {
-                responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
-              }
-              
-              if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
-                responseText += `✨ **Your Strengths:**\n`;
-                mbtiResult.strengths.forEach(strength => {
-                  responseText += `• ${strength}\n`;
-                });
-                responseText += '\n';
-              }
-              
-              if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
-                responseText += `🌱 **Growth Tips:**\n`;
-                mbtiResult.growth_tips.forEach(tip => {
-                  responseText += `• ${tip}\n`;
-                });
-                responseText += '\n';
-              }
-              
-              responseText += `🎉 **Analysis Complete!**\nThank you for sharing your authentic preferences with me. This assessment is based on our natural conversation about how you approach energy, information, decisions, and lifestyle.`;
-              
-              if (chatInputArea) chatInputArea.style.display = 'none';
-              if (resetBtn) resetBtn.style.display = 'block';
-            } else {
-              // Continuing conversation
-              responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
-              
-              // Add subtle, natural progress encouragement only occasionally
-              if (mbtiResult.progress && mbtiResult.progress.current_step >= 3 && mbtiResult.progress.current_step <= 4) {
-                // Only show encouragement at mid-point, and make it natural
-                if (Math.random() > 0.6) { // Only 40% chance to avoid being repetitive
-                  responseText += `\n\n😊 I'm getting a good sense of your personality style!`;
-                }
-              }
-            }
-            
-            appendMessage('ai', responseText, data.conversation_id, isActualResult);
-            
-          } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            console.log('Raw AI response:', data.reply);
-            appendMessage('ai', data.reply);
-            conversationHistory.push({ role: 'assistant', content: data.reply });
-          }
-        } else if (data.error) {
-            appendMessage('ai', `Sorry, there was an error: ${data.error}`);
-        } else {
-            appendMessage('ai', 'Sorry, I received an unexpected response format.');
-        }
-      } catch (err) {
-        hideTyping();
-        appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);
-      }
-    }
-
-    function initializeChatControls() {
-      chatBody = document.getElementById('chatBody');
-      chatInputArea = document.getElementById('chatInputArea');
-      resetBtn = document.getElementById('resetBtn');
-      input = document.getElementById('chatInput');
-      sendBtn = document.getElementById('sendBtn');
-      
-      console.log('Chat elements found:', {
-        chatBody: !!chatBody,
-        chatInputArea: !!chatInputArea,
-        resetBtn: !!resetBtn,
-        input: !!input,
-        sendBtn: !!sendBtn
-      });
-      
-      if (!chatBody || !input || !sendBtn || !resetBtn) {
-        console.error('Critical chat elements not found');
-        setTimeout(() => {
-          console.log('Retrying chat initialization...');
-          initializeChatControls();
-        }, 500);
-        return;
-      }
-      
-      try {
-        sendBtn.addEventListener('click', handleSend);
-        resetBtn.addEventListener('click', resetChat);
-        
-        input.addEventListener('keydown', e => { 
-          if (e.key === 'Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            handleSend(); 
-          }
-        });
-        
-        initializeFeedbackHandler();
-        displayInitialMessage();
-        
-        console.log('Chat controls initialized successfully');
-      } catch (error) {
-        console.error('Error setting up chat controls:', error);
-      }
+      console.log('16personalities integration ready');
     }
 
     // --- 5. Initialize Everything When DOM is Ready ---
@@ -702,4 +414,4 @@
     }
   </script>
 </body>
-</html>
+</html> 
