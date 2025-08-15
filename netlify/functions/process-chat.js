@@ -393,19 +393,35 @@ exports.handler = async (event) => {
     // Generate conversation ID for feedback tracking
     const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Optional: Save conversation (non-blocking)
+    // Optional: Save conversation (works with existing schema)
     if (supabase) {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
-        await supabase.from('conversations').insert({
-          id: conversationId,
+        
+        console.log('Attempting to save conversation to Supabase...');
+        console.log('Conversation ID:', conversationId);
+        console.log('Conversation length:', fullConversation.length);
+        
+        // Save without custom ID since table doesn't have id column
+        const { data, error } = await supabase.from('conversations').insert({
           conversation_history: fullConversation,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          // Store conversation_id in the conversation_history metadata
+          conversation_id: conversationId
         });
-        console.log('✅ Conversation saved');
+        
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw error;
+        }
+        
+        console.log('✅ Conversation saved successfully:', data);
       } catch (e) {
-        console.log('⚠️ Database save failed (non-critical):', e.message);
+        console.error('⚠️ Database save failed:', e.message);
+        console.error('Full error:', e);
       }
+    } else {
+      console.log('⚠️ Supabase client not initialized');
     }
     
     return {
