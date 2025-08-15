@@ -98,12 +98,8 @@
     .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
     .notice{font-size:12px; color:#cfcaff; opacity:.8; padding:8px 12px;}
     
-    .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
-    .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; font-size: 12px; }
-    .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
-    .feedback-buttons button.selected { background: var(--accent); color: #0b0a13; border-color: transparent; }
-    .feedback-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
-
+    .progress-bar { margin-top: 8px; }
+    
     @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
   </style>
 </head>
@@ -232,36 +228,41 @@
     </section>
   </main>
 
-  <button class="chat-launch" id="chatOpen" title="Take MBTI Assessment">🧠 <b><span data-lang="en">Take Test</span><span data-lang="vi">Làm bài test</span></b></button>
+  <button class="chat-launch" id="chatOpen" title="Take MBTI Assessment">🧠 <b><span data-lang="en">Start Chat</span><span data-lang="vi">Bắt đầu</span></b></button>
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
       <h3>MBTI Personality Assessment</h3>
       <button id="closeChat" style="background: none; border: none; color: var(--fg); cursor: pointer; font-size: 18px;">✕</button>
     </div>
-    <div class="chat-body" id="chatBody" style="padding: 0; height: calc(100% - 60px);">
-      <iframe 
-        id="mbtiFrame"
-        src="https://www.16personalities.com/free-personality-test" 
-        style="width: 100%; height: 100%; border: none; border-radius: 0 0 24px 24px;"
-        title="16Personalities MBTI Test">
-      </iframe>
+    <div class="chat-body" id="chatBody">
     </div>
-    <div class="notice" style="display: none;">Powered by 16Personalities - The world's most accurate personality test</div>
+    <div class="chat-foot" id="chatFoot">
+      <div id="chatInputArea" style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+        <input id="chatInput" placeholder="Type your answer..." />
+        <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+      </div>
+      <button class="btn" id="resetBtn" style="display: none; width: 100%;">
+        <span data-lang="en">Start New Test</span>
+        <span data-lang="vi">Bài test mới</span>
+      </button>
+      <div class="progress-bar" id="progressBar" style="margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-size: 11px; color: var(--muted);">Progress</span>
+          <span id="progressText" style="font-size: 11px; color: var(--muted);">1/5</span>
+        </div>
+        <div style="background: rgba(255,255,255,.1); border-radius: 4px; height: 4px; overflow: hidden;">
+          <div id="progressFill" style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); height: 100%; width: 20%; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
-    // --- 1. Supabase Project Configuration ---
-    const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
-    const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
-    const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
-
     // Global variables
     let conversationHistory = [];
-    let chatBody, chatInputArea, resetBtn, input, sendBtn;
+    let chatBody, chatInput, sendBtn, resetBtn, chatInputArea, progressBar, progressText, progressFill;
 
-    // --- 2. Page Functions (Sparkles, Tilt, Language) ---
+    // Initialize sparkles animation
     function initializeSparkles() { 
       const host = document.getElementById('sparkles'); 
       if (!host) return;
@@ -275,6 +276,7 @@
       } 
     }
 
+    // Initialize card tilt effect
     function initializeTilt() { 
       const card = document.getElementById('card3d'); 
       if (!card) return;
@@ -293,6 +295,7 @@
       }); 
     }
 
+    // Initialize language switching
     function initializeLanguage() {
       const sel = document.getElementById('language');
       if (!sel) return;
@@ -310,8 +313,8 @@
         document.body.classList.add('lang-' + lang); 
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
-        if (chatBody) {
-          displayInitialMessage();
+        if (chatBody && conversationHistory.length === 0) {
+          startConversation();
         }
       }
       
@@ -321,7 +324,7 @@
       sel.addEventListener('change', e => setLang(e.target.value));
     }
 
-    // --- 3. Chat Panel Logic (Updated for 16personalities) ---
+    // Initialize chat panel controls
     function initializeChatPanel() {
       const panel = document.getElementById('chatPanel');
       const chatOpen = document.getElementById('chatOpen');
@@ -331,12 +334,10 @@
       
       chatOpen.onclick = () => { 
         panel.classList.toggle('open'); 
-        if(panel.classList.contains('open')){ 
-          // Optional: Reset iframe when opening
-          const iframe = document.getElementById('mbtiFrame');
-          if (iframe) {
-            // Refresh the test each time for a clean start
-            iframe.src = iframe.src;
+        if(panel.classList.contains('open') && chatInput){ 
+          chatInput.focus(); 
+          if (conversationHistory.length === 0) {
+            startConversation();
           }
         } 
       };
@@ -346,28 +347,192 @@
           panel.classList.remove('open');
         };
       }
+    }
 
-      // Listen for messages from the iframe (if 16personalities sends completion data)
-      window.addEventListener('message', function(event) {
-        // Check if message is from 16personalities
-        if (event.origin === 'https://www.16personalities.com') {
-          console.log('Message from 16personalities:', event.data);
-          // You could handle completion events here if needed
+    // Add message to chat
+    function addMessage(role, content) {
+      if (!chatBody) return;
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `msg ${role}`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      // Process content for display
+      let processedContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+      
+      bubble.innerHTML = processedContent;
+      messageDiv.appendChild(bubble);
+      chatBody.appendChild(messageDiv);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // Update progress bar
+    function updateProgress(step) {
+      if (!progressBar || !progressText || !progressFill) return;
+      
+      const percentage = (step / 5) * 100;
+      progressText.textContent = `${step}/5`;
+      progressFill.style.width = `${percentage}%`;
+    }
+
+    // Show typing indicator
+    function showTyping() {
+      if (!chatBody) return;
+      
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'msg ai';
+      typingDiv.id = 'typing-indicator';
+      typingDiv.innerHTML = '<div class="bubble">Typing...</div>';
+      chatBody.appendChild(typingDiv);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // Hide typing indicator
+    function hideTyping() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
+
+    // Start new conversation
+    async function startConversation() {
+      if (!chatBody) return;
+      
+      chatBody.innerHTML = '';
+      conversationHistory = [];
+      updateProgress(1);
+      
+      showTyping();
+      
+      try {
+        const response = await fetch('/.netlify/functions/mbti-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [] })
+        });
+        
+        const data = await response.json();
+        hideTyping();
+        
+        if (data.message) {
+          addMessage('ai', data.message);
+          conversationHistory.push({ role: 'assistant', content: data.message });
+          
+          if (data.progress) {
+            updateProgress(data.progress);
+          }
+        } else {
+          // Fallback message
+          addMessage('ai', "Hi! I'm here to help you discover your MBTI personality type. After a busy day, what helps you recharge - being around people or having quiet time alone?");
+          conversationHistory.push({ role: 'assistant', content: "Hi! I'm here to help you discover your MBTI personality type. After a busy day, what helps you recharge - being around people or having quiet time alone?" });
+        }
+        
+      } catch (error) {
+        console.error('Error starting conversation:', error);
+        hideTyping();
+        addMessage('ai', "Hi! I'm here to help you discover your MBTI personality type. Let's start: After a busy day, what helps you recharge - being around people or having quiet time alone?");
+        conversationHistory.push({ role: 'assistant', content: "Initial question" });
+      }
+    }
+
+    // Handle sending user message
+    async function handleSend() {
+      if (!chatInput || !chatBody) return;
+      
+      const userMessage = chatInput.value.trim();
+      if (!userMessage) return;
+      
+      chatInput.value = '';
+      addMessage('user', userMessage);
+      conversationHistory.push({ role: 'user', content: userMessage });
+      
+      showTyping();
+      
+      try {
+        const response = await fetch('/.netlify/functions/mbti-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversationHistory })
+        });
+        
+        const data = await response.json();
+        hideTyping();
+        
+        if (data.message) {
+          addMessage('ai', data.message);
+          conversationHistory.push({ role: 'assistant', content: data.message });
+          
+          if (data.progress) {
+            updateProgress(data.progress);
+          }
+          
+          // If assessment is complete
+          if (data.ready && data.type) {
+            if (chatInputArea) chatInputArea.style.display = 'none';
+            if (resetBtn) resetBtn.style.display = 'block';
+            if (progressBar) progressBar.style.display = 'none';
+            
+            // Add a completion message
+            setTimeout(() => {
+              addMessage('ai', `🎉 Assessment complete! Your MBTI type is **${data.type}** with ${Math.round(data.confidence * 100)}% confidence.`);
+            }, 1000);
+          }
+        } else {
+          addMessage('ai', "I didn't get a proper response. Can you try rephrasing that?");
+        }
+        
+      } catch (error) {
+        console.error('Error sending message:', error);
+        hideTyping();
+        addMessage('ai', "Sorry, I'm having technical difficulties. Can you please try again?");
+      }
+    }
+
+    // Reset chat to start over
+    function resetChat() {
+      conversationHistory = [];
+      if (chatBody) chatBody.innerHTML = '';
+      if (chatInputArea) chatInputArea.style.display = 'grid';
+      if (resetBtn) resetBtn.style.display = 'none';
+      if (progressBar) progressBar.style.display = 'block';
+      updateProgress(1);
+      startConversation();
+      if (chatInput) chatInput.focus();
+    }
+
+    // Initialize chat controls
+    function initializeChatControls() {
+      chatBody = document.getElementById('chatBody');
+      chatInput = document.getElementById('chatInput');
+      sendBtn = document.getElementById('sendBtn');
+      resetBtn = document.getElementById('resetBtn');
+      chatInputArea = document.getElementById('chatInputArea');
+      progressBar = document.getElementById('progressBar');
+      progressText = document.getElementById('progressText');
+      progressFill = document.getElementById('progressFill');
+      
+      if (!chatBody || !chatInput || !sendBtn) {
+        console.error('Chat elements not found');
+        return;
+      }
+      
+      sendBtn.addEventListener('click', handleSend);
+      if (resetBtn) resetBtn.addEventListener('click', resetChat);
+      
+      chatInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
         }
       });
+      
+      console.log('✅ Chat controls initialized');
     }
 
-    // Simplified initialization - remove all the complex chat logic
-    function initializeSimpleControls() {
-      console.log('Initializing 16personalities integration...');
-      
-      // Just need basic panel controls now
-      initializeChatPanel();
-      
-      console.log('16personalities integration ready');
-    }
-
-    // --- 5. Initialize Everything When DOM is Ready ---
+    // Initialize everything when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM loaded, initializing...');
       
@@ -378,37 +543,24 @@
         initializeChatPanel();
         initializeChatControls();
         
-        console.log('All systems initialized successfully');
+        console.log('✅ All systems ready');
       } catch (error) {
         console.error('Initialization error:', error);
-        
-        setTimeout(() => {
-          try {
-            initializeChatControls();
-            console.log('Fallback chat initialization completed');
-          } catch (e) {
-            console.error('Fallback initialization failed:', e);
-          }
-        }, 1000);
       }
     });
 
-    // Backup initialization in case DOMContentLoaded already fired
-    if (document.readyState === 'loading') {
-      // DOM is still loading, event listener will handle it
-    } else {
-      // DOM already loaded, initialize immediately
+    // Backup initialization
+    if (document.readyState !== 'loading') {
       setTimeout(() => {
-        console.log('Late initialization...');
         try {
           initializeSparkles();
           initializeTilt();
           initializeLanguage();
           initializeChatPanel();
           initializeChatControls();
-          console.log('Late initialization completed');
+          console.log('✅ Backup initialization completed');
         } catch (error) {
-          console.error('Late initialization error:', error);
+          console.error('Backup initialization error:', error);
         }
       }, 100);
     }
