@@ -21,44 +21,82 @@ const PREFERRED_MODELS = [
   'openai/gpt-4o-mini'
 ];
 
-// Fixed system prompt
+// Fixed system prompt with better conversation depth requirements
 const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach.
 
 CRITICAL RULES:
 1) Output ONLY valid JSON (no code fences, no extra text)
 2) Base content on the conversation so far; DO NOT reuse placeholder values
 3) Vary wording and insights across turns; avoid repetition
-4) If information is thin, lower confidence and include one targeted follow-up in growth_tips
+4) NEVER provide an MBTI type (other than "Unknown") unless you have substantial personality information
 
-OUTPUT SCHEMA (placeholders; do NOT copy them verbatim):
+CONVERSATION DEPTH REQUIREMENTS:
+- Messages 1-3: ALWAYS use type "Unknown", focus on gathering information
+- Messages 4-6: Only provide type if user has shared substantial personality details (decision-making style, social preferences, work habits, etc.)
+- Messages 7+: Provide type only with high confidence based on rich conversation
+
+OUTPUT SCHEMA:
 {
-  "type": "<ISTJ|ISFJ|INFJ|INTJ|ISTP|ISFP|INFP|INTP|ESTP|ESFP|ENFP|ENTP|ESTJ|ESFJ|ENFJ|ENTJ>",
+  "type": "<ISTJ|ISFJ|INFJ|INTJ|ISTP|ISFP|INFP|INTP|ESTP|ESFP|ENFP|ENTP|ESTJ|ESFJ|ENFJ|ENTJ|Unknown>",
   "confidence": <float between 0.0 and 1.0>,
   "strengths": ["<short bullet>", "<short bullet>", "<short bullet>"],
   "growth_tips": ["<short bullet>", "<short bullet>", "<short bullet>"],
   "one_liner": "<one-sentence summary>"
 }
 
-VARIETY LOGIC:
-- Early conversation: confidence ≤ 0.6, ask for a clarifying detail
-- Deeper conversation: higher confidence when warranted, diversify strengths/tips
-- Never return the same JSON twice even if the user repeats themselves.`;
+EARLY CONVERSATION RULES:
+- For greetings like "hello", "hi": Use type "Unknown", confidence 0.0, ask about their interests
+- For short responses: Use type "Unknown", confidence 0.0-0.2, ask follow-up questions
+- For substantial sharing: Can consider providing type, but confidence should remain low (0.3-0.6) until message 7+
 
-// Better conversation analysis
+NEVER rush to conclusions. Build rapport and gather meaningful information first.`;
+
+// Better conversation analysis with stricter requirements
 function analyzeConversationDepth(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
   const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
   const avgLength = totalLength / userMessages.length;
   
+  // Check for personality-relevant content
+  const personalityKeywords = [
+    'study', 'work', 'decision', 'decide', 'prefer', 'like', 'enjoy', 'friend', 'social', 
+    'quiet', 'loud', 'organized', 'spontaneous', 'plan', 'schedule', 'feeling', 'thinking',
+    'extrovert', 'introvert', 'team', 'alone', 'group', 'individual', 'creative', 'logical'
+  ];
+  
+  let personalityContentScore = 0;
+  userMessages.forEach(msg => {
+    const content = msg.content.toLowerCase();
+    personalityKeywords.forEach(keyword => {
+      if (content.includes(keyword)) personalityContentScore += 1;
+    });
+  });
+  
+  // Check if messages are just greetings or very short
+  const hasSubstantialContent = userMessages.some(m => 
+    m.content.length > 20 && 
+    !m.content.toLowerCase().match(/^(hi|hello|hey|thanks|thank you|ok|okay|yes|no)\.?$/i)
+  );
+  
   return {
     messageCount: userMessages.length,
     totalLength,
     avgLength,
+    personalityContentScore,
+    hasSubstantialContent,
     hasPersonalityRequest: userMessages.some(m => 
       m.content.toLowerCase().includes('mbti') || 
       m.content.toLowerCase().includes('personality') ||
-      m.content.toLowerCase().includes('type')
-    )
+      m.content.toLowerCase().includes('type') ||
+      m.content.toLowerCase().includes('analyze') ||
+      m.content.toLowerCase().includes('assessment')
+    ),
+    isReadyForAnalysis: function() {
+      return this.messageCount >= 4 && 
+             this.personalityContentScore >= 3 && 
+             this.hasSubstantialContent &&
+             this.avgLength > 25;
+    }
   };
 }
 
@@ -171,14 +209,23 @@ async function tryModelsInOrder(messages) {
       console.log(`\n=== Trying model: ${model} ===`);
       const params = getModelParams(model, conversationDepth);
       
-      // Add conversation context to the system prompt
+      // Add conversation context to the system prompt with stricter requirements
       const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
 - Messages exchanged: ${conversationDepth.messageCount}
-- Topics covered: ${summary.topicsCovered.join(', ')}
-- Style: ${summary.conversationStyle}
-- Analysis readiness: ${conversationDepth.hasPersonalityRequest ? 'Ready for full analysis' : 'Still gathering info'}
+- Personality content score: ${conversationDepth.personalityContentScore}
+- Has substantial content: ${conversationDepth.hasSubstantialContent}
+- Ready for analysis: ${conversationDepth.isReadyForAnalysis()}
+- Analysis readiness: ${conversationDepth.hasPersonalityRequest ? 'User wants analysis' : 'Still gathering info'}
 
-IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide a UNIQUE response that builds on what was already discussed.`;
+STRICT REQUIREMENTS FOR THIS TURN #${conversationDepth.messageCount}:
+${conversationDepth.messageCount <= 3 ? 
+  '- MUST use type "Unknown" - too early for analysis\n- Focus on building rapport and asking about their preferences' :
+  conversationDepth.isReadyForAnalysis() ? 
+    '- Can provide MBTI type if confident, but keep confidence moderate (0.4-0.7)\n- Ensure analysis is based on substantial personality information shared' :
+    '- Use type "Unknown" - need more personality information\n- Ask specific questions about decision-making, social preferences, or work style'
+}
+
+IMPORTANT: Provide a UNIQUE response that builds on what was already discussed. Never repeat previous insights.`;
 
       const requestBody = {
         model,
@@ -223,23 +270,35 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
           parsed = content;
         }
         
-        // Better validation and enrichment
+        // Better validation and enrichment with stricter early conversation rules
         const result = {
           type: parsed.type || 'Unknown',
-          confidence: Math.min(Math.max(parsed.confidence || 0.5, 0.0), 1.0),
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Analysis in progress'],
-          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Keep sharing more about yourself'],
-          one_liner: parsed.one_liner || 'Getting to know your personality'
+          confidence: Math.min(Math.max(parsed.confidence || 0.0, 0.0), 1.0),
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Getting to know you better'],
+          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Share more about your preferences'],
+          one_liner: parsed.one_liner || 'Building understanding of your personality'
         };
         
-        // Add variety based on conversation depth
-        if (conversationDepth.messageCount < 3 && result.type !== 'Unknown') {
-          result.confidence = Math.min(result.confidence, 0.6);
-          result.growth_tips.unshift("Share more about yourself for better accuracy");
+        // Enforce stricter early conversation rules
+        if (conversationDepth.messageCount <= 3) {
+          result.type = 'Unknown';
+          result.confidence = 0.0;
+          if (!result.growth_tips.some(tip => tip.includes('tell me') || tip.includes('share'))) {
+            result.growth_tips.unshift("Tell me more about how you like to spend your time");
+          }
+        } else if (!conversationDepth.isReadyForAnalysis() && result.type !== 'Unknown') {
+          // If AI tried to give a type but we don't have enough info, override it
+          result.type = 'Unknown';
+          result.confidence = Math.min(result.confidence, 0.3);
+          result.growth_tips.unshift("I'd love to learn more about your decision-making style");
+        } else if (conversationDepth.isReadyForAnalysis() && result.type !== 'Unknown') {
+          // Even when ready for analysis, cap confidence until more conversation
+          result.confidence = Math.min(result.confidence, conversationDepth.messageCount >= 7 ? 0.8 : 0.6);
         }
         
         console.log(`✓ Success with ${model}`);
         console.log('Final result:', result);
+        console.log('Conversation depth analysis:', conversationDepth);
         return JSON.stringify(result);
         
       } catch (e) {
@@ -260,15 +319,21 @@ IMPORTANT: This is conversation turn #${conversationDepth.messageCount}. Provide
   const fallback = {
     type: "Unknown",
     confidence: 0.0,
-    strengths: conversationDepth.messageCount > 2 
-      ? ["You're sharing thoughtfully", "You're engaging in self-reflection"]
-      : ["You're curious about self-discovery"],
-    growth_tips: conversationDepth.messageCount > 2
-      ? ["Try describing a recent decision you made", "Share what energizes you most"]
-      : ["Tell me more about how you like to spend your free time"],
-    one_liner: conversationDepth.messageCount > 2 
-      ? "Building a deeper understanding of your personality"
-      : "Just getting started on your personality journey"
+    strengths: conversationDepth.messageCount <= 3 
+      ? ["You're taking the first step in self-discovery"]
+      : conversationDepth.hasSubstantialContent
+        ? ["You're sharing thoughtfully", "You're engaging in self-reflection"]
+        : ["You're curious about self-discovery"],
+    growth_tips: conversationDepth.messageCount <= 3
+      ? ["Tell me about your ideal study environment", "Share how you prefer to make important decisions"]
+      : conversationDepth.hasSubstantialContent
+        ? ["Describe a recent challenging decision you made", "Tell me what energizes you most in social situations"]
+        : ["Share more details about your daily preferences and habits"],
+    one_liner: conversationDepth.messageCount <= 3 
+      ? "Just getting started on your personality journey"
+      : conversationDepth.hasSubstantialContent
+        ? "Building a deeper understanding of your personality patterns"
+        : "Learning more about your unique personality traits"
   };
   
   return JSON.stringify(fallback);
