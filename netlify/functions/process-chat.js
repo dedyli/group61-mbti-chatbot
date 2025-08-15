@@ -21,19 +21,26 @@ const PREFERRED_MODELS = [
   'openai/gpt-4o-mini'
 ];
 
-// Fixed system prompt with better conversation depth requirements
+// Fixed system prompt with specific questions and faster analysis
 const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach.
 
 CRITICAL RULES:
 1) Output ONLY valid JSON (no code fences, no extra text)
-2) Base content on the conversation so far; DO NOT reuse placeholder values
-3) Vary wording and insights across turns; avoid repetition
-4) NEVER provide an MBTI type (other than "Unknown") unless you have substantial personality information
+2) Ask ONE specific, direct question that's easy to answer
+3) Provide MBTI analysis after 3-4 meaningful exchanges
+4) Base analysis on the conversation patterns you observe
 
-CONVERSATION DEPTH REQUIREMENTS:
-- Messages 1-3: ALWAYS use type "Unknown", focus on gathering information
-- Messages 4-6: Only provide type if user has shared substantial personality details (decision-making style, social preferences, work habits, etc.)
-- Messages 7+: Provide type only with high confidence based on rich conversation
+CONVERSATION FLOW:
+- Message 1 (greeting): Ask about study/work preferences (quiet vs busy environment)
+- Message 2: Ask about decision-making (logical analysis vs gut feeling)  
+- Message 3: Ask about social energy (energized by people vs energized by alone time)
+- Message 4+: Provide MBTI type with confidence based on their answers
+
+QUESTION EXAMPLES:
+- "When studying or working, do you prefer a quiet, organized space or do you work well with background noise and activity?"
+- "When making important decisions, do you usually analyze all the facts first, or do you tend to go with your gut feeling?"
+- "After a long day, do you feel more energized hanging out with friends or having some quiet time alone?"
+- "Do you prefer having a clear plan and schedule, or do you like keeping things flexible and spontaneous?"
 
 OUTPUT SCHEMA:
 {
@@ -41,61 +48,57 @@ OUTPUT SCHEMA:
   "confidence": <float between 0.0 and 1.0>,
   "strengths": ["<short bullet>", "<short bullet>", "<short bullet>"],
   "growth_tips": ["<short bullet>", "<short bullet>", "<short bullet>"],
-  "one_liner": "<one-sentence summary>"
+  "one_liner": "<one-sentence summary or specific question>"
 }
 
-EARLY CONVERSATION RULES:
-- For greetings like "hello", "hi": Use type "Unknown", confidence 0.0, ask about their interests
-- For short responses: Use type "Unknown", confidence 0.0-0.2, ask follow-up questions
-- For substantial sharing: Can consider providing type, but confidence should remain low (0.3-0.6) until message 7+
+ANALYSIS RULES:
+- Messages 1-2: Use type "Unknown", ask specific questions in one_liner
+- Message 3: Can start forming hypothesis, but still ask one more question
+- Message 4+: Provide confident MBTI analysis based on their responses
 
-NEVER rush to conclusions. Build rapport and gather meaningful information first.`;
+Make questions conversational and easy to answer with specific examples.`;
 
-// Better conversation analysis with stricter requirements
+// Simplified conversation analysis focused on question flow
 function analyzeConversationDepth(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
   const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
-  const avgLength = totalLength / userMessages.length;
   
-  // Check for personality-relevant content
-  const personalityKeywords = [
-    'study', 'work', 'decision', 'decide', 'prefer', 'like', 'enjoy', 'friend', 'social', 
-    'quiet', 'loud', 'organized', 'spontaneous', 'plan', 'schedule', 'feeling', 'thinking',
-    'extrovert', 'introvert', 'team', 'alone', 'group', 'individual', 'creative', 'logical'
-  ];
+  // Track what aspects have been covered
+  const aspects = {
+    workEnvironment: false,
+    decisionMaking: false,
+    socialEnergy: false,
+    planningStyle: false
+  };
   
-  let personalityContentScore = 0;
-  userMessages.forEach(msg => {
-    const content = msg.content.toLowerCase();
-    personalityKeywords.forEach(keyword => {
-      if (content.includes(keyword)) personalityContentScore += 1;
-    });
-  });
+  const allContent = messages.map(m => m.content.toLowerCase()).join(' ');
   
-  // Check if messages are just greetings or very short
-  const hasSubstantialContent = userMessages.some(m => 
-    m.content.length > 20 && 
-    !m.content.toLowerCase().match(/^(hi|hello|hey|thanks|thank you|ok|okay|yes|no)\.?$/i)
-  );
+  // Check if key personality aspects have been discussed
+  if (allContent.includes('quiet') || allContent.includes('noise') || allContent.includes('organized') || allContent.includes('study')) {
+    aspects.workEnvironment = true;
+  }
+  if (allContent.includes('decision') || allContent.includes('analyze') || allContent.includes('gut') || allContent.includes('feeling')) {
+    aspects.decisionMaking = true;
+  }
+  if (allContent.includes('friends') || allContent.includes('alone') || allContent.includes('energized') || allContent.includes('social')) {
+    aspects.socialEnergy = true;
+  }
+  if (allContent.includes('plan') || allContent.includes('schedule') || allContent.includes('flexible') || allContent.includes('spontaneous')) {
+    aspects.planningStyle = true;
+  }
+  
+  const aspectsCovered = Object.values(aspects).filter(Boolean).length;
   
   return {
     messageCount: userMessages.length,
     totalLength,
-    avgLength,
-    personalityContentScore,
-    hasSubstantialContent,
-    hasPersonalityRequest: userMessages.some(m => 
-      m.content.toLowerCase().includes('mbti') || 
-      m.content.toLowerCase().includes('personality') ||
-      m.content.toLowerCase().includes('type') ||
-      m.content.toLowerCase().includes('analyze') ||
-      m.content.toLowerCase().includes('assessment')
-    ),
+    aspectsCovered,
+    aspects,
     isReadyForAnalysis: function() {
-      return this.messageCount >= 4 && 
-             this.personalityContentScore >= 3 && 
-             this.hasSubstantialContent &&
-             this.avgLength > 25;
+      return this.messageCount >= 3 && aspectsCovered >= 2;
+    },
+    shouldGiveFullAnalysis: function() {
+      return this.messageCount >= 4 || aspectsCovered >= 3;
     }
   };
 }
@@ -209,23 +212,28 @@ async function tryModelsInOrder(messages) {
       console.log(`\n=== Trying model: ${model} ===`);
       const params = getModelParams(model, conversationDepth);
       
-      // Add conversation context to the system prompt with stricter requirements
+      // Add conversation context with question flow guidance
       const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
-- Messages exchanged: ${conversationDepth.messageCount}
-- Personality content score: ${conversationDepth.personalityContentScore}
-- Has substantial content: ${conversationDepth.hasSubstantialContent}
-- Ready for analysis: ${conversationDepth.isReadyForAnalysis()}
-- Analysis readiness: ${conversationDepth.hasPersonalityRequest ? 'User wants analysis' : 'Still gathering info'}
+- Message number: ${conversationDepth.messageCount}
+- Aspects covered: ${conversationDepth.aspectsCovered}/4
+- Work environment discussed: ${conversationDepth.aspects.workEnvironment}
+- Decision-making discussed: ${conversationDepth.aspects.decisionMaking}
+- Social energy discussed: ${conversationDepth.aspects.socialEnergy}
+- Planning style discussed: ${conversationDepth.aspects.planningStyle}
 
-STRICT REQUIREMENTS FOR THIS TURN #${conversationDepth.messageCount}:
-${conversationDepth.messageCount <= 3 ? 
-  '- MUST use type "Unknown" - too early for analysis\n- Focus on building rapport and asking about their preferences' :
-  conversationDepth.isReadyForAnalysis() ? 
-    '- Can provide MBTI type if confident, but keep confidence moderate (0.4-0.7)\n- Ensure analysis is based on substantial personality information shared' :
-    '- Use type "Unknown" - need more personality information\n- Ask specific questions about decision-making, social preferences, or work style'
+INSTRUCTIONS FOR MESSAGE #${conversationDepth.messageCount}:
+${conversationDepth.messageCount === 1 ? 
+  'Ask about work/study environment preferences (quiet vs busy, organized vs flexible)' :
+  conversationDepth.messageCount === 2 ? 
+    'Ask about decision-making style (logical analysis vs intuition/gut feeling)' :
+    conversationDepth.messageCount === 3 ?
+      'Ask about social energy (energized by people vs alone time)' :
+      conversationDepth.shouldGiveFullAnalysis() ?
+        'Provide MBTI analysis with confidence 0.6-0.8 based on their responses' :
+        'Ask one final question about planning (structured vs spontaneous) then analyze'
 }
 
-IMPORTANT: Provide a UNIQUE response that builds on what was already discussed. Never repeat previous insights.`;
+REMEMBER: Keep questions specific and easy to answer. Use the one_liner field for questions when type is "Unknown".`;
 
       const requestBody = {
         model,
@@ -270,35 +278,30 @@ IMPORTANT: Provide a UNIQUE response that builds on what was already discussed. 
           parsed = content;
         }
         
-        // Better validation and enrichment with stricter early conversation rules
+        // Streamlined validation for question-based flow
         const result = {
           type: parsed.type || 'Unknown',
           confidence: Math.min(Math.max(parsed.confidence || 0.0, 0.0), 1.0),
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Getting to know you better'],
-          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Share more about your preferences'],
-          one_liner: parsed.one_liner || 'Building understanding of your personality'
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Learning about your preferences'],
+          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Continue sharing your thoughts'],
+          one_liner: parsed.one_liner || 'Getting to know your personality style'
         };
         
-        // Enforce stricter early conversation rules
-        if (conversationDepth.messageCount <= 3) {
+        // Enforce question flow rules
+        if (conversationDepth.messageCount <= 2) {
           result.type = 'Unknown';
           result.confidence = 0.0;
-          if (!result.growth_tips.some(tip => tip.includes('tell me') || tip.includes('share'))) {
-            result.growth_tips.unshift("Tell me more about how you like to spend your time");
-          }
-        } else if (!conversationDepth.isReadyForAnalysis() && result.type !== 'Unknown') {
-          // If AI tried to give a type but we don't have enough info, override it
+        } else if (conversationDepth.messageCount === 3 && !conversationDepth.shouldGiveFullAnalysis()) {
           result.type = 'Unknown';
           result.confidence = Math.min(result.confidence, 0.3);
-          result.growth_tips.unshift("I'd love to learn more about your decision-making style");
-        } else if (conversationDepth.isReadyForAnalysis() && result.type !== 'Unknown') {
-          // Even when ready for analysis, cap confidence until more conversation
-          result.confidence = Math.min(result.confidence, conversationDepth.messageCount >= 7 ? 0.8 : 0.6);
+        } else if (conversationDepth.shouldGiveFullAnalysis() && result.type !== 'Unknown') {
+          // Good to provide analysis
+          result.confidence = Math.min(Math.max(result.confidence, 0.6), 0.8);
         }
         
         console.log(`✓ Success with ${model}`);
         console.log('Final result:', result);
-        console.log('Conversation depth analysis:', conversationDepth);
+        console.log('Conversation analysis:', conversationDepth);
         return JSON.stringify(result);
         
       } catch (e) {
@@ -314,26 +317,30 @@ IMPORTANT: Provide a UNIQUE response that builds on what was already discussed. 
     }
   }
   
-  // Fallback with conversation-aware message
+  // Improved fallback with specific questions
   console.log('All models failed. Providing contextual fallback...');
+  
+  const getQuestionForMessage = (messageNum) => {
+    switch(messageNum) {
+      case 1: return "When studying or working, do you prefer a quiet, organized space or do you work well with background noise and activity?";
+      case 2: return "When making important decisions, do you usually analyze all the facts first, or do you tend to go with your gut feeling?";
+      case 3: return "After a long day, do you feel more energized hanging out with friends or having some quiet time alone?";
+      default: return "Do you prefer having a clear plan and schedule, or do you like keeping things flexible and spontaneous?";
+    }
+  };
+  
   const fallback = {
     type: "Unknown",
     confidence: 0.0,
-    strengths: conversationDepth.messageCount <= 3 
-      ? ["You're taking the first step in self-discovery"]
-      : conversationDepth.hasSubstantialContent
-        ? ["You're sharing thoughtfully", "You're engaging in self-reflection"]
-        : ["You're curious about self-discovery"],
-    growth_tips: conversationDepth.messageCount <= 3
-      ? ["Tell me about your ideal study environment", "Share how you prefer to make important decisions"]
-      : conversationDepth.hasSubstantialContent
-        ? ["Describe a recent challenging decision you made", "Tell me what energizes you most in social situations"]
-        : ["Share more details about your daily preferences and habits"],
-    one_liner: conversationDepth.messageCount <= 3 
-      ? "Just getting started on your personality journey"
-      : conversationDepth.hasSubstantialContent
-        ? "Building a deeper understanding of your personality patterns"
-        : "Learning more about your unique personality traits"
+    strengths: conversationDepth.messageCount <= 2 
+      ? ["You're open to self-discovery", "You're taking time for self-reflection"]
+      : ["You're sharing thoughtfully", "You're engaging authentically"],
+    growth_tips: conversationDepth.messageCount <= 2
+      ? ["Answer honestly about your preferences", "Think about what feels most natural to you"]
+      : ["Keep sharing your authentic preferences", "There are no right or wrong answers"],
+    one_liner: conversationDepth.shouldGiveFullAnalysis() 
+      ? "Ready to analyze your personality based on our conversation!"
+      : getQuestionForMessage(conversationDepth.messageCount)
   };
   
   return JSON.stringify(fallback);
