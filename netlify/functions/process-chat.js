@@ -1,4 +1,4 @@
-// Enhanced process-chat.js with natural conversation flow and progress tracking
+// Complete fixed process-chat.js with proper syntax - FULL VERSION
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -64,14 +64,6 @@ CONVERSATION STRATEGY:
 - Connect to their specific examples and experiences
 - Validate their responses before moving on
 - Only move to analysis after exploring ALL four dimensions meaningfully
-
-NATURAL QUESTION FLOW:
-Instead of rigid questions, use conversational starters:
-- "I'm curious about..." 
-- "That's interesting! Can you tell me more about..."
-- "What does that look like in your daily life?"
-- "How do you typically handle..."
-- "I'd love to understand..."
 
 ANALYSIS CRITERIA (ALL must be met):
 - Has meaningfully discussed ALL 4 MBTI dimensions
@@ -233,11 +225,11 @@ function analyzeConversation(messages) {
       // 2. OR explicit request + substantial conversation + most dimensions covered
       const hasDepth = this.messageCount >= 6 && this.avgMessageLength > 20;
       const allDimensionsCovered = this.dimensionsExplored >= 4;
-      const substiantialConversation = this.messageCount >= 4 && this.avgMessageLength > 15;
+      const substantialConversation = this.messageCount >= 4 && this.avgMessageLength > 15;
       const mostDimensionsCovered = this.dimensionsExplored >= 3;
       
       return (allDimensionsCovered && hasDepth) || 
-             (this.hasResultRequest && substiantialConversation && mostDimensionsCovered && this.messageCount >= 5);
+             (this.hasResultRequest && substantialConversation && mostDimensionsCovered && this.messageCount >= 5);
     },
     
     needsMoreDepth: function() {
@@ -380,7 +372,7 @@ function inferMBTIType(conversation, messages) {
 }
 
 // Enhanced type insights with personalization
-function getTypeInsights(type, conversation) {
+function getTypeInsights(type) {
   const insights = {
     'INTJ': {
       strengths: ['Strategic thinking and long-term vision', 'Independent and self-directed learning', 'Strong analytical and problem-solving abilities', 'Confident in your convictions'],
@@ -454,7 +446,7 @@ function getTypeInsights(type, conversation) {
   };
 }
 
-// Enhanced JSON response handler (same as before)
+// Enhanced JSON response handler
 async function getJsonResponse(response) {
   const responseText = await response.text();
   
@@ -571,3 +563,254 @@ ${conversationAnalysis.shouldExplainProcess() ?
         lastError = new Error('No content in response');
         continue;
       }
+      
+      // Parse and build result
+      try {
+        let parsed;
+        if (typeof content === 'string') {
+          const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+          parsed = JSON.parse(cleanContent);
+        } else {
+          parsed = content;
+        }
+        
+        // Build final result with enhanced logic
+        let result;
+        
+        if (conversationAnalysis.shouldExplainProcess()) {
+          // Explain process warmly
+          result = {
+            type: 'Unknown',
+            confidence: 0.0,
+            strengths: ['Curious about self-discovery', 'Taking initiative in personal growth'],
+            growth_tips: ['Share your authentic preferences', 'Think about what feels most natural to you'],
+            one_liner: getContextualQuestion(conversationAnalysis, fullConversation),
+            ready_for_analysis: false,
+            progress: {
+              current_step: 1,
+              total_steps: 5,
+              step_description: "Getting to know you",
+              dimensions_explored: conversationAnalysis.dimensions
+            }
+          };
+        } else if (conversationAnalysis.shouldProvideAnalysis()) {
+          // Provide analysis - override AI decision if criteria met
+          const inferredType = inferMBTIType(fullConversation, messages);
+          const insights = getTypeInsights(inferredType);
+          
+          // Calculate confidence based on conversation quality
+          let confidence = 0.65;
+          if (conversationAnalysis.dimensionsExplored >= 4) confidence += 0.1;
+          if (conversationAnalysis.avgMessageLength > 30) confidence += 0.05;
+          if (conversationAnalysis.messageCount >= 8) confidence += 0.05;
+          confidence = Math.min(confidence, 0.85);
+          
+          result = {
+            type: inferredType,
+            confidence: confidence,
+            strengths: insights.strengths,
+            growth_tips: insights.tips,
+            one_liner: `Based on our conversation, you show strong ${inferredType} characteristics in how you approach energy, information, decisions, and lifestyle.`,
+            ready_for_analysis: true,
+            progress: {
+              current_step: 5,
+              total_steps: 5,
+              step_description: "Analysis complete!",
+              dimensions_explored: conversationAnalysis.dimensions
+            }
+          };
+          
+          console.log('PROVIDING ANALYSIS with type:', inferredType, 'confidence:', confidence);
+        } else {
+          // Continue conversation - use AI response but ensure progress tracking
+          const baseResult = {
+            type: 'Unknown',
+            confidence: 0.0,
+            strengths: ['Engaging thoughtfully in self-discovery', 'Open to exploring your personality'],
+            growth_tips: ['Continue sharing specific examples', 'Think about your natural preferences'],
+            ready_for_analysis: false,
+            progress: {
+              current_step: conversationAnalysis.currentStep,
+              total_steps: 5,
+              step_description: conversationAnalysis.stepDescription,
+              dimensions_explored: conversationAnalysis.dimensions
+            }
+          };
+          
+          // Use AI's one_liner if good, otherwise use contextual question
+          if (parsed.one_liner && parsed.one_liner.length > 10) {
+            baseResult.one_liner = parsed.one_liner;
+          } else {
+            baseResult.one_liner = getContextualQuestion(conversationAnalysis, fullConversation);
+          }
+          
+          // Use AI's progress if provided, otherwise use our analysis
+          if (parsed.progress) {
+            baseResult.progress = { ...baseResult.progress, ...parsed.progress };
+          }
+          
+          result = baseResult;
+        }
+        
+        console.log(`✅ Success with ${model}`);
+        console.log('Final result:', result);
+        return JSON.stringify(result);
+        
+      } catch (e) {
+        console.log(`${model}: JSON validation failed:`, e.message);
+        lastError = e;
+        continue;
+      }
+      
+    } catch (err) {
+      console.log(`${model} failed:`, err.message);
+      lastError = err;
+      continue;
+    }
+  }
+  
+  // Enhanced fallback with progress tracking
+  console.log('All models failed. Providing enhanced fallback...');
+  
+  if (conversationAnalysis.shouldExplainProcess()) {
+    return JSON.stringify({
+      type: "Unknown",
+      confidence: 0.0,
+      strengths: ["Eager to learn about yourself", "Taking steps toward self-awareness"],
+      growth_tips: ["Share your natural preferences honestly", "Think about what energizes you"],
+      one_liner: getContextualQuestion(conversationAnalysis, fullConversation),
+      ready_for_analysis: false,
+      progress: {
+        current_step: 1,
+        total_steps: 5,
+        step_description: "Getting to know you",
+        dimensions_explored: conversationAnalysis.dimensions
+      }
+    });
+  }
+  
+  if (conversationAnalysis.shouldProvideAnalysis()) {
+    const inferredType = inferMBTIType(fullConversation, messages);
+    const insights = getTypeInsights(inferredType);
+    
+    return JSON.stringify({
+      type: inferredType,
+      confidence: 0.7,
+      strengths: insights.strengths,
+      growth_tips: insights.tips,
+      one_liner: `Based on our conversation, you demonstrate ${inferredType} characteristics.`,
+      ready_for_analysis: true,
+      progress: {
+        current_step: 5,
+        total_steps: 5,
+        step_description: "Analysis complete!",
+        dimensions_explored: conversationAnalysis.dimensions
+      }
+    });
+  } else {
+    return JSON.stringify({
+      type: "Unknown",
+      confidence: 0.0,
+      strengths: ["You're engaging thoughtfully in self-discovery", "You're sharing meaningful insights"],
+      growth_tips: ["Keep sharing your authentic preferences", "Think about specific examples from your life"],
+      one_liner: getContextualQuestion(conversationAnalysis, fullConversation),
+      ready_for_analysis: false,
+      progress: {
+        current_step: conversationAnalysis.currentStep,
+        total_steps: 5,
+        step_description: conversationAnalysis.stepDescription,
+        dimensions_explored: conversationAnalysis.dimensions
+      }
+    });
+  }
+}
+
+exports.handler = async (event) => {
+  console.log('\n🚀 Function invoked');
+  
+  // CORS
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+  
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+  
+  if (event.httpMethod !== 'POST') {
+    return { 
+      statusCode: 405, 
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
+  }
+  
+  try {
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error('API key not configured');
+    }
+    
+    const body = JSON.parse(event.body || '{}');
+    const { messages } = body;
+    
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Invalid payload: messages[] required' })
+      };
+    }
+    
+    const conversationId = Date.now();
+    let actualConversationId = conversationId;
+    
+    console.log('🔍 Processing conversation with', messages.length, 'messages');
+    
+    const aiResponse = await tryModelsInOrder(messages);
+    console.log('✅ AI response generated successfully');
+    
+    // Save conversation
+    if (supabase) {
+      try {
+        const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
+        
+        const { data, error } = await supabase.from('conversations').insert({
+          conversation_history: fullConversation,
+          created_at: new Date().toISOString()
+        }).select('id');
+        
+        if (error) {
+          console.error('❌ Supabase insert error:', error);
+        } else if (data && data[0] && data[0].id) {
+          actualConversationId = data[0].id;
+          console.log('✅ Conversation saved successfully with ID:', actualConversationId);
+        }
+      } catch (e) {
+        console.error('💥 Database save failed:', e.message);
+      }
+    }
+    
+    return {
+      statusCode: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        reply: aiResponse,
+        conversation_id: actualConversationId
+      })
+    };
+    
+  } catch (error) {
+    console.error('💥 Error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        error: 'Service temporarily unavailable',
+        message: error.message
+      })
+    };
+  }
+};
