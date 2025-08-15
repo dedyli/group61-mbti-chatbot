@@ -583,10 +583,12 @@
               // Continuing conversation
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
               
-              // Add encouraging progress message
-              if (mbtiResult.progress && mbtiResult.progress.current_step <= 4) {
-                const dimensionsCount = Object.values(mbtiResult.progress.dimensions_explored || {}).filter(Boolean).length;
-                responseText += `\n\n💫 Great! We're making good progress (${dimensionsCount}/4 areas explored). Keep sharing what feels natural to you!`;
+              // Add subtle, natural progress encouragement only occasionally
+              if (mbtiResult.progress && mbtiResult.progress.current_step >= 3 && mbtiResult.progress.current_step <= 4) {
+                // Only show encouragement at mid-point, and make it natural
+                if (Math.random() > 0.6) { // Only 40% chance to avoid being repetitive
+                  responseText += `\n\n😊 I'm getting a good sense of your personality style!`;
+                }
               }
             }
             

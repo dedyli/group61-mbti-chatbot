@@ -244,47 +244,47 @@ function analyzeConversation(messages) {
   };
 }
 
-// Get contextual follow-up questions
+// Get contextual follow-up questions - NATURAL TONE
 function getContextualQuestion(analysis, conversation) {
   const conv = conversation.toLowerCase();
   
   // If they asked for results too early
   if (analysis.shouldExplainProcess()) {
-    return "I'd love to help you discover your MBTI type! I'll need to learn about your personality through conversation first. This usually takes about 5-7 questions to get a good read. Let's start: After a busy day, what helps you recharge - being around people or having some quiet time alone?";
+    return "I'd love to help you discover your MBTI type! I'll need to learn about your personality through a natural conversation first. Let's start: After a busy day, what helps you recharge - being around people or having some quiet time alone?";
   }
   
   // If we need more depth on current topic
   if (analysis.needsMoreDepth()) {
-    return "That's helpful! Can you tell me a bit more about that? I'd love to understand what that looks like in your daily life.";
+    return "That's helpful! Can you tell me a bit more about that? I'd love to understand what that looks like for you.";
   }
   
-  // Based on current step and what's been explored
+  // Based on current step and what's been explored - NATURAL QUESTIONS
   if (!analysis.dimensions.energy_source) {
     if (conv.includes('recharge') || conv.includes('energy')) {
-      return "Interesting! Can you give me an example of a time when you felt really energized vs. a time when you felt drained? What was different about those situations?";
+      return "Interesting! Can you give me an example of a time when you felt really energized vs. drained? What was different about those situations?";
     }
-    return "Let's start with something fundamental: After a busy day at school or work, what helps you recharge your energy - spending time with friends and talking, or having some quiet time alone to process?";
+    return "After a busy day at school or work, what helps you recharge - spending time with friends and talking, or having some quiet time alone?";
   }
   
   if (!analysis.dimensions.information_processing) {
     if (conv.includes('learn') || conv.includes('information')) {
-      return "That makes sense! When you're learning something new - like a new app, hobby, or subject - do you prefer detailed step-by-step instructions, or do you like to explore and figure out the big picture yourself?";
+      return "That makes sense! When you're learning something new - like a new app or hobby - do you prefer step-by-step instructions, or do you like to explore and figure it out yourself?";
     }
-    return "Now I'm curious about how you process information. When learning something completely new, what approach works best for you - having detailed instructions to follow, or exploring and discovering patterns yourself?";
+    return "I'm curious about how you learn best. When tackling something completely new, do you prefer detailed instructions or exploring and discovering patterns yourself?";
   }
   
   if (!analysis.dimensions.decision_making) {
     if (conv.includes('decision') || conv.includes('choice')) {
-      return "Can you walk me through a recent important decision you made? What factors mattered most to you - the logical pros and cons, or how it would affect people and relationships?";
+      return "Can you walk me through a recent important decision? What mattered most to you - the logical pros and cons, or how it would affect people?";
     }
-    return "Let's talk about decision-making. When you have an important choice to make, what do you find yourself relying on more - logical analysis of the facts and outcomes, or considering how it will impact people and align with your values?";
+    return "When you have an important choice to make, what do you rely on more - logical analysis of the facts, or considering how it will impact people and relationships?";
   }
   
   if (!analysis.dimensions.lifestyle_preferences) {
     if (conv.includes('plan') || conv.includes('schedule')) {
-      return "That's revealing! How do you typically handle unexpected changes to your plans? Do you find them stressful or kind of exciting?";
+      return "That's revealing! How do you handle unexpected changes to your plans? Stressful or kind of exciting?";
     }
-    return "Almost done! I'm curious about your lifestyle approach - do you prefer having a clear plan and schedule for your day, or do you like keeping things flexible and adapting as opportunities come up?";
+    return "Last question area: do you prefer having a clear plan for your day, or keeping things flexible and adapting as you go?";
   }
   
   // All dimensions covered, ready for analysis
@@ -292,7 +292,7 @@ function getContextualQuestion(analysis, conversation) {
     return "Perfect! I think I have a good sense of your personality now. Let me analyze your type...";
   }
   
-  return "I'm getting a clear picture of your personality style! Based on our conversation, I can see some interesting patterns emerging. Would you like me to share your MBTI analysis, or is there anything else about your preferences you'd like to discuss?";
+  return "I'm getting a clear picture of your personality! Based on our conversation, I can see some interesting patterns. Would you like me to share your MBTI analysis?";
 }
 
 // Enhanced MBTI type inference with conversation context
