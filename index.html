@@ -375,41 +375,42 @@
       chatBody.scrollTop=chatBody.scrollHeight; 
     }
 
-    async async function handleFeedback(conversationId, isAccurate) {
-        try {
-            // Optimistic UI: disable the two buttons for this conversation
-            const buttons = document.querySelectorAll(`button[data-convo-id="${'${'}conversationId{'}'}"]`);
-            buttons.forEach(b => b.disabled = true);
+    async function handleFeedback(conversationId, isAccurate) {
+    try {
+        // Disable the two feedback buttons for this conversation to avoid double-clicks
+        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+        buttons.forEach(b => b.disabled = true);
 
-            const res = await fetch('/.netlify/functions/save-feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    conversation_id: Number(conversationId),
-                    is_accurate: Boolean(isAccurate)
-                })
-            });
+        const res = await fetch('/.netlify/functions/save-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                conversation_id: Number(conversationId),
+                is_accurate: Boolean(isAccurate)
+            })
+        });
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || `HTTP ${res.status}`);
-            }
-
-            // Success UI: mark the selected button
-            buttons.forEach(btn => {
-                if (btn.getAttribute('data-rating') == String(isAccurate)) {
-                    btn.classList.add('selected');
-                    btn.innerHTML = isAccurate ? '✅ Thanks!' : '📝 Noted';
-                }
-            });
-        } catch (error) {
-            console.error('Error saving feedback:', error);
-            alert('Could not save feedback: ' + (error.message || String(error)));
-            // Re-enable on failure
-            const buttons = document.querySelectorAll(`button[data-convo-id="${'${'}conversationId{'}'}"]`);
-            buttons.forEach(b => b.disabled = false);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || `HTTP ${res.status}`);
         }
-    }}
+
+        // Success UI updates
+        buttons.forEach(btn => {
+            if (btn.getAttribute('data-rating') === String(isAccurate)) {
+                btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
+                btn.classList.add('selected');
+            }
+        });
+        console.log('Feedback saved via backend for conversation', conversationId);
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        alert('Could not save feedback: ' + (error.message || String(error)));
+        // Re-enable on failure
+        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+        buttons.forEach(b => b.disabled = false);
+    }
+}
 
     chatBody.addEventListener('click', (event) => {
         const target = event.target;
