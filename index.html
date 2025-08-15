@@ -93,14 +93,11 @@
     .msg.user{justify-content:flex-end}
     .msg.user .bubble{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; border-top-right-radius:4px}
     .msg.ai .bubble{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); border-top-left-radius:4px}
-    .chat-foot{padding:12px; border-top:1px solid var(--glass-stroke); display:grid; grid-template-columns:1fr auto; gap:8px}
+    .chat-foot{padding:12px; border-top:1px solid var(--glass-stroke); display:grid; grid-template-columns:1fr; gap:8px}
     .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
     .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
-    .model-select{display:flex; gap:8px; align-items:center}
-    .model-select select{background:transparent; color:var(--fg); border:1px solid var(--glass-stroke); padding:6px 8px; border-radius:8px}
-    .notice{font-size:12px; color:#cfcaff; opacity:.8}
+    .notice{font-size:12px; color:#cfcaff; opacity:.8; padding:8px 12px;}
     
-    /* Feedback buttons styling */
     .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
     .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; font-size: 12px; }
     .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
@@ -241,29 +238,29 @@
       <h3>Mind-Mapper AI – Personality Analyst</h3>
     </div>
     <div class="chat-body" id="chatBody">
-      <div class="msg ai">
-        <div class="bubble">
-          <span data-lang="en">Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>
-          <span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>
-        </div>
       </div>
+    <div class="chat-foot" id="chatFoot">
+      <div id="chatInputArea" style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+        <input id="chatInput" placeholder="Type your message…" />
+        <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+      </div>
+      <button class="btn" id="resetBtn" style="display: none; width: 100%;">
+        <span data-lang="en">Start New Analysis</span>
+        <span data-lang="vi">Bắt đầu phân tích mới</span>
+      </button>
     </div>
-    <div class="chat-foot">
-      <input id="chatInput" placeholder="Type your message…" />
-      <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
-    </div>
-    <div class="notice" style="padding:8px 12px">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
+    <div class="notice">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // --- 1. Supabase Project Configuration (Still needed for other potential uses) ---
+    // --- 1. Supabase Project Configuration ---
     const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
     const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
     const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
-    // --- 2. Existing Page Functions (Sparkles, Tilt, Language) ---
+    // --- 2. Page Functions (Sparkles, Tilt, Language) ---
     (function makeSparkles(){ 
       const host=document.getElementById('sparkles'); 
       for(let i=0;i<120;i++){ 
@@ -289,12 +286,12 @@
     })();
 
     (function initLang(){
-      const sel=document.getElementById('language');
+      const sel = document.getElementById('language');
       function applyPlaceholders(){ 
-        const lang=document.body.classList.contains('lang-vi')?'vi':'en'; 
-        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el=>{ 
-          const txt=el.getAttribute(`data-lang-${lang}-placeholder`); 
-          if(txt) el.placeholder=txt; 
+        const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en'; 
+        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el => { 
+          const txt = el.getAttribute(`data-lang-${lang}-placeholder`); 
+          if(txt) el.placeholder = txt; 
         }); 
       }
       function setLang(lang){ 
@@ -302,62 +299,72 @@
         document.body.classList.add('lang-'+lang); 
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
-        
-        const chatBody = document.getElementById('chatBody');
-        if (chatBody) {
-          chatBody.innerHTML = '';
-          const initialMsg = document.createElement('div');
-          initialMsg.className = 'msg ai';
-          const bubble = document.createElement('div');
-          bubble.className = 'bubble';
-          
-          if (lang === 'vi') {
-            bubble.innerHTML = `<span data-lang="vi">Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.</span>`;
-          } else {
-            bubble.innerHTML = `<span data-lang="en">Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.</span>`;
-          }
-          
-          initialMsg.appendChild(bubble);
-          chatBody.appendChild(initialMsg);
-        }
+        displayInitialMessage();
       }
-      const saved=localStorage.getItem('preferredLanguage')||'en'; 
-      sel.value=saved; 
+      const saved = localStorage.getItem('preferredLanguage') || 'en'; 
+      sel.value = saved; 
       setLang(saved); 
-      sel.addEventListener('change', e=> setLang(e.target.value));
+      sel.addEventListener('change', e => setLang(e.target.value));
     })();
 
-    // Chat widget open/close
-    const panel=document.getElementById('chatPanel');
-    document.getElementById('chatOpen').onclick=()=>{ 
+    // --- 3. Chat Panel Logic ---
+    const panel = document.getElementById('chatPanel');
+    document.getElementById('chatOpen').onclick = () => { 
       panel.classList.toggle('open'); 
       if(panel.classList.contains('open')){ 
         document.getElementById('chatInput')?.focus(); 
       } 
     };
 
-    // --- 3. FIXED Chat + Backend Logic ---
-    const chatBody=document.getElementById('chatBody');
-    const input=document.getElementById('chatInput');
-    const sendBtn=document.getElementById('sendBtn');
+    // --- 4. Chat + Backend Logic ---
+    const chatBody = document.getElementById('chatBody');
+    const chatInputArea = document.getElementById('chatInputArea');
+    const resetBtn = document.getElementById('resetBtn');
+    let input = document.getElementById('chatInput');
+    let sendBtn = document.getElementById('sendBtn');
     
     let conversationHistory = [];
+
+    function displayInitialMessage() {
+      const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en';
+      chatBody.innerHTML = ''; 
+      const initialMsg = document.createElement('div');
+      initialMsg.className = 'msg ai';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      
+      let welcomeText;
+      if (lang === 'vi') {
+        welcomeText = `Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.`;
+      } else {
+        welcomeText = `Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.`;
+      }
+      bubble.innerHTML = `<span>${welcomeText}</span>`;
+      initialMsg.appendChild(bubble);
+      chatBody.appendChild(initialMsg);
+      conversationHistory = [{ role: 'assistant', content: welcomeText }];
+    }
+
+    function resetChat() {
+      displayInitialMessage();
+      chatInputArea.style.display = 'grid';
+      resetBtn.style.display = 'none';
+      input.focus();
+    }
+    
+    resetBtn.addEventListener('click', resetChat);
 
     function appendMessage(role, text, conversationId = null, showFeedback = false){ 
       const wrap=document.createElement('div'); 
       wrap.className='msg '+(role==='user'?'user':'ai');
-      
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      
       let processedText = text
         .replace(/</g,'&lt;')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g,'<br>');
-      
       bubble.innerHTML = processedText;
-      
       if (role === 'ai' && conversationId && showFeedback) {
         const feedbackContainer = document.createElement('div');
         feedbackContainer.className = 'feedback-buttons';
@@ -367,7 +374,6 @@
         `;
         bubble.appendChild(feedbackContainer);
       }
-      
       wrap.appendChild(bubble);
       chatBody.appendChild(wrap); 
       chatBody.scrollTop=chatBody.scrollHeight; 
@@ -377,7 +383,6 @@
         try {
             const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
             buttons.forEach(b => b.disabled = true);
-
             const res = await fetch('/.netlify/functions/save-feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -386,19 +391,16 @@
                     is_accurate: Boolean(isAccurate)
                 })
             });
-
             if (!res.ok) {
                 const text = await res.text();
                 throw new Error(text || `HTTP ${res.status}`);
             }
-
             buttons.forEach(btn => {
                 if (btn.getAttribute('data-rating') === String(isAccurate)) {
                     btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
                     btn.classList.add('selected');
                 }
             });
-            console.log('Feedback saved via backend for conversation', conversationId);
         } catch (error) {
             console.error('Error saving feedback:', error);
             alert('Could not save feedback: ' + (error.message || String(error)));
@@ -442,7 +444,6 @@
       
       try {
         const messages = conversationHistory.slice(-8);
-        
         const res = await fetch('/.netlify/functions/process-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -479,6 +480,8 @@
                 responseText += `🌱 **Growth Tips:**\n`;
                 mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
               }
+              chatInputArea.style.display = 'none';
+              resetBtn.style.display = 'block';
             } else {
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
             }
@@ -490,11 +493,10 @@
             conversationHistory.push({ role: 'assistant', content: data.reply });
           }
         } else if (data.error) {
-          appendMessage('ai', `Sorry, there was an error: ${data.error}`);
+            appendMessage('ai', `Sorry, there was an error: ${data.error}`);
         } else {
-          appendMessage('ai', 'Sorry, I received an unexpected response format.');
+            appendMessage('ai', 'Sorry, I received an unexpected response format.');
         }
-        
       } catch (err) {
         hideTyping();
         appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);
@@ -510,10 +512,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-      const initialBubble = document.querySelector('#chatBody .msg.ai .bubble');
-      if (initialBubble) {
-        conversationHistory.push({ role: 'assistant', content: initialBubble.innerText });
-      }
+      displayInitialMessage();
     });
   </script>
 </body>
