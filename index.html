@@ -110,7 +110,7 @@
     @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
   </style>
 </head>
-<body>
+<body class="lang-en">
   <div class="aurora"></div>
   <div class="sparkles" id="sparkles"></div>
 
@@ -258,10 +258,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // --- 1. Supabase Project Configuration ---
+    // --- 1. Supabase Project Configuration (Still needed for other potential uses) ---
     const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
     const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
-
     const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
     // --- 2. Existing Page Functions (Sparkles, Tilt, Language) ---
@@ -278,6 +277,7 @@
 
     (function tilt(){ 
       const card=document.getElementById('card3d'); 
+      if (!card) return;
       let b=card.getBoundingClientRect(); 
       window.addEventListener('resize',()=>b=card.getBoundingClientRect()); 
       card.addEventListener('mousemove',e=>{ 
@@ -341,7 +341,6 @@
     const input=document.getElementById('chatInput');
     const sendBtn=document.getElementById('sendBtn');
     
-    // **FIX**: Use a clean JavaScript array to track conversation history
     let conversationHistory = [];
 
     function appendMessage(role, text, conversationId = null, showFeedback = false){ 
@@ -359,7 +358,6 @@
       
       bubble.innerHTML = processedText;
       
-      // Only show feedback buttons for MBTI analysis results
       if (role === 'ai' && conversationId && showFeedback) {
         const feedbackContainer = document.createElement('div');
         feedbackContainer.className = 'feedback-buttons';
@@ -376,41 +374,38 @@
     }
 
     async function handleFeedback(conversationId, isAccurate) {
-    try {
-        // Disable the two feedback buttons for this conversation to avoid double-clicks
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = true);
+        try {
+            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+            buttons.forEach(b => b.disabled = true);
 
-        const res = await fetch('/.netlify/functions/save-feedback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                conversation_id: Number(conversationId),
-                is_accurate: Boolean(isAccurate)
-            })
-        });
+            const res = await fetch('/.netlify/functions/save-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    conversation_id: Number(conversationId),
+                    is_accurate: Boolean(isAccurate)
+                })
+            });
 
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(text || `HTTP ${res.status}`);
-        }
-
-        // Success UI updates
-        buttons.forEach(btn => {
-            if (btn.getAttribute('data-rating') === String(isAccurate)) {
-                btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
-                btn.classList.add('selected');
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `HTTP ${res.status}`);
             }
-        });
-        console.log('Feedback saved via backend for conversation', conversationId);
-    } catch (error) {
-        console.error('Error saving feedback:', error);
-        alert('Could not save feedback: ' + (error.message || String(error)));
-        // Re-enable on failure
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = false);
+
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-rating') === String(isAccurate)) {
+                    btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
+                    btn.classList.add('selected');
+                }
+            });
+            console.log('Feedback saved via backend for conversation', conversationId);
+        } catch (error) {
+            console.error('Error saving feedback:', error);
+            alert('Could not save feedback: ' + (error.message || String(error)));
+            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+            buttons.forEach(b => b.disabled = false);
+        }
     }
-}
 
     chatBody.addEventListener('click', (event) => {
         const target = event.target;
@@ -441,15 +436,12 @@
       
       input.value = ''; 
       appendMessage('user', text);
-      // **FIX**: Add user message to our clean history
       conversationHistory.push({ role: 'user', content: text });
       
       showTyping();
       
       try {
-        // **FIX**: Use the clean history, limited to the last 8 messages
         const messages = conversationHistory.slice(-8);
-        console.log('Sending messages to backend:', messages);
         
         const res = await fetch('/.netlify/functions/process-chat', {
           method: 'POST',
@@ -459,68 +451,53 @@
         
         if (!res.ok) {
           const errorText = await res.text();
-          console.error('API Error Response:', errorText);
           throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`);
         }
         
         const data = await res.json();
-        console.log('Raw API response:', data);
-        
         hideTyping();
         
         if (data.reply) {
           try {
             const mbtiResult = JSON.parse(data.reply);
-            
-            // **FIX**: Add the raw AI response to our clean history
             conversationHistory.push({ role: 'assistant', content: data.reply });
 
             let responseText = '';
-            let isActualResult = false; // Track if this is an MBTI result or just a question
+            let isActualResult = false;
             
             if (mbtiResult.type && mbtiResult.type !== 'Unknown') {
-              // This is an actual MBTI analysis result
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              if (mbtiResult.one_liner) {
-                responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
-              }
-              if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
+              if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              if (mbtiResult.strengths?.length) {
                 responseText += `✨ **Your Strengths:**\n`;
-                mbtiResult.strengths.forEach(strength => { responseText += `• ${strength}\n`; });
+                mbtiResult.strengths.forEach(s => { responseText += `• ${s}\n`; });
                 responseText += '\n';
               }
-              if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
+              if (mbtiResult.growth_tips?.length) {
                 responseText += `🌱 **Growth Tips:**\n`;
                 mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
               }
             } else {
-              // This is just a question or gathering info, not a final result
-              isActualResult = false;
-              responseText = mbtiResult.one_liner || 'I need a bit more information to give you a good analysis. Can you tell me more about how you prefer to make decisions or spend your free time?';
+              responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
             }
             
-            // Only show feedback buttons for actual MBTI results
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
             
           } catch (parseError) {
-            console.error('Failed to parse MBTI result:', parseError);
-            appendMessage('ai', data.reply || 'Sorry, I received an unexpected response format.');
+            appendMessage('ai', data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
           }
         } else if (data.error) {
-          console.error('API returned error:', data.error);
           appendMessage('ai', `Sorry, there was an error: ${data.error}`);
         } else {
-          console.error('Unexpected response format:', data);
           appendMessage('ai', 'Sorry, I received an unexpected response format.');
         }
         
       } catch (err) {
         hideTyping();
-        console.error('Chat error:', err);
-        appendMessage('ai', `Sorry, I encountered an error: ${err.message}. Please check your connection and try again.`);
+        appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);
       }
     }
 
@@ -532,7 +509,6 @@
       }
     });
 
-    // **FIX**: Initialize history with the first AI message on page load
     document.addEventListener('DOMContentLoaded', () => {
       const initialBubble = document.querySelector('#chatBody .msg.ai .bubble');
       if (initialBubble) {
