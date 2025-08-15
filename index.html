@@ -497,11 +497,18 @@
             const mbtiResult = JSON.parse(data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
 
+            // Debug logging
+            console.log('MBTI Result received:', mbtiResult);
+            console.log('Validation status:', mbtiResult.validation_status);
+            console.log('Type:', mbtiResult.type);
+            console.log('Confidence:', mbtiResult.confidence);
+
             let responseText = '';
             let isActualResult = false;
             
-            // Check if this is a final MBTI result
-            if (mbtiResult.validation_status === 'ready_for_analysis' && mbtiResult.type && mbtiResult.type !== 'Unknown') {
+            // Check if this is a final MBTI result - be more lenient
+            if ((mbtiResult.validation_status === 'ready_for_analysis' || mbtiResult.confidence > 0.6) && 
+                mbtiResult.type && mbtiResult.type !== 'Unknown') {
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
@@ -543,11 +550,17 @@
               } else if (mbtiResult.validation_status === 'clarification_needed') {
                 responseText += `\n\n🎯 Let's get a clearer answer to ensure accurate analysis`;
               }
+              
+              // Debug info in questions
+              console.log('Still asking questions. Status:', mbtiResult.validation_status);
+              console.log('Missing dimensions:', mbtiResult.missing_dimensions);
             }
             
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
             
           } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.log('Raw AI response:', data.reply);
             appendMessage('ai', data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
           }
