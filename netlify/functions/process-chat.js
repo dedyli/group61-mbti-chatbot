@@ -2,7 +2,22 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// Fix: Check environment variables first
+console.log('Environment check:');
+console.log('SUPABASE_URL present:', !!process.env.SUPABASE_URL);
+console.log('SUPABASE_SERVICE_KEY present:', !!process.env.SUPABASE_SERVICE_KEY);
+
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  try {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    console.log('✅ Backend Supabase client created successfully');
+  } catch (error) {
+    console.error('❌ Failed to create backend Supabase client:', error);
+  }
+} else {
+  console.error('❌ Missing Supabase environment variables');
+}
 
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_HEADERS = {
@@ -63,7 +78,7 @@ function analyzeConversationDepth(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
   const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
   
-  // Track what aspects have been covered
+  // Track what aspects have been covered - make this more strict
   const aspects = {
     workEnvironment: false,
     decisionMaking: false,
@@ -73,17 +88,22 @@ function analyzeConversationDepth(messages) {
   
   const allContent = messages.map(m => m.content.toLowerCase()).join(' ');
   
-  // Check if key personality aspects have been discussed
-  if (allContent.includes('quiet') || allContent.includes('noise') || allContent.includes('organized') || allContent.includes('study')) {
+  // More strict keyword matching - require specific terms
+  if (allContent.includes('quiet') && allContent.includes('organized') || 
+      allContent.includes('noise') && allContent.includes('activity') ||
+      allContent.includes('study') && (allContent.includes('space') || allContent.includes('environment'))) {
     aspects.workEnvironment = true;
   }
-  if (allContent.includes('decision') || allContent.includes('analyze') || allContent.includes('gut') || allContent.includes('feeling')) {
+  if ((allContent.includes('decision') || allContent.includes('decide')) && 
+      (allContent.includes('analyze') || allContent.includes('gut') || allContent.includes('facts'))) {
     aspects.decisionMaking = true;
   }
-  if (allContent.includes('friends') || allContent.includes('alone') || allContent.includes('energized') || allContent.includes('social')) {
+  if ((allContent.includes('friends') || allContent.includes('social')) && 
+      (allContent.includes('alone') || allContent.includes('energized'))) {
     aspects.socialEnergy = true;
   }
-  if (allContent.includes('plan') || allContent.includes('schedule') || allContent.includes('flexible') || allContent.includes('spontaneous')) {
+  if ((allContent.includes('plan') || allContent.includes('schedule')) && 
+      (allContent.includes('flexible') || allContent.includes('spontaneous'))) {
     aspects.planningStyle = true;
   }
   
@@ -346,9 +366,12 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
   return JSON.stringify(fallback);
 }
 
-// Using CommonJS exports instead of ES6 export
 exports.handler = async (event) => {
   console.log('\n🚀 Function invoked');
+  console.log('Environment check:');
+  console.log('SUPABASE_URL present:', !!process.env.SUPABASE_URL);
+  console.log('SUPABASE_SERVICE_KEY present:', !!process.env.SUPABASE_SERVICE_KEY);
+  console.log('OPENROUTER_API_KEY present:', !!process.env.OPENROUTER_API_KEY);
   
   // CORS
   const corsHeaders = {
@@ -399,8 +422,9 @@ exports.handler = async (event) => {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
         
-        console.log('Attempting to save conversation to Supabase...');
-        console.log('Conversation length:', fullConversation.length);
+        console.log('📁 Attempting to save conversation to Supabase...');
+        console.log('📊 Conversation length:', fullConversation.length);
+        console.log('🔗 Supabase URL:', process.env.SUPABASE_URL);
         
         const { data, error } = await supabase.from('conversations').insert({
           conversation_history: fullConversation,
@@ -408,7 +432,8 @@ exports.handler = async (event) => {
         }).select('id'); // Get the ID back
         
         if (error) {
-          console.error('Supabase insert error:', error);
+          console.error('❌ Supabase insert error:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
           throw error;
         }
         
@@ -416,14 +441,15 @@ exports.handler = async (event) => {
           actualConversationId = data[0].id;
           console.log('✅ Conversation saved successfully with ID:', actualConversationId);
         } else {
-          console.log('✅ Conversation saved but no ID returned');
+          console.log('⚠️ Conversation saved but no ID returned. Data:', JSON.stringify(data, null, 2));
         }
       } catch (e) {
-        console.error('⚠️ Database save failed:', e.message);
-        console.error('Full error:', e);
+        console.error('💥 Database save failed:', e.message);
+        console.error('Full error details:', JSON.stringify(e, null, 2));
+        // Don't fail the whole request if database save fails
       }
     } else {
-      console.log('⚠️ Supabase client not initialized');
+      console.log('⚠️ Supabase client not initialized - skipping conversation save');
     }
     
     return {
