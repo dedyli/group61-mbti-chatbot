@@ -313,7 +313,6 @@
         document.body.classList.add('lang-' + lang); 
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
-        // Only call displayInitialMessage if chatBody exists
         if (chatBody) {
           displayInitialMessage();
         }
@@ -497,7 +496,6 @@
             const mbtiResult = JSON.parse(data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
 
-            // Debug logging
             console.log('MBTI Result received:', mbtiResult);
             console.log('Ready for analysis:', mbtiResult.ready_for_analysis);
             console.log('Type:', mbtiResult.type);
@@ -506,7 +504,6 @@
             let responseText = '';
             let isActualResult = false;
             
-            // Check if this is a final MBTI result - simplified logic
             if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
@@ -532,23 +529,16 @@
                 responseText += '\n';
               }
               
-              // Add completion message
               responseText += `📈 **Analysis Complete!**\nBased on our conversation about your preferences and natural tendencies.`;
               
               if (chatInputArea) chatInputArea.style.display = 'none';
               if (resetBtn) resetBtn.style.display = 'block';
             } else {
-              // This is a question or intermediate response
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
               
-              // Add encouraging message for questions
               if (mbtiResult.ready_for_analysis === false) {
                 responseText += `\n\n💬 Keep sharing your thoughts - I'm learning about your personality style!`;
               }
-            }
-            
-            appendMessage('ai', responseText, data.conversation_id, isActualResult);              // Debug info in questions
-              console.log('Still asking questions. Ready for analysis:', mbtiResult.ready_for_analysis);
             }
             
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
@@ -571,7 +561,6 @@
     }
 
     function initializeChatControls() {
-      // Get DOM elements with error checking
       chatBody = document.getElementById('chatBody');
       chatInputArea = document.getElementById('chatInputArea');
       resetBtn = document.getElementById('resetBtn');
@@ -587,14 +576,7 @@
       });
       
       if (!chatBody || !input || !sendBtn || !resetBtn) {
-        console.error('Critical chat elements not found:', {
-          chatBody: !!chatBody,
-          input: !!input,
-          sendBtn: !!sendBtn,
-          resetBtn: !!resetBtn
-        });
-        
-        // Try again after a delay
+        console.error('Critical chat elements not found');
         setTimeout(() => {
           console.log('Retrying chat initialization...');
           initializeChatControls();
@@ -603,7 +585,6 @@
       }
       
       try {
-        // Add event listeners
         sendBtn.addEventListener('click', handleSend);
         resetBtn.addEventListener('click', resetChat);
         
@@ -614,10 +595,7 @@
           }
         });
         
-        // Initialize feedback handler
         initializeFeedbackHandler();
-        
-        // Display initial message
         displayInitialMessage();
         
         console.log('Chat controls initialized successfully');
@@ -631,20 +609,16 @@
       console.log('DOM loaded, initializing...');
       
       try {
-        // Initialize page features
         initializeSparkles();
         initializeTilt();
         initializeLanguage();
         initializeChatPanel();
-        
-        // Initialize chat (this must happen after DOM is ready)
         initializeChatControls();
         
         console.log('All systems initialized successfully');
       } catch (error) {
         console.error('Initialization error:', error);
         
-        // Fallback initialization for chat
         setTimeout(() => {
           try {
             initializeChatControls();
