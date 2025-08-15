@@ -1,8 +1,8 @@
-// Fixed process-chat.js using CommonJS syntax for Netlify Functions
+// Enhanced process-chat.js with answer validation and adaptive questioning
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Fix: Check environment variables first
+// Check environment variables
 console.log('Environment check:');
 console.log('SUPABASE_URL present:', !!process.env.SUPABASE_URL);
 console.log('SUPABASE_SERVICE_KEY present:', !!process.env.SUPABASE_SERVICE_KEY);
@@ -28,7 +28,6 @@ const OPENROUTER_HEADERS = {
   'X-Title': 'Mind-Mapper AI'
 };
 
-// Updated models and better parameters
 const PREFERRED_MODELS = [
   'anthropic/claude-3.5-haiku',
   'google/gemini-flash-1.5-8b',
@@ -36,116 +35,217 @@ const PREFERRED_MODELS = [
   'openai/gpt-4o-mini'
 ];
 
-// Fixed system prompt with specific questions and faster analysis
-const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a friendly personality coach.
+// Enhanced system prompt with validation logic
+const MBTI_SYSTEM_PROMPT = `You are Mind-Mapper AI, a conversational personality analyst who needs CLEAR, RELEVANT answers before providing MBTI analysis.
 
 CRITICAL RULES:
 1) Output ONLY valid JSON (no code fences, no extra text)
-2) Ask ONE specific, direct question that's easy to answer
-3) Provide MBTI analysis after 3-4 meaningful exchanges
-4) Base analysis on the conversation patterns you observe
+2) VALIDATE user answers - only accept relevant, specific responses
+3) Ask follow-up questions if answers are vague, off-topic, or insufficient
+4) Only provide MBTI analysis when you have SOLID information on all 4 dimensions
+5) Be friendly but persistent in getting meaningful answers
+
+REQUIRED DIMENSIONS TO ASSESS:
+1. EXTRAVERSION vs INTROVERSION: Energy source (people vs solitude)
+2. SENSING vs INTUITION: Information processing (details/facts vs patterns/possibilities)
+3. THINKING vs FEELING: Decision making (logic/analysis vs values/emotions)
+4. JUDGING vs PERCEIVING: Lifestyle preference (structure/planning vs flexibility/spontaneity)
+
+ANSWER VALIDATION CRITERIA:
+- GOOD answers: Specific preferences, examples, clear choices between options
+- BAD answers: Vague ("it depends"), non-answers ("I don't know"), off-topic responses
 
 CONVERSATION FLOW:
-- Message 1 (greeting): Ask about study/work preferences (quiet vs busy environment)
-- Message 2: Ask about decision-making (logical analysis vs gut feeling)  
-- Message 3: Ask about social energy (energized by people vs energized by alone time)
-- Message 4+: Provide MBTI type with confidence based on their answers
+- Ask ONE specific question at a time
+- Validate the user's answer before moving to next dimension
+- If answer is unclear/irrelevant, rephrase the question with examples
+- Only move forward when you have a clear, usable answer
+- Provide MBTI analysis ONLY when all 4 dimensions are adequately covered
 
-QUESTION EXAMPLES:
-- "When studying or working, do you prefer a quiet, organized space or do you work well with background noise and activity?"
-- "When making important decisions, do you usually analyze all the facts first, or do you tend to go with your gut feeling?"
-- "After a long day, do you feel more energized hanging out with friends or having some quiet time alone?"
-- "Do you prefer having a clear plan and schedule, or do you like keeping things flexible and spontaneous?"
+QUESTION EXAMPLES BY DIMENSION:
+
+EXTRAVERSION/INTROVERSION:
+- "After a busy day, what helps you recharge: being around friends and family, or having quiet time alone?"
+- "When working on projects, do you prefer collaborating with others or working independently?"
+
+SENSING/INTUITION:
+- "When learning something new, do you prefer step-by-step instructions with examples, or do you like to see the big picture first and figure out the details?"
+- "Are you more drawn to practical, proven methods or innovative, creative approaches?"
+
+THINKING/FEELING:
+- "When making important decisions, what weighs more heavily: logical analysis of pros/cons, or how the decision will affect people's feelings?"
+- "When giving feedback, do you focus on being direct and honest, or on being tactful and considerate?"
+
+JUDGING/PERCEIVING:
+- "Do you prefer having a clear schedule and plan for your day, or do you like keeping things flexible and spontaneous?"
+- "When working on assignments, do you start early and work steadily, or do you work better under pressure closer to deadlines?"
 
 OUTPUT SCHEMA:
 {
-  "type": "<ISTJ|ISFJ|INFJ|INTJ|ISTP|ISFP|INFP|INTP|ESTP|ESFP|ENFP|ENTP|ESTJ|ESFJ|ENFJ|ENTJ|Unknown>",
-  "confidence": <float between 0.0 and 1.0>,
-  "strengths": ["<short bullet>", "<short bullet>", "<short bullet>"],
-  "growth_tips": ["<short bullet>", "<short bullet>", "<short bullet>"],
-  "one_liner": "<one-sentence summary or specific question>"
+  "type": "<MBTI_TYPE|Unknown>",
+  "confidence": <float 0.0-1.0>,
+  "strengths": ["<strength>", "<strength>", "<strength>"],
+  "growth_tips": ["<tip>", "<tip>", "<tip>"],
+  "one_liner": "<question_or_summary>",
+  "validation_status": "<need_more_info|ready_for_analysis|clarification_needed>",
+  "missing_dimensions": ["<dimension_if_missing>"]
 }
 
-ANALYSIS RULES:
-- Messages 1-2: Use type "Unknown", ask specific questions in one_liner
-- Message 3: Can start forming hypothesis, but still ask one more question
-- Message 4+: Provide confident MBTI analysis based on their responses
+VALIDATION LOGIC:
+- If user gives vague/irrelevant answer: validation_status = "clarification_needed", rephrase question
+- If missing information on dimensions: validation_status = "need_more_info", ask about missing dimension
+- If all dimensions covered with good answers: validation_status = "ready_for_analysis", provide MBTI type
 
-Make questions conversational and easy to answer with specific examples.`;
+Remember: Be conversational but ensure you get REAL, SPECIFIC answers before moving forward.`;
 
-// Simplified conversation analysis focused on question flow
+// Enhanced conversation analysis with answer validation
 function analyzeConversationDepth(messages) {
   const userMessages = messages.filter(m => m.role === 'user');
-  const totalLength = userMessages.reduce((sum, m) => sum + m.content.length, 0);
+  const aiMessages = messages.filter(m => m.role === 'assistant');
   
-  // Track what aspects have been covered - make this more strict
-  const aspects = {
-    workEnvironment: false,
-    decisionMaking: false,
-    socialEnergy: false,
-    planningStyle: false
+  // Track dimensions and answer quality
+  const dimensions = {
+    extraversion_introversion: { covered: false, quality: 'none', keywords: [] },
+    sensing_intuition: { covered: false, quality: 'none', keywords: [] },
+    thinking_feeling: { covered: false, quality: 'none', keywords: [] },
+    judging_perceiving: { covered: false, quality: 'none', keywords: [] }
   };
   
   const allContent = messages.map(m => m.content.toLowerCase()).join(' ');
   
-  // More strict keyword matching - require specific terms
-  if (allContent.includes('quiet') && allContent.includes('organized') || 
-      allContent.includes('noise') && allContent.includes('activity') ||
-      allContent.includes('study') && (allContent.includes('space') || allContent.includes('environment'))) {
-    aspects.workEnvironment = true;
-  }
-  if ((allContent.includes('decision') || allContent.includes('decide')) && 
-      (allContent.includes('analyze') || allContent.includes('gut') || allContent.includes('facts'))) {
-    aspects.decisionMaking = true;
-  }
-  if ((allContent.includes('friends') || allContent.includes('social')) && 
-      (allContent.includes('alone') || allContent.includes('energized'))) {
-    aspects.socialEnergy = true;
-  }
-  if ((allContent.includes('plan') || allContent.includes('schedule')) && 
-      (allContent.includes('flexible') || allContent.includes('spontaneous'))) {
-    aspects.planningStyle = true;
+  // Enhanced keyword analysis for each dimension
+  // Extraversion/Introversion indicators
+  const extraversionKeywords = ['friends', 'people', 'social', 'party', 'group', 'team', 'collaborate', 'together'];
+  const introversionKeywords = ['alone', 'quiet', 'solitude', 'independent', 'recharge', 'private', 'myself'];
+  
+  if (hasRelevantAnswer(allContent, [...extraversionKeywords, ...introversionKeywords], ['energy', 'recharge', 'people', 'alone'])) {
+    dimensions.extraversion_introversion.covered = true;
+    dimensions.extraversion_introversion.quality = assessAnswerQuality(userMessages, [...extraversionKeywords, ...introversionKeywords]);
   }
   
-  const aspectsCovered = Object.values(aspects).filter(Boolean).length;
+  // Sensing/Intuition indicators
+  const sensingKeywords = ['details', 'facts', 'practical', 'step-by-step', 'concrete', 'specific', 'proven', 'experience'];
+  const intuitionKeywords = ['big picture', 'possibilities', 'creative', 'innovative', 'pattern', 'future', 'theoretical', 'abstract'];
+  
+  if (hasRelevantAnswer(allContent, [...sensingKeywords, ...intuitionKeywords], ['learn', 'information', 'approach', 'method'])) {
+    dimensions.sensing_intuition.covered = true;
+    dimensions.sensing_intuition.quality = assessAnswerQuality(userMessages, [...sensingKeywords, ...intuitionKeywords]);
+  }
+  
+  // Thinking/Feeling indicators
+  const thinkingKeywords = ['logical', 'analysis', 'objective', 'pros and cons', 'rational', 'facts', 'direct', 'honest'];
+  const feelingKeywords = ['feelings', 'values', 'harmony', 'people', 'emotions', 'considerate', 'tactful', 'impact'];
+  
+  if (hasRelevantAnswer(allContent, [...thinkingKeywords, ...feelingKeywords], ['decision', 'choose', 'feedback', 'important'])) {
+    dimensions.thinking_feeling.covered = true;
+    dimensions.thinking_feeling.quality = assessAnswerQuality(userMessages, [...thinkingKeywords, ...feelingKeywords]);
+  }
+  
+  // Judging/Perceiving indicators
+  const judgingKeywords = ['plan', 'schedule', 'organized', 'deadline', 'structure', 'early', 'steady', 'routine'];
+  const perceivingKeywords = ['flexible', 'spontaneous', 'adapt', 'pressure', 'last minute', 'open', 'improvise'];
+  
+  if (hasRelevantAnswer(allContent, [...judgingKeywords, ...perceivingKeywords], ['schedule', 'plan', 'work', 'time', 'assignments'])) {
+    dimensions.judging_perceiving.covered = true;
+    dimensions.judging_perceiving.quality = assessAnswerQuality(userMessages, [...judgingKeywords, ...perceivingKeywords]);
+  }
+  
+  // Calculate overall progress
+  const coveredDimensions = Object.values(dimensions).filter(d => d.covered).length;
+  const goodQualityAnswers = Object.values(dimensions).filter(d => d.quality === 'good').length;
   
   return {
     messageCount: userMessages.length,
-    totalLength,
-    aspectsCovered,
-    aspects,
+    dimensions,
+    coveredDimensions,
+    goodQualityAnswers,
     isReadyForAnalysis: function() {
-      return this.messageCount >= 3 && aspectsCovered >= 2;
+      return this.coveredDimensions >= 4 && goodQualityAnswers >= 3;
     },
-    shouldGiveFullAnalysis: function() {
-      return this.messageCount >= 4 || aspectsCovered >= 3;
+    getMissingDimensions: function() {
+      return Object.keys(dimensions).filter(key => !dimensions[key].covered);
+    },
+    needsClarification: function() {
+      return Object.values(dimensions).some(d => d.covered && d.quality === 'poor');
     }
   };
 }
 
-// Dynamic model parameters based on conversation
-function getModelParams(model, conversationDepth) {
-  const baseParams = {
-    'anthropic/claude-3.5-haiku': { 
-      max_tokens: 250, 
-      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1))
-    },
-    'google/gemini-flash-1.5-8b': { 
-      max_tokens: 200, 
-      temperature: Math.min(1.1, 0.7 + (conversationDepth.messageCount * 0.1))
-    },
-    'meta-llama/llama-3.1-8b-instruct': { 
-      max_tokens: 180, 
-      temperature: Math.min(1.1, 0.6 + (conversationDepth.messageCount * 0.1)),
-      top_p: 0.9 
-    },
-    'openai/gpt-4o-mini': { 
-      max_tokens: 200, 
-      temperature: Math.min(1.1, 0.8 + (conversationDepth.messageCount * 0.1))
-    }
-  };
+// Helper function to check if content has relevant answers
+function hasRelevantAnswer(content, keywords, contextWords) {
+  const hasKeywords = keywords.some(keyword => content.includes(keyword));
+  const hasContext = contextWords.some(word => content.includes(word));
+  return hasKeywords && hasContext;
+}
+
+// Assess the quality of user answers
+function assessAnswerQuality(userMessages, relevantKeywords) {
+  const recentMessage = userMessages[userMessages.length - 1];
+  if (!recentMessage) return 'none';
   
-  return baseParams[model] || { max_tokens: 200, temperature: 0.8 };
+  const messageContent = recentMessage.content.toLowerCase();
+  const messageLength = messageContent.length;
+  
+  // Check for poor quality indicators
+  const poorQualityPhrases = [
+    'i don\'t know', 'not sure', 'maybe', 'it depends', 'sometimes', 
+    'both', 'either', 'hard to say', 'varies', 'depends on', 'idk'
+  ];
+  
+  const hasPoorIndicators = poorQualityPhrases.some(phrase => messageContent.includes(phrase));
+  const hasRelevantKeywords = relevantKeywords.some(keyword => messageContent.includes(keyword));
+  
+  if (hasPoorIndicators || messageLength < 10) {
+    return 'poor';
+  } else if (hasRelevantKeywords && messageLength > 20) {
+    return 'good';
+  } else {
+    return 'fair';
+  }
+}
+
+// Get next question based on analysis
+function getNextQuestion(conversationAnalysis) {
+  const { dimensions, needsClarification } = conversationAnalysis;
+  
+  // If we need clarification on a poor answer, address that first
+  if (needsClarification()) {
+    const poorDimension = Object.keys(dimensions).find(key => 
+      dimensions[key].covered && dimensions[key].quality === 'poor'
+    );
+    
+    switch(poorDimension) {
+      case 'extraversion_introversion':
+        return "Let me ask this differently: After a long, busy day, what specifically helps you feel recharged - spending time with friends and family, or having quiet time by yourself? Can you give me an example?";
+      case 'sensing_intuition':
+        return "I'd like to understand better: When you're learning something new (like using a new app or studying), do you prefer to get step-by-step instructions first, or do you like to explore and figure out the big picture yourself?";
+      case 'thinking_feeling':
+        return "Let me rephrase: When you need to make an important decision, what do you rely on more - analyzing the facts and logic, or considering how it will affect people's feelings? Can you give me a specific example?";
+      case 'judging_perceiving':
+        return "To clarify: In your daily life, do you prefer having a planned schedule and sticking to it, or do you like keeping things flexible and deciding what to do as you go?";
+    }
+  }
+  
+  // Ask about missing dimensions
+  const missing = conversationAnalysis.getMissingDimensions();
+  if (missing.length > 0) {
+    const nextDimension = missing[0];
+    
+    switch(nextDimension) {
+      case 'extraversion_introversion':
+        return "After a busy day at school or work, what helps you recharge your energy: being around friends and family, or having some quiet time alone?";
+      case 'sensing_intuition':
+        return "When learning something new, do you prefer detailed, step-by-step instructions with examples, or do you like to see the big picture first and figure out the details yourself?";
+      case 'thinking_feeling':
+        return "When making important decisions, what influences you more: logical analysis of pros and cons, or considering how the decision will affect people's feelings and relationships?";
+      case 'judging_perceiving':
+        return "Do you prefer having a clear plan and schedule for your day, or do you like to keep things flexible and spontaneous, adapting as you go?";
+      default:
+        return "Tell me more about how you prefer to approach daily tasks and decisions.";
+    }
+  }
+  
+  return "I'd like to understand one more aspect of your personality. How do you typically handle deadlines and planning?";
 }
 
 // Enhanced JSON response handler
@@ -164,14 +264,12 @@ async function getJsonResponse(response) {
   }
   
   try {
-    // Try parsing as JSON first
     const parsed = JSON.parse(responseText);
     console.log('Successfully parsed JSON response');
     return parsed;
   } catch (e) {
     console.log('Direct JSON parse failed, trying extraction...');
     
-    // Try to extract JSON from various formats
     const jsonPatterns = [
       /```json\s*([\s\S]*?)\s*```/i,
       /```\s*([\s\S]*?)\s*```/i,
@@ -195,65 +293,45 @@ async function getJsonResponse(response) {
   }
 }
 
-// Better conversation summarization for context
-function summarizeConversation(messages) {
-  const userMessages = messages.filter(m => m.role === 'user');
-  const recentMessages = userMessages.slice(-5);
-  
-  const topics = [];
-  const keywords = ['study', 'friend', 'decision', 'feel', 'think', 'prefer', 'like', 'enjoy'];
-  
-  recentMessages.forEach(msg => {
-    keywords.forEach(keyword => {
-      if (msg.content.toLowerCase().includes(keyword)) {
-        topics.push(keyword);
-      }
-    });
-  });
-  
-  return {
-    topicsCovered: [...new Set(topics)],
-    conversationStyle: userMessages.length > 3 ? 'detailed' : 'brief',
-    personalityHints: recentMessages.map(m => m.content).join(' ').toLowerCase()
-  };
-}
-
 async function tryModelsInOrder(messages) {
-  const conversationDepth = analyzeConversationDepth(messages);
-  const summary = summarizeConversation(messages);
+  const conversationAnalysis = analyzeConversationDepth(messages);
   
-  console.log('Conversation analysis:', conversationDepth);
-  console.log('Conversation summary:', summary);
+  console.log('Conversation analysis:', {
+    messageCount: conversationAnalysis.messageCount,
+    coveredDimensions: conversationAnalysis.coveredDimensions,
+    goodQualityAnswers: conversationAnalysis.goodQualityAnswers,
+    isReady: conversationAnalysis.isReadyForAnalysis(),
+    missing: conversationAnalysis.getMissingDimensions(),
+    needsClarification: conversationAnalysis.needsClarification()
+  });
   
   let lastError = null;
   
   for (const model of PREFERRED_MODELS) {
     try {
       console.log(`\n=== Trying model: ${model} ===`);
-      const params = getModelParams(model, conversationDepth);
       
-      // Add conversation context with question flow guidance
-      const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCONVERSATION CONTEXT:
-- Message number: ${conversationDepth.messageCount}
-- Aspects covered: ${conversationDepth.aspectsCovered}/4
-- Work environment discussed: ${conversationDepth.aspects.workEnvironment}
-- Decision-making discussed: ${conversationDepth.aspects.decisionMaking}
-- Social energy discussed: ${conversationDepth.aspects.socialEnergy}
-- Planning style discussed: ${conversationDepth.aspects.planningStyle}
+      // Build context-aware system prompt
+      const contextualSystemPrompt = MBTI_SYSTEM_PROMPT + `\n\nCURRENT CONVERSATION STATUS:
+- Messages exchanged: ${conversationAnalysis.messageCount}
+- Dimensions covered: ${conversationAnalysis.coveredDimensions}/4
+- Good quality answers: ${conversationAnalysis.goodQualityAnswers}
+- Missing dimensions: ${conversationAnalysis.getMissingDimensions().join(', ') || 'None'}
+- Needs clarification: ${conversationAnalysis.needsClarification()}
+- Ready for analysis: ${conversationAnalysis.isReadyForAnalysis()}
 
-INSTRUCTIONS FOR MESSAGE #${conversationDepth.messageCount}:
-${conversationDepth.messageCount === 1 ? 
-  'Ask about work/study environment preferences (quiet vs busy, organized vs flexible)' :
-  conversationDepth.messageCount === 2 ? 
-    'Ask about decision-making style (logical analysis vs intuition/gut feeling)' :
-    conversationDepth.messageCount === 3 ?
-      'Ask about social energy (energized by people vs alone time)' :
-      conversationDepth.shouldGiveFullAnalysis() ?
-        'Provide MBTI analysis with confidence 0.6-0.8 based on their responses' :
-        'Ask one final question about planning (structured vs spontaneous) then analyze'
-}
+DIMENSION STATUS:
+${Object.entries(conversationAnalysis.dimensions).map(([dim, info]) => 
+  `- ${dim.replace('_', '/')}: ${info.covered ? `Covered (${info.quality} quality)` : 'Not covered'}`
+).join('\n')}
 
-REMEMBER: Keep questions specific and easy to answer. Use the one_liner field for questions when type is "Unknown".`;
+INSTRUCTION FOR THIS RESPONSE:
+${conversationAnalysis.isReadyForAnalysis() ? 
+  'Provide comprehensive MBTI analysis with high confidence (0.7-0.9)' :
+  conversationAnalysis.needsClarification() ?
+    'Ask for clarification on the poor quality answer before proceeding' :
+    'Ask about the next missing dimension with specific, easy-to-answer questions'
+}`;
 
       const requestBody = {
         model,
@@ -261,10 +339,9 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
           { role: 'system', content: contextualSystemPrompt },
           ...messages
         ],
-        ...params
+        max_tokens: 300,
+        temperature: 0.7
       };
-      
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
       
       const chatResponse = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
         method: 'POST',
@@ -275,7 +352,6 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
       const chatJson = await getJsonResponse(chatResponse);
       
       if (!chatJson?.choices?.[0]) {
-        console.log(`${model}: invalid response structure`);
         lastError = new Error('Invalid response structure');
         continue;
       }
@@ -283,7 +359,6 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
       let content = chatJson.choices[0].message?.content;
       
       if (!content) {
-        console.log(`${model}: no content in response`);
         lastError = new Error('No content in response');
         continue;
       }
@@ -298,30 +373,41 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
           parsed = content;
         }
         
-        // Streamlined validation for question-based flow
+        // Enhanced validation and result building
         const result = {
           type: parsed.type || 'Unknown',
           confidence: Math.min(Math.max(parsed.confidence || 0.0, 0.0), 1.0),
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Learning about your preferences'],
-          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Continue sharing your thoughts'],
-          one_liner: parsed.one_liner || 'Getting to know your personality style'
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : ['Engaging in self-reflection'],
+          growth_tips: Array.isArray(parsed.growth_tips) ? parsed.growth_tips.slice(0, 5) : ['Continue exploring your preferences'],
+          one_liner: parsed.one_liner || getNextQuestion(conversationAnalysis),
+          validation_status: parsed.validation_status || 'need_more_info',
+          missing_dimensions: parsed.missing_dimensions || conversationAnalysis.getMissingDimensions()
         };
         
-        // Enforce question flow rules
-        if (conversationDepth.messageCount <= 2) {
+        // Enforce validation rules
+        if (!conversationAnalysis.isReadyForAnalysis()) {
           result.type = 'Unknown';
           result.confidence = 0.0;
-        } else if (conversationDepth.messageCount === 3 && !conversationDepth.shouldGiveFullAnalysis()) {
-          result.type = 'Unknown';
-          result.confidence = Math.min(result.confidence, 0.3);
-        } else if (conversationDepth.shouldGiveFullAnalysis() && result.type !== 'Unknown') {
-          // Good to provide analysis
-          result.confidence = Math.min(Math.max(result.confidence, 0.6), 0.8);
+          
+          if (conversationAnalysis.needsClarification()) {
+            result.validation_status = 'clarification_needed';
+          } else {
+            result.validation_status = 'need_more_info';
+          }
+          
+          // Ensure we have a good question
+          if (!result.one_liner || result.one_liner.length < 10) {
+            result.one_liner = getNextQuestion(conversationAnalysis);
+          }
+        } else {
+          // Ready for analysis - ensure good confidence
+          result.validation_status = 'ready_for_analysis';
+          result.confidence = Math.max(result.confidence, 0.7);
+          result.missing_dimensions = [];
         }
         
-        console.log(`✓ Success with ${model}`);
+        console.log(`✅ Success with ${model}`);
         console.log('Final result:', result);
-        console.log('Conversation analysis:', conversationDepth);
         return JSON.stringify(result);
         
       } catch (e) {
@@ -337,30 +423,17 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
     }
   }
   
-  // Improved fallback with specific questions
-  console.log('All models failed. Providing contextual fallback...');
-  
-  const getQuestionForMessage = (messageNum) => {
-    switch(messageNum) {
-      case 1: return "When studying or working, do you prefer a quiet, organized space or do you work well with background noise and activity?";
-      case 2: return "When making important decisions, do you usually analyze all the facts first, or do you tend to go with your gut feeling?";
-      case 3: return "After a long day, do you feel more energized hanging out with friends or having some quiet time alone?";
-      default: return "Do you prefer having a clear plan and schedule, or do you like keeping things flexible and spontaneous?";
-    }
-  };
+  // Enhanced fallback with proper question flow
+  console.log('All models failed. Providing intelligent fallback...');
   
   const fallback = {
     type: "Unknown",
     confidence: 0.0,
-    strengths: conversationDepth.messageCount <= 2 
-      ? ["You're open to self-discovery", "You're taking time for self-reflection"]
-      : ["You're sharing thoughtfully", "You're engaging authentically"],
-    growth_tips: conversationDepth.messageCount <= 2
-      ? ["Answer honestly about your preferences", "Think about what feels most natural to you"]
-      : ["Keep sharing your authentic preferences", "There are no right or wrong answers"],
-    one_liner: conversationDepth.shouldGiveFullAnalysis() 
-      ? "Ready to analyze your personality based on our conversation!"
-      : getQuestionForMessage(conversationDepth.messageCount)
+    strengths: ["You're open to self-discovery", "You're engaging thoughtfully"],
+    growth_tips: ["Take time to think about your natural preferences", "Answer based on what feels most authentic to you"],
+    one_liner: getNextQuestion(conversationAnalysis),
+    validation_status: conversationAnalysis.needsClarification() ? 'clarification_needed' : 'need_more_info',
+    missing_dimensions: conversationAnalysis.getMissingDimensions()
   };
   
   return JSON.stringify(fallback);
@@ -368,10 +441,6 @@ REMEMBER: Keep questions specific and easy to answer. Use the one_liner field fo
 
 exports.handler = async (event) => {
   console.log('\n🚀 Function invoked');
-  console.log('Environment check:');
-  console.log('SUPABASE_URL present:', !!process.env.SUPABASE_URL);
-  console.log('SUPABASE_SERVICE_KEY present:', !!process.env.SUPABASE_SERVICE_KEY);
-  console.log('OPENROUTER_API_KEY present:', !!process.env.OPENROUTER_API_KEY);
   
   // CORS
   const corsHeaders = {
@@ -408,48 +477,33 @@ exports.handler = async (event) => {
       };
     }
     
-    // Generate simple timestamp-based ID
     const conversationId = Date.now();
-    let actualConversationId = conversationId; // This will be updated after saving
+    let actualConversationId = conversationId;
     
     console.log('🔍 Processing conversation with', messages.length, 'messages');
     
     const aiResponse = await tryModelsInOrder(messages);
     console.log('✅ AI response generated successfully');
     
-    // Save conversation and get the actual database ID
+    // Save conversation
     if (supabase) {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
         
-        console.log('📁 Attempting to save conversation to Supabase...');
-        console.log('📊 Conversation length:', fullConversation.length);
-        console.log('🔗 Supabase URL:', process.env.SUPABASE_URL);
-        
         const { data, error } = await supabase.from('conversations').insert({
           conversation_history: fullConversation,
           created_at: new Date().toISOString()
-        }).select('id'); // Get the ID back
+        }).select('id');
         
         if (error) {
           console.error('❌ Supabase insert error:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          throw error;
-        }
-        
-        if (data && data[0] && data[0].id) {
+        } else if (data && data[0] && data[0].id) {
           actualConversationId = data[0].id;
           console.log('✅ Conversation saved successfully with ID:', actualConversationId);
-        } else {
-          console.log('⚠️ Conversation saved but no ID returned. Data:', JSON.stringify(data, null, 2));
         }
       } catch (e) {
         console.error('💥 Database save failed:', e.message);
-        console.error('Full error details:', JSON.stringify(e, null, 2));
-        // Don't fail the whole request if database save fails
       }
-    } else {
-      console.log('⚠️ Supabase client not initialized - skipping conversation save');
     }
     
     return {
@@ -457,7 +511,7 @@ exports.handler = async (event) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         reply: aiResponse,
-        conversation_id: actualConversationId // Use the actual database ID
+        conversation_id: actualConversationId
       })
     };
     
