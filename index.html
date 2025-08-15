@@ -344,7 +344,7 @@
     // **FIX**: Use a clean JavaScript array to track conversation history
     let conversationHistory = [];
 
-    function appendMessage(role, text, conversationId = null){ 
+    function appendMessage(role, text, conversationId = null, showFeedback = false){ 
       const wrap=document.createElement('div'); 
       wrap.className='msg '+(role==='user'?'user':'ai');
       
@@ -359,7 +359,8 @@
       
       bubble.innerHTML = processedText;
       
-      if (role === 'ai' && conversationId) {
+      // Only show feedback buttons for MBTI analysis results
+      if (role === 'ai' && conversationId && showFeedback) {
         const feedbackContainer = document.createElement('div');
         feedbackContainer.className = 'feedback-buttons';
         feedbackContainer.innerHTML = `
@@ -375,23 +376,50 @@
     }
 
     async function handleFeedback(conversationId, isAccurate) {
-        if (!supabaseClient) return alert('Supabase client not initialized.');
+        if (!supabaseClient) {
+            console.error('Supabase client not initialized.');
+            alert('Feedback system not available.');
+            return;
+        }
         
-        const { error } = await supabaseClient
-            .from('feedback')
-            .insert({ conversation_id: conversationId, is_accurate: isAccurate });
+        try {
+            console.log('Attempting to save feedback:', { conversationId, isAccurate });
+            
+            const { data, error } = await supabaseClient
+                .from('feedback')
+                .insert({ 
+                    conversation_id: conversationId, 
+                    is_accurate: isAccurate,
+                    created_at: new Date().toISOString()
+                });
 
-        if (error) {
-            console.error('Error saving feedback:', error);
-            alert('Could not save feedback.');
-        } else {
+            if (error) {
+                console.error('Error saving feedback:', error);
+                
+                // Check if it's a table doesn't exist error
+                if (error.message.includes('relation "public.feedback" does not exist')) {
+                    alert('Feedback table not set up yet. Please contact the administrator.');
+                } else {
+                    alert('Could not save feedback: ' + error.message);
+                }
+                return;
+            }
+
+            console.log('Feedback saved successfully:', data);
+            
+            // Mark buttons as completed
             const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
             buttons.forEach(btn => {
                 btn.disabled = true;
                 if (btn.getAttribute('data-rating') == String(isAccurate)) {
                     btn.classList.add('selected');
+                    btn.innerHTML = isAccurate ? '✅ Thanks!' : '📝 Noted';
                 }
             });
+            
+        } catch (error) {
+            console.error('Unexpected error saving feedback:', error);
+            alert('Could not save feedback. Please try again.');
         }
     }
 
@@ -459,8 +487,11 @@
             conversationHistory.push({ role: 'assistant', content: data.reply });
 
             let responseText = '';
+            let isActualResult = false; // Track if this is an MBTI result or just a question
             
             if (mbtiResult.type && mbtiResult.type !== 'Unknown') {
+              // This is an actual MBTI analysis result
+              isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
               if (mbtiResult.one_liner) {
@@ -476,11 +507,13 @@
                 mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
               }
             } else {
+              // This is just a question or gathering info, not a final result
+              isActualResult = false;
               responseText = mbtiResult.one_liner || 'I need a bit more information to give you a good analysis. Can you tell me more about how you prefer to make decisions or spend your free time?';
             }
             
-            // **FIX**: Pass the conversation_id from the backend to the message display
-            appendMessage('ai', responseText, data.conversation_id);
+            // Only show feedback buttons for actual MBTI results
+            appendMessage('ai', responseText, data.conversation_id, isActualResult);
             
           } catch (parseError) {
             console.error('Failed to parse MBTI result:', parseError);

@@ -385,37 +385,39 @@ exports.handler = async (event) => {
       };
     }
     
+    // Generate simple timestamp-based ID
+    const conversationId = Date.now();
+    let actualConversationId = conversationId; // This will be updated after saving
+    
     console.log('🔍 Processing conversation with', messages.length, 'messages');
     
     const aiResponse = await tryModelsInOrder(messages);
     console.log('✅ AI response generated successfully');
     
-    // Generate conversation ID for feedback tracking
-    const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Optional: Save conversation (works with existing schema)
+    // Save conversation and get the actual database ID
     if (supabase) {
       try {
         const fullConversation = [...messages, { role: 'assistant', content: aiResponse }];
         
         console.log('Attempting to save conversation to Supabase...');
-        console.log('Conversation ID:', conversationId);
         console.log('Conversation length:', fullConversation.length);
         
-        // Save without custom ID since table doesn't have id column
         const { data, error } = await supabase.from('conversations').insert({
           conversation_history: fullConversation,
-          created_at: new Date().toISOString(),
-          // Store conversation_id in the conversation_history metadata
-          conversation_id: conversationId
-        });
+          created_at: new Date().toISOString()
+        }).select('id'); // Get the ID back
         
         if (error) {
           console.error('Supabase insert error:', error);
           throw error;
         }
         
-        console.log('✅ Conversation saved successfully:', data);
+        if (data && data[0] && data[0].id) {
+          actualConversationId = data[0].id;
+          console.log('✅ Conversation saved successfully with ID:', actualConversationId);
+        } else {
+          console.log('✅ Conversation saved but no ID returned');
+        }
       } catch (e) {
         console.error('⚠️ Database save failed:', e.message);
         console.error('Full error:', e);
@@ -429,7 +431,7 @@ exports.handler = async (event) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         reply: aiResponse,
-        conversation_id: conversationId
+        conversation_id: actualConversationId // Use the actual database ID
       })
     };
     
