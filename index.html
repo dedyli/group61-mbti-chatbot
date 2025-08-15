@@ -260,74 +260,93 @@
     const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
     const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
+    // Global variables
+    let conversationHistory = [];
+    let chatBody, chatInputArea, resetBtn, input, sendBtn;
+
     // --- 2. Page Functions (Sparkles, Tilt, Language) ---
-    (function makeSparkles(){ 
-      const host=document.getElementById('sparkles'); 
-      for(let i=0;i<120;i++){ 
-        const s=document.createElement('i'); 
-        s.style.left=Math.random()*100+'vw';
+    function initializeSparkles() { 
+      const host = document.getElementById('sparkles'); 
+      if (!host) return;
+      
+      for(let i = 0; i < 120; i++){ 
+        const s = document.createElement('i'); 
+        s.style.left = Math.random() * 100 + 'vw';
         s.style.top = '100vh';
-        s.style.animationDuration=(10+Math.random()*16)+'s'; 
+        s.style.animationDuration = (10 + Math.random() * 16) + 's'; 
         host.appendChild(s);
       } 
-    })();
+    }
 
-    (function tilt(){ 
-      const card=document.getElementById('card3d'); 
+    function initializeTilt() { 
+      const card = document.getElementById('card3d'); 
       if (!card) return;
-      let b=card.getBoundingClientRect(); 
-      window.addEventListener('resize',()=>b=card.getBoundingClientRect()); 
-      card.addEventListener('mousemove',e=>{ 
-        const x=(e.clientX-b.left)/b.width-0.5; 
-        const y=(e.clientY-b.top)/b.height-0.5; 
-        card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`; 
+      
+      let b = card.getBoundingClientRect(); 
+      window.addEventListener('resize', () => b = card.getBoundingClientRect()); 
+      
+      card.addEventListener('mousemove', e => { 
+        const x = (e.clientX - b.left) / b.width - 0.5; 
+        const y = (e.clientY - b.top) / b.height - 0.5; 
+        card.style.transform = `perspective(1000px) rotateX(${-y * 6}deg) rotateY(${x * 8}deg)`; 
       }); 
-      card.addEventListener('mouseleave',()=>card.style.transform='perspective(1000px) rotateX(0) rotateY(0)'); 
-    })();
+      
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+      }); 
+    }
 
-    (function initLang(){
+    function initializeLanguage() {
       const sel = document.getElementById('language');
-      function applyPlaceholders(){ 
+      if (!sel) return;
+      
+      function applyPlaceholders() { 
         const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en'; 
         document.querySelectorAll('[data-lang-en-placeholder]').forEach(el => { 
           const txt = el.getAttribute(`data-lang-${lang}-placeholder`); 
           if(txt) el.placeholder = txt; 
         }); 
       }
-      function setLang(lang){ 
+      
+      function setLang(lang) { 
         document.body.classList.remove('lang-en','lang-vi'); 
-        document.body.classList.add('lang-'+lang); 
+        document.body.classList.add('lang-' + lang); 
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
-        displayInitialMessage();
+        // Only call displayInitialMessage if chatBody exists
+        if (chatBody) {
+          displayInitialMessage();
+        }
       }
+      
       const saved = localStorage.getItem('preferredLanguage') || 'en'; 
       sel.value = saved; 
       setLang(saved); 
       sel.addEventListener('change', e => setLang(e.target.value));
-    })();
+    }
 
     // --- 3. Chat Panel Logic ---
-    const panel = document.getElementById('chatPanel');
-    document.getElementById('chatOpen').onclick = () => { 
-      panel.classList.toggle('open'); 
-      if(panel.classList.contains('open')){ 
-        document.getElementById('chatInput')?.focus(); 
-      } 
-    };
+    function initializeChatPanel() {
+      const panel = document.getElementById('chatPanel');
+      const chatOpen = document.getElementById('chatOpen');
+      
+      if (!panel || !chatOpen) return;
+      
+      chatOpen.onclick = () => { 
+        panel.classList.toggle('open'); 
+        if(panel.classList.contains('open') && input){ 
+          input.focus(); 
+        } 
+      };
+    }
 
-    // --- 4. Chat + Backend Logic ---
-    const chatBody = document.getElementById('chatBody');
-    const chatInputArea = document.getElementById('chatInputArea');
-    const resetBtn = document.getElementById('resetBtn');
-    let input = document.getElementById('chatInput');
-    let sendBtn = document.getElementById('sendBtn');
-    
-    let conversationHistory = [];
-
+    // --- 4. Chat Functions ---
     function displayInitialMessage() {
+      if (!chatBody) return;
+      
       const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en';
       chatBody.innerHTML = ''; 
+      
       const initialMsg = document.createElement('div');
       initialMsg.className = 'msg ai';
       const bubble = document.createElement('div');
@@ -339,6 +358,7 @@
       } else {
         welcomeText = `Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.`;
       }
+      
       bubble.innerHTML = `<span>${welcomeText}</span>`;
       initialMsg.appendChild(bubble);
       chatBody.appendChild(initialMsg);
@@ -347,24 +367,26 @@
 
     function resetChat() {
       displayInitialMessage();
-      chatInputArea.style.display = 'grid';
-      resetBtn.style.display = 'none';
-      input.focus();
+      if (chatInputArea) chatInputArea.style.display = 'grid';
+      if (resetBtn) resetBtn.style.display = 'none';
+      if (input) input.focus();
     }
-    
-    resetBtn.addEventListener('click', resetChat);
 
-    function appendMessage(role, text, conversationId = null, showFeedback = false){ 
-      const wrap=document.createElement('div'); 
-      wrap.className='msg '+(role==='user'?'user':'ai');
+    function appendMessage(role, text, conversationId = null, showFeedback = false) { 
+      if (!chatBody) return;
+      
+      const wrap = document.createElement('div'); 
+      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
+      
       let processedText = text
         .replace(/</g,'&lt;')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g,'<br>');
       bubble.innerHTML = processedText;
+      
       if (role === 'ai' && conversationId && showFeedback) {
         const feedbackContainer = document.createElement('div');
         feedbackContainer.className = 'feedback-buttons';
@@ -374,15 +396,17 @@
         `;
         bubble.appendChild(feedbackContainer);
       }
+      
       wrap.appendChild(bubble);
       chatBody.appendChild(wrap); 
-      chatBody.scrollTop=chatBody.scrollHeight; 
+      chatBody.scrollTop = chatBody.scrollHeight; 
     }
 
     async function handleFeedback(conversationId, isAccurate) {
         try {
             const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
             buttons.forEach(b => b.disabled = true);
+            
             const res = await fetch('/.netlify/functions/save-feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -391,10 +415,12 @@
                     is_accurate: Boolean(isAccurate)
                 })
             });
+            
             if (!res.ok) {
                 const text = await res.text();
                 throw new Error(text || `HTTP ${res.status}`);
             }
+            
             buttons.forEach(btn => {
                 if (btn.getAttribute('data-rating') === String(isAccurate)) {
                     btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
@@ -409,22 +435,28 @@
         }
     }
 
-    chatBody.addEventListener('click', (event) => {
-        const target = event.target;
-        if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
-            const conversationId = target.getAttribute('data-convo-id');
-            const isAccurate = target.getAttribute('data-rating') === 'true';
-            handleFeedback(conversationId, isAccurate);
-        }
-    });
+    function initializeFeedbackHandler() {
+      if (!chatBody) return;
+      
+      chatBody.addEventListener('click', (event) => {
+          const target = event.target;
+          if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
+              const conversationId = target.getAttribute('data-convo-id');
+              const isAccurate = target.getAttribute('data-rating') === 'true';
+              handleFeedback(conversationId, isAccurate);
+          }
+      });
+    }
 
     function showTyping() {
-      const wrap=document.createElement('div');
-      wrap.className='msg ai typing';
-      wrap.innerHTML=`<div class="bubble">Typing...</div>`;
+      if (!chatBody) return;
+      
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ai typing';
+      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
       wrap.id = 'typing-indicator';
       chatBody.appendChild(wrap);
-      chatBody.scrollTop=chatBody.scrollHeight;
+      chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function hideTyping() {
@@ -432,7 +464,9 @@
       if (typing) typing.remove();
     }
 
-    async function handleSend(){ 
+    async function handleSend() { 
+      if (!input || !chatBody) return;
+      
       const text = input.value.trim(); 
       if (!text) return; 
       
@@ -480,8 +514,8 @@
                 responseText += `🌱 **Growth Tips:**\n`;
                 mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
               }
-              chatInputArea.style.display = 'none';
-              resetBtn.style.display = 'block';
+              if (chatInputArea) chatInputArea.style.display = 'none';
+              if (resetBtn) resetBtn.style.display = 'block';
             } else {
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
             }
@@ -503,16 +537,49 @@
       }
     }
 
-    sendBtn.addEventListener('click', handleSend);
-    input.addEventListener('keydown', e => { 
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        handleSend(); 
+    function initializeChatControls() {
+      // Get DOM elements
+      chatBody = document.getElementById('chatBody');
+      chatInputArea = document.getElementById('chatInputArea');
+      resetBtn = document.getElementById('resetBtn');
+      input = document.getElementById('chatInput');
+      sendBtn = document.getElementById('sendBtn');
+      
+      if (!chatBody || !input || !sendBtn || !resetBtn) {
+        console.error('Chat elements not found');
+        return;
       }
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
+      
+      // Add event listeners
+      sendBtn.addEventListener('click', handleSend);
+      resetBtn.addEventListener('click', resetChat);
+      
+      input.addEventListener('keydown', e => { 
+        if (e.key === 'Enter' && !e.shiftKey) { 
+          e.preventDefault(); 
+          handleSend(); 
+        }
+      });
+      
+      // Initialize feedback handler
+      initializeFeedbackHandler();
+      
+      // Display initial message
       displayInitialMessage();
+    }
+
+    // --- 5. Initialize Everything When DOM is Ready ---
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM loaded, initializing...');
+      
+      // Initialize page features
+      initializeSparkles();
+      initializeTilt();
+      initializeLanguage();
+      initializeChatPanel();
+      
+      // Initialize chat (this must happen after DOM is ready)
+      initializeChatControls();
     });
   </script>
 </body>
