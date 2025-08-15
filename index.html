@@ -500,24 +500,49 @@
             let responseText = '';
             let isActualResult = false;
             
-            if (mbtiResult.type && mbtiResult.type !== 'Unknown') {
+            // Check if this is a final MBTI result
+            if (mbtiResult.validation_status === 'ready_for_analysis' && mbtiResult.type && mbtiResult.type !== 'Unknown') {
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
-              if (mbtiResult.strengths?.length) {
+              
+              if (mbtiResult.one_liner) {
+                responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              }
+              
+              if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
                 responseText += `✨ **Your Strengths:**\n`;
-                mbtiResult.strengths.forEach(s => { responseText += `• ${s}\n`; });
+                mbtiResult.strengths.forEach(strength => {
+                  responseText += `• ${strength}\n`;
+                });
                 responseText += '\n';
               }
-              if (mbtiResult.growth_tips?.length) {
+              
+              if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
                 responseText += `🌱 **Growth Tips:**\n`;
-                mbtiResult.growth_tips.forEach(tip => { responseText += `• ${tip}\n`; });
+                mbtiResult.growth_tips.forEach(tip => {
+                  responseText += `• ${tip}\n`;
+                });
+                responseText += '\n';
               }
+              
+              // Add progress indicator
+              responseText += `📈 **Analysis Complete!**\nBased on our conversation covering your preferences for energy, information processing, decision-making, and lifestyle.`;
+              
               if (chatInputArea) chatInputArea.style.display = 'none';
               if (resetBtn) resetBtn.style.display = 'block';
             } else {
+              // This is a question or intermediate response
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
+              
+              // Add progress indicator for questions
+              if (mbtiResult.validation_status === 'need_more_info' && mbtiResult.missing_dimensions) {
+                const totalDimensions = 4;
+                const coveredDimensions = totalDimensions - mbtiResult.missing_dimensions.length;
+                responseText += `\n\n📊 Progress: ${coveredDimensions}/${totalDimensions} personality dimensions covered`;
+              } else if (mbtiResult.validation_status === 'clarification_needed') {
+                responseText += `\n\n🎯 Let's get a clearer answer to ensure accurate analysis`;
+              }
             }
             
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
