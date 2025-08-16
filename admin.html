@@ -317,9 +317,32 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase configuration
-    const SUPABASE_URL = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
+    // Supabase configuration - CORRECTED URL AND API KEY
+    const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
+    
+    // Test Supabase URL accessibility
+    async function testSupabaseConnection() {
+      try {
+        debug('Testing Supabase connection...');
+        const response = await fetch(SUPABASE_URL + '/rest/v1/', {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          }
+        });
+        debug('Supabase connection test result', { 
+          status: response.status, 
+          ok: response.ok,
+          url: SUPABASE_URL 
+        });
+        return response.ok;
+      } catch (error) {
+        debug('Supabase connection failed', error);
+        return false;
+      }
+    }
     
     // Initialize Supabase client
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -357,6 +380,25 @@
         return;
       }
       
+      // Test Supabase connection first
+      errorMessage.textContent = 'Testing connection...';
+      const connectionOk = await testSupabaseConnection();
+      
+      if (!connectionOk) {
+        errorMessage.innerHTML = `
+          <strong>Connection Failed!</strong><br>
+          Cannot reach Supabase server. Please check:
+          <ul style="text-align: left; margin: 10px 0;">
+            <li>Your internet connection</li>
+            <li>Supabase URL is correct</li>
+            <li>Supabase project is active</li>
+          </ul>
+        `;
+        return;
+      }
+      
+      errorMessage.textContent = 'Authenticating...';
+      
       try {
         // Attempt to sign in
         const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -368,14 +410,21 @@
         
         if (error) {
           debug('Login error', error);
-          errorMessage.textContent = error.message;
+          if (error.message.includes('Invalid login credentials')) {
+            errorMessage.textContent = 'Invalid email or password. Please check your credentials.';
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage.textContent = 'Please confirm your email address before logging in.';
+          } else {
+            errorMessage.textContent = error.message;
+          }
         } else {
           debug('Login successful');
+          errorMessage.textContent = 'Login successful!';
           loginForm.reset();
         }
       } catch (err) {
         debug('Login exception', err);
-        errorMessage.textContent = 'An unexpected error occurred. Please try again.';
+        errorMessage.textContent = 'Network error. Please check your connection and try again.';
       }
     });
 
@@ -620,8 +669,22 @@
       // Implementation would go here
     }
 
-    // Check initial auth state
-    debug('Checking initial auth state');
+    // Check initial auth state and connection
+    debug('Checking initial auth state and connection');
+    
+    // Test connection on page load
+    testSupabaseConnection().then(connectionOk => {
+      if (!connectionOk) {
+        debug('Initial connection test failed');
+        errorMessage.innerHTML = `
+          <strong>⚠️ Connection Issue</strong><br>
+          Cannot reach Supabase. Please verify your settings.
+        `;
+      } else {
+        debug('Initial connection test successful');
+      }
+    });
+    
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       debug('Initial session', !!session);
     });
