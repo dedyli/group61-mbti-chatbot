@@ -12,13 +12,10 @@
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
-
-    /* Multilingual helpers */
     [data-lang]{display:none}
     body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
     body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
     body.lang-zh [data-lang="zh"], body.lang-zh .block-zh{display:initial}
-
     .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
       radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
       radial-gradient(50vw 50vw at 110% 10%, rgba(240,166,255,.25), transparent 60%),
@@ -31,7 +28,6 @@
     .sparkles i{position:absolute; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.85); filter:blur(.3px); opacity:.7; animation:float 16s linear infinite, twinkle 2.5s ease-in-out infinite alternate}
     @keyframes float{to{transform:translateY(-120vh)}}
     @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } }
-
     header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
     .brand{display:flex; align-items:center; gap:12px}
     .brand img{width:120px; height:40px; object-fit:contain; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,.35)}
@@ -40,119 +36,62 @@
     nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:999px; position:relative; overflow:hidden; }
     nav a:after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:0; transition:.35s}
     nav a:hover:after, nav a.active:after{opacity:.25}
-
-    /* Language pill - higher contrast */
     .lang{display:flex; align-items:center; gap:8px}
     .pill{border:1px solid #6b61b8; background:rgba(14,12,30,.85); padding:8px 10px; border-radius:999px; display:flex; align-items:center; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.45)}
     .pill select{background:rgba(29,25,58,.95); border:1px solid #8B5CF6; color:#f3f0ff; font-weight:700; padding:8px 10px; border-radius:999px; outline:none; appearance:none}
     .pill select option{background:#1f1a3f; color:#f3f0ff;}
-
     .container{max-width:1200px; margin:0 auto; padding:64px 16px}
-
     .hero{display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:48px; padding-top:48px}
     .title{ font-family:'Playfair Display',serif; font-weight:800; font-size:clamp(36px,6vw,64px); line-height:1.04; letter-spacing:-.3px; margin:0 0 16px; position:relative; background:linear-gradient(180deg,#fff, #d7d0ff 60%, #b9b0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 8px 28px rgba(139,92,246,.15) }
     .subtitle{color:var(--muted); font-weight:600; font-size:18px; margin-bottom:20px}
     .lead{color:#dbd7ff; opacity:.9; max-width:56ch; line-height:1.8; margin-bottom:28px}
     .cta{ display:inline-flex; gap:10px; align-items:center; padding:14px 18px; border-radius:14px; font-weight:700; text-decoration:none; color:#0b0a13; background:linear-gradient(90deg, var(--gold), #FFEBA4); box-shadow:0 10px 30px rgba(238,217,114,.35); transition:transform .2s ease, box-shadow .2s ease }
     .cta:hover{transform:translateY(-2px); box-shadow:0 16px 36px rgba(238,217,114,.45)}
-
     .illustrationWrap{position:relative}
     .card3d{ position:relative; border-radius:24px; overflow:hidden; border:1px solid var(--glass-stroke); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); box-shadow:0 30px 80px rgba(0,0,0,.35); transform:perspective(1000px) rotateX(0) rotateY(0); transition:transform .2s ease }
     .hero-img{display:block; width:100%; height:auto; aspect-ratio:4/3; object-fit:cover}
-    .revealMask{ position:absolute; inset:0; background:conic-gradient(from 45deg at 0% 0%, transparent 0 10%, black 10% 20%, transparent 20% 30%, black 30% 40%, transparent 40% 50%, black 50% 60%, transparent 60% 70%, black 70% 80%, transparent 80% 90%, black 90% 100%); transform:translate(-120%, -120%) rotate(0.0001deg); filter:blur(1.2px) contrast(120%); animation:reveal 2.8s cubic-bezier(.2,.8,.2,1) .3s forwards }
+    .revealMask{ position:absolute; inset:0; transform:translate(-120%, -120%) rotate(0.0001deg); animation:reveal 2.8s cubic-bezier(.2,.8,.2,1) .3s forwards }
     @keyframes reveal{to{transform:translate(0,0)}}
     .badge{position:absolute; right:16px; top:16px; padding:10px 14px; border-radius:12px; font-weight:700; color:#0b0a13; background:linear-gradient(90deg,#fff,#f7f5ff); box-shadow:0 10px 30px rgba(255,255,255,.25)}
-
     .section{padding:72px 0}
     .section h2{font-family:'Playfair Display',serif; font-size:clamp(28px,3.2vw,40px); margin:0 0 24px}
     .muted{color:var(--muted)}
-
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
     .step{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:20px; padding:22px; position:relative; overflow:hidden; transition:transform .25s ease, box-shadow .25s ease }
     .step:hover{transform:translateY(-6px); box-shadow:0 24px 60px rgba(0,0,0,.35)}
     .step .n{width:38px; height:38px; display:grid; place-items:center; border-radius:999px; font-weight:800; color:#0b0a13; background:linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 8px 22px rgba(139,92,246,.45)}
     .step h3{margin:12px 0 8px; font-weight:800}
     .step p{margin:0; color:#e9e7ff; opacity:.9}
-
     .faq{max-width:920px}
     details{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:16px; padding:18px 20px; margin:10px 0}
     summary{cursor:pointer; font-weight:700}
     details[open]{box-shadow:0 16px 40px rgba(0,0,0,.35)}
-
     form{max-width:760px}
     input,textarea,select,button{font-family:inherit}
     .field{display:grid; gap:8px}
     .field input,.field textarea{ background:rgba(255,255,255,.04); border:1px solid var(--glass-stroke); color:var(--fg); padding:14px 16px; border-radius:12px }
     .btn{ border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; box-shadow:0 12px 34px rgba(139,92,246,.35) }
-
     .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
     .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
-    
-    /* --- UPDATED CSS FOR CHAT PANEL (pro header) --- */
-    .chat-panel{ 
-        position:fixed; 
-        right:18px; 
-        bottom:78px; 
-        width:min(420px, calc(100vw - 32px)); 
-        height:min(68vh, 720px); 
-        border-radius:24px; 
-        overflow:hidden; 
-        display:none; 
-        flex-direction:column;
-        z-index:9999; 
-        background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); 
-        -webkit-backdrop-filter:blur(20px) saturate(140%); 
-        backdrop-filter:blur(20px) saturate(140%); 
-        border:1px solid var(--glass-stroke); 
-        box-shadow:0 30px 80px rgba(0,0,0,.55); 
-    }
+    .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; flex-direction:column; z-index:9999; background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55); }
     .chat-panel.open { display:flex; }
-    .chat-head{
-        padding:12px 16px; 
-        background:linear-gradient(90deg, #241b5f, #3c2c9f 45%, #6d4df7);
-        border-bottom:1px solid rgba(255,255,255,.12);
-        flex-shrink:0;
-    }
-    .chat-head h3{
-        margin:0; 
-        font-family:'Playfair Display',serif; 
-        letter-spacing:.3px;
-        font-weight:800;
-    }
-    .chat-body{
-        padding:14px; 
-        flex-grow:1;
-        overflow:auto; 
-        display:flex; 
-        flex-direction:column; 
-        gap:12px
-    }
-
+    .chat-head{ padding:12px 16px; background:linear-gradient(90deg, #241b5f, #3c2c9f 45%, #6d4df7); border-bottom:1px solid rgba(255,255,255,.12); flex-shrink:0; }
+    .chat-head h3{ margin:0; font-family:'Playfair Display',serif; letter-spacing:.3px; font-weight:800; }
+    .chat-body{ padding:14px; flex-grow:1; overflow:auto; display:flex; flex-direction:column; gap:12px }
     .msg{display:flex; gap:10px; align-items:flex-start}
     .msg .bubble{max-width:85%; padding:12px 14px; border-radius:14px; line-height:1.6}
     .msg.user{justify-content:flex-end}
     .msg.user .bubble{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; border-top-right-radius:4px}
     .msg.ai .bubble{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); border-top-left-radius:4px}
-    
-    .chat-foot{
-        padding:12px; 
-        border-top:1px solid var(--glass-stroke); 
-        display:grid; 
-        grid-template-columns:1fr; 
-        gap:8px;
-        flex-shrink:0;
-        background:rgba(255,255,255,.02);
-    }
+    .chat-foot{ padding:12px; border-top:1px solid var(--glass-stroke); display:grid; grid-template-columns:1fr; gap:8px; flex-shrink:0; background:rgba(255,255,255,.02); }
     .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
     .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
     .notice{font-size:12px; color:#cfcaff; opacity:.8; padding:8px 12px;}
-    
     .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
     .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; font-size: 12px; }
     .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
     .feedback-buttons button.selected { background: var(--accent); color: #0b0a13; border-color: transparent; }
     .feedback-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
-
     @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
   </style>
 </head>
@@ -167,27 +106,11 @@
     </div>
     <nav>
       <ul>
-        <li><a class="active" href="#home">
-          <span data-lang="en">Home</span>
-          <span data-lang="vi">Trang chủ</span>
-          <span data-lang="zh">首页</span>
-        </a></li>
-        <li><a href="#how">
-          <span data-lang="en">How it works</span>
-          <span data-lang="vi">Cách hoạt động</span>
-          <span data-lang="zh">使用方式</span>
-        </a></li>
-        <li><a href="#about">
-          <span data-lang="en">About Group 61</span>
-          <span data-lang="vi">Về Nhóm 61</span>
-          <span data-lang="zh">关于第61组</span>
-        </a></li>
+        <li><a class="active" href="#home"><span data-lang="en">Home</span><span data-lang="vi">Trang chủ</span><span data-lang="zh">首页</span></a></li>
+        <li><a href="#how"><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span><span data-lang="zh">使用方式</span></a></li>
+        <li><a href="#about"><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span><span data-lang="zh">关于第61组</span></a></li>
         <li><a href="#faq"><span>FAQ</span></a></li>
-        <li><a href="#contact">
-          <span data-lang="en">Contact</span>
-          <span data-lang="vi">Liên hệ</span>
-          <span data-lang="zh">联系</span>
-        </a></li>
+        <li><a href="#contact"><span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系</span></a></li>
       </ul>
     </nav>
     <div class="lang pill">
@@ -226,72 +149,23 @@
       </div>
       <div class="illustrationWrap">
         <div class="card3d" id="card3d">
-          <!-- Updated hero image -->
           <img class="hero-img" src="hero_image.png" alt="Professionals of diverse backgrounds"/>
         </div>
       </div>
     </section>
 
     <section class="section" id="how">
-      <h2>
-        <span data-lang="en">How it works</span>
-        <span data-lang="vi">Cách hoạt động</span>
-        <span data-lang="zh">如何运作</span>
-      </h2>
-      <p class="muted">
-        <span data-lang="en">Simple, elegant, respectful of your time.</span>
-        <span data-lang="vi">Đơn giản, tinh gọn và tiết kiệm thời gian.</span>
-        <span data-lang="zh">简单优雅，不浪费你的时间。</span>
-      </p>
+      <h2><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span><span data-lang="zh">如何运作</span></h2>
+      <p class="muted"><span data-lang="en">Simple, elegant, respectful of your time.</span><span data-lang="vi">Đơn giản, tinh gọn và tiết kiệm thời gian.</span><span data-lang="zh">简单优雅，不浪费你的时间。</span></p>
       <div class="steps">
-        <div class="step">
-          <span class="n">1</span>
-          <h3>
-            <span data-lang="en">Start a natural chat</span>
-            <span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span>
-            <span data-lang="zh">开始自然对话</span>
-          </h3>
-          <p>
-            <span data-lang="en">Say hello and share how you work, socialize, and make decisions.</span>
-            <span data-lang="vi">Hãy chào và chia sẻ cách bạn làm việc, giao tiếp và ra quyết định.</span>
-            <span data-lang="zh">先打个招呼，说说你的工作方式、人际互动与决策习惯。</span>
-          </p>
-        </div>
-        <div class="step">
-          <span class="n">2</span>
-          <h3>
-            <span data-lang="en">AI listens and learns</span>
-            <span data-lang="vi">AI lắng nghe và học hỏi</span>
-            <span data-lang="zh">AI 认真倾听并学习</span>
-          </h3>
-          <p>
-            <span data-lang="en">The assistant looks for patterns and refines insights over the chat.</span>
-            <span data-lang="vi">Trợ lý tìm các mẫu hành vi và hoàn thiện nhận định trong suốt cuộc trò chuyện.</span>
-            <span data-lang="zh">助手在对话中识别模式，不断完善结论。</span>
-          </p>
-        </div>
-        <div class="step">
-          <span class="n">3</span>
-          <h3>
-            <span data-lang="en">Receive your profile</span>
-            <span data-lang="vi">Nhận hồ sơ của bạn</span>
-            <span data-lang="zh">获取你的画像</span>
-          </h3>
-          <p>
-            <span data-lang="en">Get an MBTI-style type with confidence, traits, and friendly tips.</span>
-            <span data-lang="vi">Nhận kiểu MBTI cùng mức tự tin, đặc trưng chính và gợi ý hữu ích.</span>
-            <span data-lang="zh">获得 MBTI 风格类型、可信度、关键特质和贴心建议。</span>
-          </p>
-        </div>
+        <div class="step"><span class="n">1</span><h3><span data-lang="en">Start a natural chat</span><span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span><span data-lang="zh">开始自然对话</span></h3><p><span data-lang="en">Say hello and share how you work, socialize, and make decisions.</span><span data-lang="vi">Hãy chào và chia sẻ cách bạn làm việc, giao tiếp và ra quyết định.</span><span data-lang="zh">先打个招呼，说说你的工作方式、人际互动与决策习惯。</span></p></div>
+        <div class="step"><span class="n">2</span><h3><span data-lang="en">AI listens and learns</span><span data-lang="vi">AI lắng nghe và học hỏi</span><span data-lang="zh">AI 认真倾听并学习</span></h3><p><span data-lang="en">The assistant looks for patterns and refines insights over the chat.</span><span data-lang="vi">Trợ lý tìm các mẫu hành vi và hoàn thiện nhận định trong suốt cuộc trò chuyện.</span><span data-lang="zh">助手在对话中识别模式，不断完善结论。</span></p></div>
+        <div class="step"><span class="n">3</span><h3><span data-lang="en">Receive your profile</span><span data-lang="vi">Nhận hồ sơ của bạn</span><span data-lang="zh">获取你的画像</span></h3><p><span data-lang="en">Get an MBTI-style type with confidence, traits, and friendly tips.</span><span data-lang="vi">Nhận kiểu MBTI cùng mức tự tin, đặc trưng chính và gợi ý hữu ích.</span><span data-lang="zh">获得 MBTI 风格类型、可信度、关键特质和贴心建议。</span></p></div>
       </div>
     </section>
 
     <section class="section" id="about">
-      <h2>
-        <span data-lang="en">About Group 61</span>
-        <span data-lang="vi">Về Nhóm 61</span>
-        <span data-lang="zh">关于第 61 组</span>
-      </h2>
+      <h2><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span><span data-lang="zh">关于第 61 组</span></h2>
       <p class="muted">
         <span data-lang="en">We are Group 61 from Tsinghua University's IEDE 2025 program. Mind-Mapper AI was born from our passion to use technology for self-awareness and growth.</span>
         <span data-lang="vi">Chúng tôi là Nhóm 61 của chương trình IEDE 2025 (ĐH Thanh Hoa). Mind-Mapper AI ra đời từ mong muốn dùng công nghệ để giúp mọi người hiểu mình và phát triển.</span>
@@ -326,23 +200,36 @@
 
     <section class="section" id="contact">
       <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
-      <form onsubmit="event.preventDefault(); this.reset(); 
-        alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi sẽ liên hệ.' :
-              document.body.classList.contains('lang-zh') ? '谢谢！我们会尽快联系你。' :
-              'Thanks! We\\'ll be in touch.');">
+
+      <!-- UPDATED: real submit + status -->
+      <form id="contactForm">
         <div class="field">
-          <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
-          <input required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" data-lang-zh-placeholder="你的名字" />
+          <label for="nameField"><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
+          <input id="nameField" name="name" required
+                 data-lang-en-placeholder="Your name"
+                 data-lang-vi-placeholder="Tên của bạn"
+                 data-lang-zh-placeholder="你的名字" />
         </div>
+
         <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
-          <input type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" data-lang-zh-placeholder="ni@example.com" />
+          <label for="emailField"><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
+          <input id="emailField" name="email" type="email" required
+                 data-lang-en-placeholder="you@example.com"
+                 data-lang-vi-placeholder="ban@example.com"
+                 data-lang-zh-placeholder="ni@example.com" />
         </div>
+
         <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
-          <textarea rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?" data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
+          <label for="messageField"><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
+          <textarea id="messageField" name="message" rows="5" required
+                    data-lang-en-placeholder="How can we help?"
+                    data-lang-vi-placeholder="Chúng tôi có thể giúp gì?"
+                    data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
         </div>
-        <button class="btn" style="margin-top:12px">
+
+        <div id="contactStatus" style="margin:10px 2px 0; font-size:13px; color:#cfcaff;"></div>
+
+        <button class="btn" id="contactBtn" style="margin-top:12px">
           <span data-lang="en">Send message</span>
           <span data-lang="vi">Gửi tin nhắn</span>
           <span data-lang="zh">发送</span>
@@ -363,308 +250,109 @@
     <div class="chat-foot" id="chatFoot">
       <div id="chatInputArea" style="display:grid; grid-template-columns: 1fr auto; gap: 8px;">
         <input id="chatInput" placeholder="Type your message…" />
-        <button class="btn" id="sendBtn">
-          <span data-lang="en">Send</span>
-          <span data-lang="vi">Gửi</span>
-          <span data-lang="zh">发送</span>
-        </button>
+        <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span><span data-lang="zh">发送</span></button>
       </div>
-      <button class="btn" id="resetBtn" style="display:none; width:100%;">
-        <span data-lang="en">Start New Analysis</span>
-        <span data-lang="vi">Bắt đầu phân tích mới</span>
-        <span data-lang="zh">开始新的分析</span>
-      </button>
-    </div>
-    <div class="notice">
-      <span data-lang="en">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</span>
-      <span data-lang="vi">Mẹo: Sau vài tin nhắn, hãy gõ <b>"Hãy cho tôi MBTI"</b>.</span>
-      <span data-lang="zh">提示：交流几句后输入 <b>“给我我的 MBTI”</b>。</span>
+      <button class="btn" id="resetBtn" style="display:none; width:100%;"><span data-lang="en">Start New Analysis</span><span data-lang="vi">Bắt đầu phân tích mới</span><span data-lang="zh">开始新的分析</span></button>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // --- 1. Supabase Project Configuration ---
+    // --- Supabase client (your existing project) ---
     const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
     const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
     const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
-    // Globals
     let conversationHistory = [];
     let chatBody, chatInputArea, resetBtn, input, sendBtn;
     let latestProgress = null;
 
-    // --- 2. Page Functions (Sparkles, Tilt, Language) ---
-    function initializeSparkles() { 
-      const host = document.getElementById('sparkles'); 
-      if (!host || host.children.length) return;
-      for(let i=0;i<120;i++){ 
-        const s=document.createElement('i'); 
-        s.style.left=Math.random()*100+'vw';
-        s.style.top='100vh';
-        s.style.animationDuration=(10+Math.random()*16)+'s'; 
-        host.appendChild(s);
-      } 
+    function initializeSparkles(){ const host=document.getElementById('sparkles'); if(!host||host.children.length) return; for(let i=0;i<120;i++){ const s=document.createElement('i'); s.style.left=Math.random()*100+'vw'; s.style.top='100vh'; s.style.animationDuration=(10+Math.random()*16)+'s'; host.appendChild(s);} }
+    function initializeTilt(){ const card=document.getElementById('card3d'); if(!card) return; let b=card.getBoundingClientRect(); window.addEventListener('resize',()=>b=card.getBoundingClientRect()); card.addEventListener('mousemove',e=>{ const x=(e.clientX-b.left)/b.width-0.5; const y=(e.clientY-b.top)/b.height-0.5; card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`;}); card.addEventListener('mouseleave',()=>{ card.style.transform='perspective(1000px) rotateX(0) rotateY(0)';}); }
+    function initializeLanguage(){ const sel=document.getElementById('language'); if(!sel) return;
+      function applyPlaceholders(){ const lang=document.body.classList.contains('lang-vi')?'vi':document.body.classList.contains('lang-zh')?'zh':'en';
+        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el=>{ const txt=el.getAttribute(`data-lang-${lang}-placeholder`); if(txt) el.placeholder=txt; }); }
+      function setLang(lang){ document.body.classList.remove('lang-en','lang-vi','lang-zh'); document.body.classList.add('lang-'+lang); localStorage.setItem('preferredLanguage', lang); applyPlaceholders(); if (chatBody) displayInitialMessage(); }
+      const saved=localStorage.getItem('preferredLanguage')||'en'; sel.value=saved; setLang(saved); sel.addEventListener('change',e=>setLang(e.target.value));
+    }
+    function initializeChatPanel(){ const panel=document.getElementById('chatPanel'); const chatOpen=document.getElementById('chatOpen'); if(!panel||!chatOpen) return; chatOpen.onclick=()=>{ panel.classList.toggle('open'); if(panel.classList.contains('open')){ if(latestProgress && latestProgress.current_step < latestProgress.total_steps){ updateProgressBar(latestProgress); } if(input) input.focus(); } }; }
+
+    function displayInitialMessage(){ if(!chatBody) return; const isVI=document.body.classList.contains('lang-vi'); const isZH=document.body.classList.contains('lang-zh'); chatBody.innerHTML=''; const initialMsg=document.createElement('div'); initialMsg.className='msg ai'; const bubble=document.createElement('div'); bubble.className='bubble'; let welcomeText = isVI ? `Chào bạn! Cùng trò chuyện một chút về tính cách nhé...` : isZH ? `你好！我们来轻松聊聊你的性格吧…` : `Hey there! Let's chat a bit about your personality…`; bubble.innerHTML=`<span>${welcomeText}</span>`; initialMsg.appendChild(bubble); chatBody.appendChild(initialMsg); conversationHistory=[{role:'assistant', content:welcomeText}]; }
+    function resetChat(){ displayInitialMessage(); if(chatInputArea) chatInputArea.style.display='grid'; if(resetBtn) resetBtn.style.display='none'; if(input) input.focus(); latestProgress=null; const pc=document.getElementById('progress-container'); if(pc) pc.remove(); }
+    function appendMessage(role,text,conversationId=null,showFeedback=false){ if(!chatBody) return; const wrap=document.createElement('div'); wrap.className='msg '+(role==='user'?'user':'ai'); const bubble=document.createElement('div'); bubble.className='bubble'; let processed=text.replace(/</g,'&lt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); bubble.innerHTML=processed; wrap.appendChild(bubble); chatBody.appendChild(wrap); chatBody.scrollTop=chatBody.scrollHeight; }
+    function showTyping(){ if(!chatBody) return; const wrap=document.createElement('div'); wrap.className='msg ai typing'; wrap.id='typing-indicator'; wrap.innerHTML=`<div class="bubble">Typing...</div>`; chatBody.appendChild(wrap); chatBody.scrollTop=chatBody.scrollHeight; }
+    function hideTyping(){ const t=document.getElementById('typing-indicator'); if(t) t.remove(); }
+    function updateProgressBar(progress){ if(progress && progress.current_step >= progress.total_steps){ const ex=document.getElementById('progress-container'); if(ex) ex.remove(); latestProgress=null; return;} let pc=document.getElementById('progress-container'); if(!pc){ pc=document.createElement('div'); pc.id='progress-container'; pc.style.cssText=`padding:8px 14px;border-bottom:1px solid var(--glass-stroke);background:rgba(255,255,255,.03);text-align:center;font-size:12px;color:var(--muted);font-weight:500;flex-shrink:0;`; const head=document.querySelector('.chat-head'); if(head && head.parentNode) head.parentNode.insertBefore(pc, head.nextSibling);} if(progress){ const count=Object.values(progress.dimensions_explored||{}).filter(Boolean).length; pc.innerHTML=`Analysis Progress: Dimensions Explored ${count}/4`; } }
+    async function handleSend(){ if(!input||!chatBody) return; const text=input.value.trim(); if(!text) return; input.value=''; appendMessage('user', text); conversationHistory.push({role:'user', content:text}); showTyping(); try{ const messages=conversationHistory.slice(-10); const res=await fetch('/.netlify/functions/process-chat',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages})}); if(!res.ok) throw new Error(`HTTP ${res.status}: `+await res.text()); const data=await res.json(); hideTyping(); if(data.reply){ appendMessage('ai', data.reply); conversationHistory.push({role:'assistant', content:data.reply}); } else if(data.error){ appendMessage('ai', `Sorry, there was an error: ${data.error}`); } else { appendMessage('ai','Sorry, I received an unexpected response format.'); } }catch(err){ hideTyping(); appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);} }
+    function initializeChatControls(){ chatBody=document.getElementById('chatBody'); chatInputArea=document.getElementById('chatInputArea'); resetBtn=document.getElementById('resetBtn'); input=document.getElementById('chatInput'); sendBtn=document.getElementById('sendBtn'); if(!chatBody||!input||!sendBtn||!resetBtn) return; sendBtn.addEventListener('click', handleSend); resetBtn.addEventListener('click', resetChat); input.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); }}); displayInitialMessage(); }
+
+    // ---------- CONTACT FORM -> SUPABASE ----------
+    function currentLang(){ return document.body.classList.contains('lang-vi') ? 'vi' : document.body.classList.contains('lang-zh') ? 'zh' : 'en'; }
+    const i18nContact = {
+      en: { sending:'Sending…', sent:"Thanks! We'll be in touch.", error:'Could not send. Please try again.' },
+      vi: { sending:'Đang gửi…', sent:'Cảm ơn! Chúng tôi sẽ sớm liên hệ.', error:'Gửi không thành công. Vui lòng thử lại.' },
+      zh: { sending:'正在发送…', sent:'谢谢！我们会尽快联系你。', error:'发送失败，请稍后重试。' },
+    };
+
+    async function saveContactToSupabase(name, email, message, lang){
+      // Table: public.contact_messages (see SQL below)
+      return await supabaseClient
+        .from('contact_messages')
+        .insert([{ name, email, message, lang, user_agent: navigator.userAgent }])
+        .select('id')
+        .single();
     }
 
-    function initializeTilt() { 
-      const card = document.getElementById('card3d'); 
-      if (!card) return;
-      let b = card.getBoundingClientRect(); 
-      window.addEventListener('resize', () => b = card.getBoundingClientRect()); 
-      card.addEventListener('mousemove', e => { 
-        const x=(e.clientX-b.left)/b.width-0.5; 
-        const y=(e.clientY-b.top)/b.height-0.5; 
-        card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`; 
-      }); 
-      card.addEventListener('mouseleave', () => { card.style.transform='perspective(1000px) rotateX(0) rotateY(0)';}); 
-    }
+    function initializeContactForm(){
+      const form = document.getElementById('contactForm');
+      const btn  = document.getElementById('contactBtn');
+      const status = document.getElementById('contactStatus');
+      const nameEl = document.getElementById('nameField');
+      const mailEl = document.getElementById('emailField');
+      const msgEl  = document.getElementById('messageField');
+      if(!form || !btn || !status) return;
 
-    function initializeLanguage() {
-      const sel = document.getElementById('language');
-      if (!sel) return;
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const lang = currentLang();
+        const t = i18nContact[lang];
 
-      function applyPlaceholders() { 
-        const lang = document.body.classList.contains('lang-vi') ? 'vi' :
-                     document.body.classList.contains('lang-zh') ? 'zh' : 'en';
-        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el => { 
-          const txt = el.getAttribute(`data-lang-${lang}-placeholder`); 
-          if(txt) el.placeholder = txt; 
-        }); 
-      }
-      
-      function setLang(lang) { 
-        document.body.classList.remove('lang-en','lang-vi','lang-zh'); 
-        document.body.classList.add('lang-' + lang); 
-        localStorage.setItem('preferredLanguage', lang); 
-        applyPlaceholders();
-        if (chatBody) displayInitialMessage();
-      }
-      
-      const saved = localStorage.getItem('preferredLanguage') || 'en'; 
-      sel.value = saved; 
-      setLang(saved); 
-      sel.addEventListener('change', e => setLang(e.target.value));
-    }
+        const name = (nameEl.value || '').trim();
+        const email = (mailEl.value || '').trim();
+        const message = (msgEl.value || '').trim();
+        if(!name || !email || !message){ status.textContent = lang==='vi' ? 'Vui lòng điền đầy đủ.' : lang==='zh' ? '请填写完整。' : 'Please fill all fields.'; return; }
 
-    // --- 3. Chat Panel ---
-    function initializeChatPanel() {
-      const panel = document.getElementById('chatPanel');
-      const chatOpen = document.getElementById('chatOpen');
-      if (!panel || !chatOpen) return;
-      chatOpen.onclick = () => { 
-        panel.classList.toggle('open'); 
-        if (panel.classList.contains('open')) {
-          if (latestProgress && latestProgress.current_step < latestProgress.total_steps) {
-            updateProgressBar(latestProgress);
-          }
-          if(input) input.focus(); 
-        }
-      };
-    }
+        btn.disabled = true;
+        const originalBtnHTML = btn.innerHTML;
+        btn.innerHTML = t.sending;
+        status.textContent = '';
 
-    // --- 4. Chat Functions ---
-    function displayInitialMessage() {
-      if (!chatBody) return;
-      const isVI = document.body.classList.contains('lang-vi');
-      const isZH = document.body.classList.contains('lang-zh');
-      chatBody.innerHTML = ''; 
-      const initialMsg = document.createElement('div');
-      initialMsg.className = 'msg ai';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      let welcomeText;
-      if (isVI) {
-        welcomeText = `Chào bạn! Cùng trò chuyện một chút về tính cách nhé. Bạn cứ thoải mái chia sẻ cách làm việc, giao tiếp hay ra quyết định. Mình sẽ lắng nghe và giúp bạn hiểu mình hơn. 😊`;
-      } else if (isZH) {
-        welcomeText = `你好！我们来轻松聊聊你的性格吧。可以随意说说你的工作方式、人际相处或者决策习惯。我会认真倾听并给出有用的反馈。😊`;
-      } else {
-        welcomeText = `Hey there! Let's chat a bit about your personality. Tell me how you like to work, socialize, or make decisions. I'm here to listen and help you learn more about yourself. 😊`;
-      }
-      bubble.innerHTML = `<span>${welcomeText}</span>`;
-      initialMsg.appendChild(bubble);
-      chatBody.appendChild(initialMsg);
-      conversationHistory = [{ role: 'assistant', content: welcomeText }];
-    }
-
-    function resetChat() {
-      displayInitialMessage();
-      if (chatInputArea) chatInputArea.style.display = 'grid';
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (input) input.focus();
-      latestProgress = null;
-      const pc = document.getElementById('progress-container');
-      if (pc) pc.remove();
-    }
-
-    function appendMessage(role, text, conversationId = null, showFeedback = false) { 
-      if (!chatBody) return;
-      const wrap = document.createElement('div'); 
-      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      let processedText = text
-        .replace(/</g,'&lt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n/g,'<br>');
-      bubble.innerHTML = processedText;
-      if (role === 'ai' && conversationId && showFeedback) {
-        const fb = document.createElement('div');
-        fb.className = 'feedback-buttons';
-        fb.innerHTML = `
-          <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
-          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>`;
-        bubble.appendChild(fb);
-      }
-      wrap.appendChild(bubble);
-      chatBody.appendChild(wrap); 
-      chatBody.scrollTop = chatBody.scrollHeight; 
-    }
-
-    async function handleFeedback(conversationId, isAccurate) {
-      try {
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = true);
-        const res = await fetch('/.netlify/functions/save-feedback', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ conversation_id:Number(conversationId), is_accurate:Boolean(isAccurate) })
-        });
-        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
-        buttons.forEach(btn => {
-          if (btn.getAttribute('data-rating') === String(isAccurate)) {
-            btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
-            btn.classList.add('selected');
-          }
-        });
-      } catch (error) {
-        console.error('Error saving feedback:', error);
-        alert('Could not save feedback: ' + (error.message || String(error)));
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = false);
-      }
-    }
-
-    function initializeFeedbackHandler() {
-      if (!chatBody) return;
-      chatBody.addEventListener('click', (e) => {
-        const t = e.target;
-        if (t.tagName === 'BUTTON' && t.hasAttribute('data-convo-id')) {
-          const id = t.getAttribute('data-convo-id');
-          const ok = t.getAttribute('data-rating') === 'true';
-          handleFeedback(id, ok);
+        try{
+          const { data, error } = await saveContactToSupabase(name, email, message, lang);
+          if(error) throw error;
+          form.reset();
+          status.style.color = '#b7f7c2';
+          status.textContent = t.sent;
+        }catch(err){
+          console.error('Supabase insert error:', err);
+          status.style.color = '#ffb7b7';
+          status.textContent = t.error;
+        }finally{
+          btn.disabled = false;
+          btn.innerHTML = originalBtnHTML;
         }
       });
     }
+    // ---------- END CONTACT FORM ----------
 
-    function showTyping() {
-      if (!chatBody) return;
-      const wrap = document.createElement('div');
-      wrap.className = 'msg ai typing';
-      wrap.id = 'typing-indicator';
-      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
-      chatBody.appendChild(wrap);
-      chatBody.scrollTop = chatBody.scrollHeight;
-    }
-    function hideTyping(){ const t=document.getElementById('typing-indicator'); if(t) t.remove(); }
-
-    function updateProgressBar(progress) {
-      if (progress && progress.current_step >= progress.total_steps) {
-        const ex = document.getElementById('progress-container'); if (ex) ex.remove();
-        latestProgress = null; return;
-      }
-      let pc = document.getElementById('progress-container');
-      if (!pc) {
-        pc = document.createElement('div');
-        pc.id = 'progress-container';
-        pc.style.cssText = `
-          padding: 8px 14px;border-bottom:1px solid var(--glass-stroke);
-          background: rgba(255,255,255,.03); text-align:center; font-size:12px;
-          color: var(--muted); font-weight:500; flex-shrink:0;`;
-        const head = document.querySelector('.chat-head');
-        if (head && head.parentNode) head.parentNode.insertBefore(pc, head.nextSibling);
-      }
-      if (progress) {
-        const count = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        pc.innerHTML = `Analysis Progress: Dimensions Explored ${count}/4`;
-      }
-    }
-
-    async function handleSend() { 
-      if (!input || !chatBody) return;
-      const text = input.value.trim(); 
-      if (!text) return; 
-      input.value=''; 
-      appendMessage('user', text);
-      conversationHistory.push({ role:'user', content:text });
-      showTyping();
-      try {
-        const messages = conversationHistory.slice(-10);
-        const res = await fetch('/.netlify/functions/process-chat', {
-          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ messages })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ` + await res.text());
-        const data = await res.json();
-        hideTyping();
-        if (data.reply) {
-          try {
-            const mbtiResult = JSON.parse(data.reply);
-            conversationHistory.push({ role:'assistant', content:data.reply });
-            if (mbtiResult.progress) { latestProgress = mbtiResult.progress; updateProgressBar(latestProgress); }
-            let responseText = '';
-            let isActualResult = false;
-            if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
-              isActualResult = true;
-              responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
-              responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
-              if (mbtiResult.reasoning) responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
-              if (mbtiResult.strengths?.length) {
-                responseText += `✨ **Your Strengths:**\n`; mbtiResult.strengths.forEach(s => responseText += `• ${s}\n`); responseText += '\n';
-              }
-              if (mbtiResult.growth_tips?.length) {
-                responseText += `🌱 **Growth Tips:**\n`; mbtiResult.growth_tips.forEach(t => responseText += `• ${t}\n`); responseText += '\n';
-              }
-              if (chatInputArea) chatInputArea.style.display='none';
-              if (resetBtn) resetBtn.style.display='block';
-            } else {
-              responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
-            }
-            appendMessage('ai', responseText, data.conversation_id, isActualResult);
-          } catch (e) {
-            console.error('JSON parse error:', e); console.log('Raw AI response:', data.reply);
-            appendMessage('ai', data.reply); conversationHistory.push({ role:'assistant', content:data.reply });
-          }
-        } else if (data.error) {
-          appendMessage('ai', `Sorry, there was an error: ${data.error}`);
-        } else {
-          appendMessage('ai', 'Sorry, I received an unexpected response format.');
-        }
-      } catch (err) { hideTyping(); appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`); }
-    }
-
-    function initializeChatControls() {
-      chatBody = document.getElementById('chatBody');
-      chatInputArea = document.getElementById('chatInputArea');
-      resetBtn = document.getElementById('resetBtn');
-      input = document.getElementById('chatInput');
-      sendBtn = document.getElementById('sendBtn');
-      if (!chatBody || !input || !sendBtn || !resetBtn) return;
-      sendBtn.addEventListener('click', handleSend);
-      resetBtn.addEventListener('click', resetChat);
-      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }});
-      initializeFeedbackHandler();
-      displayInitialMessage();
-    }
-
-    // --- 5. Initialize ---
     document.addEventListener('DOMContentLoaded', () => {
       initializeSparkles();
       initializeTilt();
       initializeLanguage();
       initializeChatPanel();
       initializeChatControls();
+      initializeContactForm();
     });
   </script>
 </body>

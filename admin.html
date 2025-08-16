@@ -1,1091 +1,511 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mind–Mapper AI – Admin Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg: #0b0a13;
-            --fg: #f7f5ff;
-            --muted: #bdb7e6;
-            --accent: #8B5CF6;
-            --glass: rgba(255, 255, 255, .08);
-            --glass-stroke: rgba(255, 255, 255, .12);
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --error: #ef4444;
-        }
-        body {
-            margin: 0;
-            color: var(--fg);
-            background-color: var(--bg);
-            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-            font-size: 16px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-        h1, h2, h3 {
-            color: var(--fg);
-        }
-        
-        /* Navigation Tabs */
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid var(--glass-stroke);
-        }
-        .nav-tab {
-            padding: 12px 24px;
-            background: transparent;
-            border: none;
-            color: var(--muted);
-            cursor: pointer;
-            border-radius: 8px 8px 0 0;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .nav-tab.active {
-            background: var(--glass);
-            color: var(--fg);
-            border-bottom: 2px solid var(--accent);
-        }
-        
-        /* Tab Content */
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mind–Mapper AI – Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--bg:#0b0a13;--fg:#f7f5ff;--muted:#bdb7e6;--accent:#8B5CF6;--glass:rgba(255,255,255,.08);--glass-stroke:rgba(255,255,255,.12);--success:#22c55e;--warning:#f59e0b;--error:#ef4444}
+    body{margin:0;color:var(--fg);background-color:var(--bg);font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;font-size:16px}
+    .container{max-width:1400px;margin:40px auto;padding:0 20px}
+    h1,h2,h3{color:var(--fg)}
 
-        /* Login Section */
-        #login-section {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 30px;
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 20px;
-            box-shadow: 0 16px 40px rgba(0,0,0,.35);
-        }
-        .field {
-            margin-bottom: 20px;
-        }
-        .field label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        .field input, .field select {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, .04);
-            border: 1px solid var(--glass-stroke);
-            color: var(--fg);
-            border-radius: 12px;
-            font-size: 1rem;
-        }
-        .btn {
-            border: none;
-            cursor: pointer;
-            padding: 14px 18px;
-            border-radius: 14px;
-            font-weight: 600;
-            font-size: 1rem;
-            background: linear-gradient(90deg, var(--accent), #a17cf8);
-            color: #0b0a13;
-            box-shadow: 0 12px 34px rgba(139, 92, 246, .35);
-            transition: all 0.3s ease;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn-secondary {
-            background: var(--glass);
-            color: var(--fg);
-            border: 1px solid var(--glass-stroke);
-            box-shadow: none;
-        }
-        #error-message {
-            color: #ff8a8a;
-            margin-top: 15px;
-            text-align: center;
-        }
+    /* Tabs */
+    .nav-tabs{display:flex;gap:10px;margin-bottom:30px;border-bottom:1px solid var(--glass-stroke)}
+    .nav-tab{padding:12px 24px;background:transparent;border:none;color:var(--muted);cursor:pointer;border-radius:8px 8px 0 0;font-weight:500;transition:.3s}
+    .nav-tab.active{background:var(--glass);color:var(--fg);border-bottom:2px solid var(--accent)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
 
-        /* Dashboard Section */
-        #dashboard-section {
-            display: none;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-        #logout-btn {
-            padding: 10px 20px;
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            color: var(--fg);
-            border-radius: 12px;
-            cursor: pointer;
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .stat-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            padding: 25px;
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent), #a17cf8);
-        }
-        .stat-card h3 {
-            margin: 0 0 10px;
-            font-size: 1.1rem;
-            color: var(--muted);
-        }
-        .stat-card .value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        .stat-card .trend {
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .trend.up { color: var(--success); }
-        .trend.down { color: var(--error); }
-        .trend.neutral { color: var(--muted); }
+    /* Login */
+    #login-section{max-width:400px;margin:100px auto;padding:30px;background:var(--glass);border:1px solid var(--glass-stroke);border-radius:20px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+    .field{margin-bottom:20px}
+    .field label{display:block;margin-bottom:8px;font-weight:600}
+    .field input,.field select{width:100%;padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--glass-stroke);color:var(--fg);border-radius:12px;font-size:1rem}
+    .btn{border:none;cursor:pointer;padding:14px 18px;border-radius:14px;font-weight:600;font-size:1rem;background:linear-gradient(90deg,var(--accent),#a17cf8);color:#0b0a13;box-shadow:0 12px 34px rgba(139,92,246,.35);transition:.3s}
+    .btn:hover{transform:translateY(-2px)}
+    .btn-secondary{background:var(--glass);color:var(--fg);border:1px solid var(--glass-stroke);box-shadow:none}
+    #error-message{color:#ff8a8a;margin-top:15px;text-align:center}
 
-        /* Charts Section */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        .chart-container {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 16px;
-            padding: 25px;
-            height: 400px;
-        }
-        .chart-container h3 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: var(--fg);
-        }
+    /* Dashboard */
+    #dashboard-section{display:none}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
+    #logout-btn{padding:10px 20px;background:var(--glass);border:1px solid var(--glass-stroke);color:var(--fg);border-radius:12px;cursor:pointer}
 
-        /* MBTI Distribution */
-        .mbti-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .mbti-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        .mbti-card .type {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .mbti-card .count {
-            font-size: 2rem;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-        .mbti-card .percentage {
-            font-size: 0.9rem;
-            color: var(--muted);
-        }
+    /* Cards + charts */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:40px}
+    .stat-card{background:var(--glass);border:1px solid var(--glass-stroke);padding:25px;border-radius:16px;position:relative;overflow:hidden}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),#a17cf8)}
+    .stat-card h3{margin:0 0 10px;font-size:1.1rem;color:var(--muted)}
+    .stat-card .value{font-size:2.5rem;font-weight:700;margin-bottom:10px}
+    .stat-card .trend{font-size:.9rem;display:flex;align-items:center;gap:5px}
+    .trend.up{color:var(--success)} .trend.down{color:var(--error)} .trend.neutral{color:var(--muted)}
+    .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:30px;margin-bottom:40px}
+    .chart-container{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;padding:25px;height:400px}
+    .chart-container h3{margin:0 0 20px}
 
-        /* Feedback Analysis */
-        .feedback-insights {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-        .insight-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--glass-stroke);
-        }
-        .insight-item:last-child {
-            border-bottom: none;
-        }
-        .insight-label {
-            font-weight: 500;
-        }
-        .insight-value {
-            font-weight: 700;
-            color: var(--accent);
-        }
+    /* MBTI */
+    .mbti-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:15px;margin-bottom:30px}
+    .mbti-card{background:var(--glass);border:1px solid var(--glass-stroke);padding:20px;border-radius:12px;text-align:center}
+    .mbti-card .type{font-size:1.5rem;font-weight:700;margin-bottom:8px}
+    .mbti-card .count{font-size:2rem;color:var(--accent);margin-bottom:5px}
+    .mbti-card .percentage{font-size:.9rem;color:var(--muted)}
 
-        /* Conversation Analysis */
-        .conversation-analysis {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 16px;
-            padding: 25px;
-        }
-        .convo-item {
-            padding: 20px;
-            border-bottom: 1px solid var(--glass-stroke);
-            margin-bottom: 15px;
-        }
-        .convo-item:last-child {
-            border-bottom: none;
-        }
-        .convo-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .convo-meta {
-            font-size: 0.9rem;
-            color: var(--muted);
-        }
-        .convo-tags {
-            display: flex;
-            gap: 8px;
-        }
-        .tag {
-            padding: 4px 12px;
-            background: var(--accent);
-            color: var(--bg);
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        .convo-summary {
-            background: rgba(0,0,0,.2);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-        .sentiment-indicator {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        .sentiment-positive { background: var(--success); color: white; }
-        .sentiment-negative { background: var(--error); color: white; }
-        .sentiment-neutral { background: var(--muted); color: var(--bg); }
+    /* Feedback */
+    .feedback-insights{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;padding:25px;margin-bottom:30px}
+    .insight-item{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--glass-stroke)}
+    .insight-item:last-child{border-bottom:none}
+    .insight-label{font-weight:500}
+    .insight-value{font-weight:700;color:var(--accent)}
 
-        /* Filters */
-        .filters {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .filter-row {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .filter-group label {
-            font-size: 0.9rem;
-            color: var(--muted);
-            font-weight: 500;
-        }
+    /* Conversations */
+    .conversation-analysis{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;padding:25px}
+    .convo-item{padding:20px;border-bottom:1px solid var(--glass-stroke);margin-bottom:15px}
+    .convo-item:last-child{border-bottom:none}
+    .convo-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+    .convo-meta{font-size:.9rem;color:var(--muted)}
+    .convo-tags{display:flex;gap:8px}
+    .tag{padding:4px 12px;background:var(--accent);color:var(--bg);border-radius:20px;font-size:.8rem;font-weight:500}
+    .sentiment-indicator{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.8rem;font-weight:500}
+    .sentiment-positive{background:var(--success);color:#fff}
+    .sentiment-negative{background:var(--error);color:#fff}
+    .sentiment-neutral{background:var(--muted);color:var(--bg)}
 
-        /* Export Section */
-        .export-section {
-            background: var(--glass);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-        .export-options {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
+    /* Filters */
+    .filters{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;padding:20px;margin-bottom:30px}
+    .filter-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+    .filter-group{display:flex;flex-direction:column;gap:8px}
+    .filter-group label{font-size:.9rem;color:var(--muted);font-weight:500}
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .nav-tabs {
-                flex-wrap: wrap;
-            }
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            }
-            .filter-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
+    /* Export */
+    .export-section{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;padding:25px;margin-bottom:30px}
+    .export-options{display:flex;gap:15px;flex-wrap:wrap}
+
+    /* Contacts tab */
+    .toolbar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+    .toolbar .field{margin:0}
+    .table-wrap{background:var(--glass);border:1px solid var(--glass-stroke);border-radius:16px;overflow:auto}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 14px;border-bottom:1px solid var(--glass-stroke);vertical-align:top}
+    th{position:sticky;top:0;background:rgba(255,255,255,.06);backdrop-filter:blur(6px);text-align:left}
+    .muted-sm{color:var(--muted);font-size:.85rem}
+    .pagination{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px}
+    .pill-btn{background:var(--glass);border:1px solid var(--glass-stroke);color:var(--fg);padding:8px 12px;border-radius:999px;cursor:pointer}
+    .pill-btn[disabled]{opacity:.5;cursor:not-allowed}
+
+    @media (max-width:768px){
+      .nav-tabs{flex-wrap:wrap}
+      .charts-grid{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+      .filter-row{flex-direction:column;align-items:stretch}
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Login Form -->
-        <section id="login-section">
-            <h1>Admin Login</h1>
-            <form id="login-form">
-                <div class="field">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" required placeholder="admin@example.com" />
-                </div>
-                <div class="field">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required />
-                </div>
-                <button type="submit" class="btn" style="width: 100%;">Login</button>
-                <p id="error-message"></p>
-            </form>
-        </section>
+  <div class="container">
+    <!-- Login -->
+    <section id="login-section">
+      <h1>Admin Login</h1>
+      <form id="login-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required placeholder="admin@example.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required />
+        </div>
+        <button type="submit" class="btn" style="width:100%;">Login</button>
+        <p id="error-message"></p>
+      </form>
+    </section>
 
-        <!-- Main Dashboard -->
-        <section id="dashboard-section">
-            <header>
-                <h1>Mind-Mapper AI Analytics</h1>
-                <button id="logout-btn">Logout</button>
-            </header>
+    <!-- Dashboard -->
+    <section id="dashboard-section">
+      <header>
+        <h1>Mind-Mapper AI Analytics</h1>
+        <button id="logout-btn">Logout</button>
+      </header>
 
-            <!-- Navigation Tabs -->
-            <div class="nav-tabs">
-                <button class="nav-tab active" onclick="switchTab('overview')">Overview</button>
-                <button class="nav-tab" onclick="switchTab('mbti')">MBTI Analysis</button>
-                <button class="nav-tab" onclick="switchTab('feedback')">Feedback Insights</button>
-                <button class="nav-tab" onclick="switchTab('conversations')">Conversations</button>
-                <button class="nav-tab" onclick="switchTab('export')">Export Data</button>
+      <!-- Tabs -->
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('overview')">Overview</button>
+        <button class="nav-tab" onclick="switchTab('mbti')">MBTI Analysis</button>
+        <button class="nav-tab" onclick="switchTab('feedback')">Feedback Insights</button>
+        <button class="nav-tab" onclick="switchTab('conversations')">Conversations</button>
+        <button class="nav-tab" onclick="switchTab('contacts')">Contacts</button><!-- NEW -->
+        <button class="nav-tab" onclick="switchTab('export')">Export Data</button>
+      </div>
+
+      <!-- Overview -->
+      <div id="overview-tab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Total Users</h3><p class="value" id="total-users">--</p><p class="trend up" id="users-trend">↗ +12% this week</p></div>
+          <div class="stat-card"><h3>Total Conversations</h3><p class="value" id="total-convos">--</p><p class="trend up" id="convos-trend">↗ +8% this week</p></div>
+          <div class="stat-card"><h3>Accuracy Rate</h3><p class="value" id="accuracy-rate">--</p><p class="trend neutral" id="accuracy-trend">→ Stable</p></div>
+          <div class="stat-card"><h3>Avg. Conversation Length</h3><p class="value" id="avg-length">--</p><p class="trend up" id="length-trend">↗ +2.3 msgs</p></div>
+          <div class="stat-card"><h3>User Satisfaction</h3><p class="value" id="satisfaction">--</p><p class="trend up" id="satisfaction-trend">↗ +5% this month</p></div>
+          <div class="stat-card"><h3>Response Time</h3><p class="value" id="response-time">--</p><p class="trend down" id="response-trend">↘ -0.2s faster</p></div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-container"><h3>Conversations Over Time</h3><canvas id="conversations-chart"></canvas></div>
+          <div class="chart-container"><h3>User Sentiment Distribution</h3><canvas id="sentiment-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- MBTI -->
+      <div id="mbti-tab" class="tab-content">
+        <h2>MBTI Personality Distribution</h2>
+        <div class="mbti-grid" id="mbti-grid"></div>
+        <div class="charts-grid">
+          <div class="chart-container"><h3>MBTI Categories Distribution</h3><canvas id="mbti-chart"></canvas></div>
+          <div class="chart-container"><h3>Personality Traits Analysis</h3><canvas id="traits-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div id="feedback-tab" class="tab-content">
+        <div class="feedback-insights">
+          <h3>Feedback Analysis</h3>
+          <div class="insight-item"><span class="insight-label">Total Feedback Entries</span><span class="insight-value" id="total-feedback">--</span></div>
+          <div class="insight-item"><span class="insight-label">Positive Feedback Rate</span><span class="insight-value" id="positive-rate">--</span></div>
+          <div class="insight-item"><span class="insight-label">Most Common Issues</span><span class="insight-value" id="common-issues">Loading...</span></div>
+          <div class="insight-item"><span class="insight-label">Improvement Areas</span><span class="insight-value" id="improvement-areas">Loading...</span></div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-container"><h3>Feedback Trends</h3><canvas id="feedback-trends-chart"></canvas></div>
+          <div class="chart-container"><h3>Issue Categories</h3><canvas id="issues-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Conversations -->
+      <div id="conversations-tab" class="tab-content">
+        <div class="filters">
+          <div class="filter-row">
+            <div class="filter-group"><label>Date Range</label>
+              <select id="date-filter">
+                <option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+                <option value="90">Last 3 months</option><option value="365">Last year</option>
+              </select>
             </div>
-
-            <!-- Overview Tab -->
-            <div id="overview-tab" class="tab-content active">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Total Users</h3>
-                        <p class="value" id="total-users">--</p>
-                        <p class="trend up" id="users-trend">↗ +12% this week</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Conversations</h3>
-                        <p class="value" id="total-convos">--</p>
-                        <p class="trend up" id="convos-trend">↗ +8% this week</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Accuracy Rate</h3>
-                        <p class="value" id="accuracy-rate">--</p>
-                        <p class="trend neutral" id="accuracy-trend">→ Stable</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Avg. Conversation Length</h3>
-                        <p class="value" id="avg-length">--</p>
-                        <p class="trend up" id="length-trend">↗ +2.3 msgs</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>User Satisfaction</h3>
-                        <p class="value" id="satisfaction">--</p>
-                        <p class="trend up" id="satisfaction-trend">↗ +5% this month</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Response Time</h3>
-                        <p class="value" id="response-time">--</p>
-                        <p class="trend down" id="response-trend">↘ -0.2s faster</p>
-                    </div>
-                </div>
-
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <h3>Conversations Over Time</h3>
-                        <canvas id="conversations-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>User Sentiment Distribution</h3>
-                        <canvas id="sentiment-chart"></canvas>
-                    </div>
-                </div>
+            <div class="filter-group"><label>MBTI Type</label>
+              <select id="mbti-filter"><option value="">All Types</option></select>
             </div>
-
-            <!-- MBTI Analysis Tab -->
-            <div id="mbti-tab" class="tab-content">
-                <h2>MBTI Personality Distribution</h2>
-                <div class="mbti-grid" id="mbti-grid">
-                    <!-- MBTI cards will be generated here -->
-                </div>
-                
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <h3>MBTI Categories Distribution</h3>
-                        <canvas id="mbti-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>Personality Traits Analysis</h3>
-                        <canvas id="traits-chart"></canvas>
-                    </div>
-                </div>
+            <div class="filter-group"><label>Sentiment</label>
+              <select id="sentiment-filter"><option value="">All Sentiments</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option></select>
             </div>
+            <div class="filter-group"><label>&nbsp;</label><button class="btn btn-secondary" onclick="applyFilters()">Apply Filters</button></div>
+          </div>
+        </div>
+        <div class="conversation-analysis" id="conversations-container"><p>Loading conversations...</p></div>
+      </div>
 
-            <!-- Feedback Insights Tab -->
-            <div id="feedback-tab" class="tab-content">
-                <div class="feedback-insights">
-                    <h3>Feedback Analysis</h3>
-                    <div class="insight-item">
-                        <span class="insight-label">Total Feedback Entries</span>
-                        <span class="insight-value" id="total-feedback">--</span>
-                    </div>
-                    <div class="insight-item">
-                        <span class="insight-label">Positive Feedback Rate</span>
-                        <span class="insight-value" id="positive-rate">--</span>
-                    </div>
-                    <div class="insight-item">
-                        <span class="insight-label">Most Common Issues</span>
-                        <span class="insight-value" id="common-issues">Loading...</span>
-                    </div>
-                    <div class="insight-item">
-                        <span class="insight-label">Improvement Areas</span>
-                        <span class="insight-value" id="improvement-areas">Loading...</span>
-                    </div>
-                </div>
+      <!-- Contacts (NEW) -->
+      <div id="contacts-tab" class="tab-content">
+        <h2>Contact Messages</h2>
+        <div class="toolbar">
+          <div class="field">
+            <label>Search</label>
+            <input id="contacts-q" placeholder="Name, email, or text…" />
+          </div>
+          <div class="field">
+            <label>From</label>
+            <input id="contacts-from" type="date" />
+          </div>
+          <div class="field">
+            <label>To</label>
+            <input id="contacts-to" type="date" />
+          </div>
+          <button class="btn btn-secondary" onclick="loadContacts(1)">Refresh</button>
+          <button class="btn" onclick="exportContactsCSV()">Export CSV</button>
+        </div>
 
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <h3>Feedback Trends</h3>
-                        <canvas id="feedback-trends-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>Issue Categories</h3>
-                        <canvas id="issues-chart"></canvas>
-                    </div>
-                </div>
-            </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:160px">Date</th>
+                <th style="min-width:140px">Name</th>
+                <th style="min-width:200px">Email</th>
+                <th style="min-width:90px">Lang</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-tbody">
+              <tr><td colspan="5" class="muted-sm">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button id="contacts-prev" class="pill-btn" onclick="contactsPrev()" disabled>◀ Prev</button>
+          <span id="contacts-page" class="muted-sm">Page 1</span>
+          <button id="contacts-next" class="pill-btn" onclick="contactsNext()" disabled>Next ▶</button>
+        </div>
+      </div>
 
-            <!-- Conversations Tab -->
-            <div id="conversations-tab" class="tab-content">
-                <div class="filters">
-                    <div class="filter-row">
-                        <div class="filter-group">
-                            <label>Date Range</label>
-                            <select id="date-filter">
-                                <option value="7">Last 7 days</option>
-                                <option value="30">Last 30 days</option>
-                                <option value="90">Last 3 months</option>
-                                <option value="365">Last year</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>MBTI Type</label>
-                            <select id="mbti-filter">
-                                <option value="">All Types</option>
-                                <option value="INTJ">INTJ</option>
-                                <option value="INTP">INTP</option>
-                                <option value="ENTJ">ENTJ</option>
-                                <option value="ENTP">ENTP</option>
-                                <!-- Add all 16 types -->
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Sentiment</label>
-                            <select id="sentiment-filter">
-                                <option value="">All Sentiments</option>
-                                <option value="positive">Positive</option>
-                                <option value="neutral">Neutral</option>
-                                <option value="negative">Negative</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>&nbsp;</label>
-                            <button class="btn btn-secondary" onclick="applyFilters()">Apply Filters</button>
-                        </div>
-                    </div>
-                </div>
+      <!-- Export -->
+      <div id="export-tab" class="tab-content">
+        <div class="export-section">
+          <h3>Export Analytics Data</h3>
+          <p>Export your data for further analysis or reporting.</p>
+          <div class="export-options">
+            <button class="btn" onclick="exportData('conversations')">Export Conversations (CSV)</button>
+            <button class="btn" onclick="exportData('feedback')">Export Feedback (CSV)</button>
+            <button class="btn" onclick="exportData('mbti')">Export MBTI Data (CSV)</button>
+            <button class="btn" onclick="exportData('analytics')">Export Analytics Report (JSON)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 
-                <div class="conversation-analysis" id="conversations-container">
-                    <p>Loading conversations...</p>
-                </div>
-            </div>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase Configuration
+    // NOTE: aligned with the public site so both read/write the same project
+    const supa_url  = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
+    const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
+    const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
-            <!-- Export Data Tab -->
-            <div id="export-tab" class="tab-content">
-                <div class="export-section">
-                    <h3>Export Analytics Data</h3>
-                    <p>Export your data for further analysis or reporting.</p>
-                    
-                    <div class="export-options">
-                        <button class="btn" onclick="exportData('conversations')">Export Conversations (CSV)</button>
-                        <button class="btn" onclick="exportData('feedback')">Export Feedback (CSV)</button>
-                        <button class="btn" onclick="exportData('mbti')">Export MBTI Data (CSV)</button>
-                        <button class="btn" onclick="exportData('analytics')">Export Analytics Report (PDF)</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
+    // DOM
+    const loginSection = document.getElementById('login-section');
+    const dashboardSection = document.getElementById('dashboard-section');
+    const loginForm = document.getElementById('login-form');
+    const logoutBtn = document.getElementById('logout-btn');
+    const errorMessage = document.getElementById('error-message');
 
-    <!-- Supabase Client Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    // Charts
+    let conversationsChart, sentimentChart, mbtiChart, traitsChart, feedbackTrendsChart, issuesChart;
 
-    <script>
-        // Supabase Configuration
-        const supa_url = 'https://okbqkkftdxazdfkiovjj.supabase.co';
-        const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
-        const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
+    // Auth
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); errorMessage.textContent='';
+      const email = e.target.email.value; const password = e.target.password.value;
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) { errorMessage.textContent = error.message; } else { loginForm.reset(); }
+    });
+    logoutBtn.addEventListener('click', async () => { await supabaseClient.auth.signOut(); });
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (session) { loginSection.style.display='none'; dashboardSection.style.display='block'; initializeDashboard(); }
+      else { loginSection.style.display='block'; dashboardSection.style.display='none'; }
+    });
 
-        // DOM Elements
-        const loginSection = document.getElementById('login-section');
-        const dashboardSection = document.getElementById('dashboard-section');
-        const loginForm = document.getElementById('login-form');
-        const logoutBtn = document.getElementById('logout-btn');
-        const errorMessage = document.getElementById('error-message');
+    // Tabs
+    function switchTab(tabName){
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+      document.getElementById(tabName+'-tab').classList.add('active');
+      event.target.classList.add('active');
+      if (tabName==='mbti') loadMBTIAnalysis();
+      if (tabName==='feedback') loadFeedbackAnalysis();
+      if (tabName==='conversations') loadConversations();
+      if (tabName==='contacts') loadContacts();
+    }
 
-        // Global variables for charts
-        let conversationsChart, sentimentChart, mbtiChart, traitsChart, feedbackTrendsChart, issuesChart;
+    // Dashboard
+    async function initializeDashboard(){ await loadOverviewStats(); await loadOverviewCharts(); }
 
-        // Authentication Logic
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMessage.textContent = '';
-            const email = e.target.email.value;
-            const password = e.target.password.value;
+    async function loadOverviewStats(){
+      try{
+        const { count: convoCount } = await supabaseClient.from('conversations').select('*', { count:'exact', head:true });
+        document.getElementById('total-convos').textContent = convoCount || 0;
 
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data: uniqueUsers } = await supabaseClient.from('conversations').select('user_id', { distinct:true });
+        document.getElementById('total-users').textContent = uniqueUsers?.length || 0;
 
-            if (error) {
-                errorMessage.textContent = error.message;
-            } else {
-                loginForm.reset();
-            }
-        });
+        const { data: feedbackData } = await supabaseClient.from('feedback').select('is_accurate, rating');
+        if (feedbackData?.length){
+          const accurate = feedbackData.filter(f=>f.is_accurate).length;
+          document.getElementById('accuracy-rate').textContent = ((accurate/feedbackData.length)*100).toFixed(1)+'%';
+          const avg = feedbackData.reduce((s,f)=>s+(f.rating||0),0)/feedbackData.length;
+          document.getElementById('satisfaction').textContent = `${avg.toFixed(1)}/5`;
+        } else {
+          document.getElementById('accuracy-rate').textContent = 'N/A';
+          document.getElementById('satisfaction').textContent = 'N/A';
+        }
+        document.getElementById('avg-length').textContent='7.2';
+        document.getElementById('response-time').textContent='1.4s';
+      }catch(err){ console.error('Overview error:', err); }
+    }
 
-        logoutBtn.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-        });
+    async function loadOverviewCharts(){
+      const ctx1=document.getElementById('conversations-chart').getContext('2d');
+      conversationsChart = new Chart(ctx1,{type:'line',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{label:'Conversations',data:[12,19,15,25,22,18,28],borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,.1)',tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      const ctx2=document.getElementById('sentiment-chart').getContext('2d');
+      sentimentChart = new Chart(ctx2,{type:'doughnut',data:{labels:['Positive','Neutral','Negative'],datasets:[{data:[65,25,10],backgroundColor:['#22c55e','#bdb7e6','#ef4444']} ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}}}});
+    }
 
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                loginSection.style.display = 'none';
-                dashboardSection.style.display = 'block';
-                initializeDashboard();
-            } else {
-                loginSection.style.display = 'block';
-                dashboardSection.style.display = 'none';
-            }
-        });
+    // MBTI (mock)
+    async function loadMBTIAnalysis(){
+      const mbtiData={'INTJ':45,'INTP':38,'ENTJ':23,'ENTP':41,'INFJ':32,'INFP':55,'ENFJ':28,'ENFP':67,'ISTJ':34,'ISFJ':29,'ESTJ':21,'ESFJ':26,'ISTP':18,'ISFP':24,'ESTP':15,'ESFP':31};
+      const total=Object.values(mbtiData).reduce((a,b)=>a+b,0); const grid=document.getElementById('mbti-grid'); grid.innerHTML='';
+      Object.entries(mbtiData).forEach(([type,count])=>{ const p=((count/total)*100).toFixed(1); const card=document.createElement('div'); card.className='mbti-card'; card.innerHTML=`<div class="type">${type}</div><div class="count">${count}</div><div class="percentage">${p}%</div>`; grid.appendChild(card);});
+      if(mbtiChart) mbtiChart.destroy(); const ctx=document.getElementById('mbti-chart').getContext('2d');
+      mbtiChart = new Chart(ctx,{type:'bar',data:{labels:Object.keys(mbtiData),datasets:[{label:'Count',data:Object.values(mbtiData),backgroundColor:'#8B5CF6'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      if(traitsChart) traitsChart.destroy(); const ctx3=document.getElementById('traits-chart').getContext('2d');
+      traitsChart=new Chart(ctx3,{type:'radar',data:{labels:['Extroversion','Sensing','Thinking','Judging'],datasets:[{label:'Average Scores',data:[45,60,55,48],borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,.2)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{r:{ticks:{color:'#bdb7e6'},grid:{color:'rgba(255,255,255,.1)'}}}}});
+    }
 
-        // Tab Switching
-        function switchTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            // Remove active class from all tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            // Show selected tab and mark as active
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-            
-            // Load tab-specific data
-            if (tabName === 'mbti') loadMBTIAnalysis();
-            if (tabName === 'feedback') loadFeedbackAnalysis();
-            if (tabName === 'conversations') loadConversations();
+    // Feedback (demo)
+    async function loadFeedbackAnalysis(){
+      const { data: feedbackData } = await supabaseClient.from('feedback').select('*');
+      if (feedbackData){ document.getElementById('total-feedback').textContent=feedbackData.length;
+        const pos=feedbackData.filter(f=>f.is_accurate || f.rating>=4).length;
+        document.getElementById('positive-rate').textContent=((pos/feedbackData.length)*100).toFixed(1)+'%';
+        document.getElementById('common-issues').textContent='Response accuracy, Speed';
+        document.getElementById('improvement-areas').textContent='Personality analysis depth';
+      }
+      if (feedbackTrendsChart) feedbackTrendsChart.destroy();
+      const ctx4=document.getElementById('feedback-trends-chart').getContext('2d');
+      feedbackTrendsChart=new Chart(ctx4,{type:'line',data:{labels:['Week 1','Week 2','Week 3','Week 4'],datasets:[{label:'Positive Feedback',data:[65,70,68,75],borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)'},{label:'Negative Feedback',data:[35,30,32,25],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      if (issuesChart) issuesChart.destroy();
+      const ctx5=document.getElementById('issues-chart').getContext('2d');
+      issuesChart=new Chart(ctx5,{type:'pie',data:{labels:['Accuracy','Speed','Understanding','Other'],datasets:[{data:[40,25,20,15],backgroundColor:['#ef4444','#f59e0b','#8B5CF6','#bdb7e6']} ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}}}});
+    }
+
+    // Conversations (demo)
+    async function loadConversations(){
+      try{
+        const { data: conversations } = await supabaseClient.from('conversations').select('*').order('created_at',{ascending:false}).limit(20);
+        const container=document.getElementById('conversations-container');
+        if (conversations?.length){ container.innerHTML='';
+          conversations.forEach(convo=>{ const item=document.createElement('div'); item.className='convo-item';
+            const sentiment=['positive','neutral','negative'][Math.floor(Math.random()*3)];
+            const mbtiType=['INTJ','ENFP','ISTP','INFJ'][Math.floor(Math.random()*4)];
+            const messageCount=Math.floor(Math.random()*15)+3;
+            const summary=generateConversationSummary(convo.conversation_history);
+            item.innerHTML=`<div class="convo-header"><div class="convo-meta"><strong>ID:</strong> ${convo.id} | <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} | <strong>Messages:</strong> ${messageCount}</div><div class="convo-tags"><span class="tag">${mbtiType}</span><span class="sentiment-indicator sentiment-${sentiment}">${sentiment}</span></div></div><div class="convo-summary">${summary}</div>`;
+            container.appendChild(item); });
+        } else { container.innerHTML='<p>No conversations found.</p>'; }
+      }catch(err){ console.error('Conversations error:', err); document.getElementById('conversations-container').innerHTML='<p>Error loading conversations.</p>'; }
+    }
+    function generateConversationSummary(){ const summaries=['User explored personality type…','Career guidance based on traits…','Relationship patterns & communication…','Decision-making and stress handling…','Growth opportunities and development areas…']; return summaries[Math.floor(Math.random()*summaries.length)]; }
+    function applyFilters(){ loadConversations(); }
+
+    // Export helpers (existing)
+    function exportData(type){
+      switch(type){
+        case 'conversations': exportCSV('conversations',['id','created_at','user_id','conversation_summary']); break;
+        case 'feedback': exportCSV('feedback',['id','conversation_id','is_accurate','rating','comments']); break;
+        case 'mbti': exportMBTIData(); break;
+        case 'analytics': exportAnalyticsReport(); break;
+      }
+    }
+    async function exportCSV(tableName, columns){
+      try{ const { data } = await supabaseClient.from(tableName).select(columns.join(',')); if(data){ const csv = convertToCSV(data, columns); downloadCSV(csv, `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);} }
+      catch(err){ console.error(`Export ${tableName} error:`, err); alert(`Error exporting ${tableName} data`); }
+    }
+    function convertToCSV(data, columns){
+      const header = columns.join(',');
+      const rows = data.map(row => columns.map(col => { const v=row[col]; if (typeof v==='string' && (v.includes(',')||v.includes('\n'))) return `"${v.replace(/"/g,'""')}"`; return v??''; }).join(','));
+      return [header,...rows].join('\n');
+    }
+    function downloadCSV(csv, filename){ const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    function exportMBTIData(){ const mbtiData=[{type:'INTJ',count:45,percentage:12.5},{type:'INTP',count:38,percentage:10.6}]; const csv=convertToCSV(mbtiData,['type','count','percentage']); downloadCSV(csv,`mbti_distribution_${new Date().toISOString().split('T')[0]}.csv`); }
+    function exportAnalyticsReport(){ const report={generated_at:new Date().toISOString(),total_users:document.getElementById('total-users').textContent,total_conversations:document.getElementById('total-convos').textContent,accuracy_rate:document.getElementById('accuracy-rate').textContent,user_satisfaction:document.getElementById('satisfaction').textContent}; const json=JSON.stringify(report,null,2); const blob=new Blob([json],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`analytics_report_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+
+    // --- Contacts Tab Logic (NEW) ---
+    const CONTACTS_PAGE_SIZE = 10;
+    let contactsPage = 1;
+    let lastContactsTotal = 0;
+    let lastContactsRows = [];
+
+    function contactsPrev(){ if (contactsPage>1){ contactsPage--; loadContacts(contactsPage); } }
+    function contactsNext(){ const maxPage = Math.max(1, Math.ceil(lastContactsTotal/CONTACTS_PAGE_SIZE)); if (contactsPage<maxPage){ contactsPage++; loadContacts(contactsPage); } }
+
+    async function loadContacts(page=1){
+      contactsPage = page;
+      const tbody = document.getElementById('contacts-tbody');
+      const q = (document.getElementById('contacts-q').value || '').trim();
+      const from = document.getElementById('contacts-from').value;
+      const to = document.getElementById('contacts-to').value;
+
+      tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Loading…</td></tr>`;
+
+      try{
+        let query = supabaseClient.from('contact_messages')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false });
+
+        if (q){
+          // Search name OR email OR message (ilike supported on text columns)
+          query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,message.ilike.%${q}%`);
+        }
+        if (from){ query = query.gte('created_at', new Date(from).toISOString()); }
+        if (to){ 
+          const end = new Date(to); end.setDate(end.getDate()+1);
+          query = query.lt('created_at', end.toISOString()); 
         }
 
-        // Initialize Dashboard
-        async function initializeDashboard() {
-            await loadOverviewStats();
-            await loadOverviewCharts();
+        const fromIdx = (contactsPage-1)*CONTACTS_PAGE_SIZE;
+        const toIdx   = fromIdx + CONTACTS_PAGE_SIZE - 1;
+        query = query.range(fromIdx, toIdx);
+
+        const { data, count, error } = await query;
+        if (error) throw error;
+
+        lastContactsTotal = count || (data?.length || 0);
+        lastContactsRows = data || [];
+
+        if (!data || data.length===0){
+          tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">No messages found.</td></tr>`;
+        } else {
+          tbody.innerHTML = data.map(r => `
+            <tr>
+              <td>${new Date(r.created_at).toLocaleString()}</td>
+              <td>${escapeHTML(r.name || '')}</td>
+              <td><a href="mailto:${encodeURIComponent(r.email||'')}">${escapeHTML(r.email || '')}</a></td>
+              <td>${escapeHTML(r.lang || '')}</td>
+              <td>${escapeHTML(r.message || '')}</td>
+            </tr>
+          `).join('');
         }
 
-        // Load Overview Statistics
-        async function loadOverviewStats() {
-            try {
-                // Total conversations
-                const { count: convoCount } = await supabaseClient
-                    .from('conversations')
-                    .select('*', { count: 'exact', head: true });
-                document.getElementById('total-convos').textContent = convoCount || 0;
+        // Pagination controls
+        const pageEl = document.getElementById('contacts-page');
+        const prevEl = document.getElementById('contacts-prev');
+        const nextEl = document.getElementById('contacts-next');
+        const maxPage = Math.max(1, Math.ceil(lastContactsTotal/CONTACTS_PAGE_SIZE));
+        pageEl.textContent = `Page ${contactsPage} of ${maxPage}`;
+        prevEl.disabled = contactsPage<=1;
+        nextEl.disabled = contactsPage>=maxPage;
 
-                // Total users (assuming you have a users table or can count unique user_ids)
-                const { data: uniqueUsers } = await supabaseClient
-                    .from('conversations')
-                    .select('user_id', { distinct: true });
-                document.getElementById('total-users').textContent = uniqueUsers?.length || 0;
+      } catch (err){
+        console.error('Contacts load error:', err);
+        tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Error: ${escapeHTML(err.message || String(err))}</td></tr>`;
+      }
+    }
 
-                // Feedback and accuracy
-                const { data: feedbackData } = await supabaseClient
-                    .from('feedback')
-                    .select('is_accurate, rating');
+    function exportContactsCSV(){
+      if (!lastContactsRows?.length){ alert('No rows to export. Try Refresh first.'); return; }
+      const data = lastContactsRows.map(r => ({
+        created_at: r.created_at,
+        name: r.name,
+        email: r.email,
+        lang: r.lang,
+        message: r.message
+      }));
+      const csv = convertToCSV(data, ['created_at','name','email','lang','message']);
+      downloadCSV(csv, `contact_messages_${new Date().toISOString().split('T')[0]}.csv`);
+    }
 
-                if (feedbackData && feedbackData.length > 0) {
-                    const accurateCount = feedbackData.filter(f => f.is_accurate).length;
-                    const accuracy = (accurateCount / feedbackData.length) * 100;
-                    document.getElementById('accuracy-rate').textContent = `${accuracy.toFixed(1)}%`;
+    // Simple HTML escaper
+    function escapeHTML(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-                    const avgRating = feedbackData.reduce((sum, f) => sum + (f.rating || 0), 0) / feedbackData.length;
-                    document.getElementById('satisfaction').textContent = `${avgRating.toFixed(1)}/5`;
-                } else {
-                    document.getElementById('accuracy-rate').textContent = 'N/A';
-                    document.getElementById('satisfaction').textContent = 'N/A';
-                }
+    // Populate MBTI select
+    document.addEventListener('DOMContentLoaded', () => {
+      const types=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+      const sel=document.getElementById('mbti-filter'); types.forEach(t=>{ const o=document.createElement('option'); o.value=t;o.textContent=t; sel.appendChild(o);});
+    });
 
-                // Mock data for demonstration (replace with actual calculations)
-                document.getElementById('avg-length').textContent = '7.2';
-                document.getElementById('response-time').textContent = '1.4s';
-
-            } catch (error) {
-                console.error('Error loading overview stats:', error);
-            }
-        }
-
-        // Load Overview Charts
-        async function loadOverviewCharts() {
-            // Conversations over time chart
-            const ctx1 = document.getElementById('conversations-chart').getContext('2d');
-            conversationsChart = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Conversations',
-                        data: [12, 19, 15, 25, 22, 18, 28],
-                        borderColor: '#8B5CF6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#f7f5ff' } } },
-                    scales: {
-                        x: { ticks: { color: '#bdb7e6' } },
-                        y: { ticks: { color: '#bdb7e6' } }
-                    }
-                }
-            });
-
-            // Sentiment distribution chart
-            const ctx2 = document.getElementById('sentiment-chart').getContext('2d');
-            sentimentChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Positive', 'Neutral', 'Negative'],
-                    datasets: [{
-                        data: [65, 25, 10],
-                        backgroundColor: ['#22c55e', '#bdb7e6', '#ef4444']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#f7f5ff' } } }
-                }
-            });
-        }
-
-        // Load MBTI Analysis
-        async function loadMBTIAnalysis() {
-            try {
-                // This is mock data - replace with actual MBTI data from your database
-                const mbtiData = {
-                    'INTJ': 45, 'INTP': 38, 'ENTJ': 23, 'ENTP': 41,
-                    'INFJ': 32, 'INFP': 55, 'ENFJ': 28, 'ENFP': 67,
-                    'ISTJ': 34, 'ISFJ': 29, 'ESTJ': 21, 'ESFJ': 26,
-                    'ISTP': 18, 'ISFP': 24, 'ESTP': 15, 'ESFP': 31
-                };
-
-                const total = Object.values(mbtiData).reduce((a, b) => a + b, 0);
-                const mbtiGrid = document.getElementById('mbti-grid');
-                mbtiGrid.innerHTML = '';
-
-                Object.entries(mbtiData).forEach(([type, count]) => {
-                    const percentage = ((count / total) * 100).toFixed(1);
-                    const card = document.createElement('div');
-                    card.className = 'mbti-card';
-                    card.innerHTML = `
-                        <div class="type">${type}</div>
-                        <div class="count">${count}</div>
-                        <div class="percentage">${percentage}%</div>
-                    `;
-                    mbtiGrid.appendChild(card);
-                });
-
-                // MBTI Distribution Chart
-                if (mbtiChart) mbtiChart.destroy();
-                const ctx = document.getElementById('mbti-chart').getContext('2d');
-                mbtiChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(mbtiData),
-                        datasets: [{
-                            label: 'Count',
-                            data: Object.values(mbtiData),
-                            backgroundColor: '#8B5CF6'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: '#f7f5ff' } } },
-                        scales: {
-                            x: { ticks: { color: '#bdb7e6' } },
-                            y: { ticks: { color: '#bdb7e6' } }
-                        }
-                    }
-                });
-
-                // Traits Analysis Chart
-                if (traitsChart) traitsChart.destroy();
-                const ctx3 = document.getElementById('traits-chart').getContext('2d');
-                traitsChart = new Chart(ctx3, {
-                    type: 'radar',
-                    data: {
-                        labels: ['Extroversion', 'Sensing', 'Thinking', 'Judging'],
-                        datasets: [{
-                            label: 'Average Scores',
-                            data: [45, 60, 55, 48],
-                            borderColor: '#8B5CF6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.2)'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: '#f7f5ff' } } },
-                        scales: {
-                            r: {
-                                ticks: { color: '#bdb7e6' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                            }
-                        }
-                    }
-                });
-
-            } catch (error) {
-                console.error('Error loading MBTI analysis:', error);
-            }
-        }
-
-        // Load Feedback Analysis
-        async function loadFeedbackAnalysis() {
-            try {
-                const { data: feedbackData } = await supabaseClient
-                    .from('feedback')
-                    .select('*');
-
-                if (feedbackData) {
-                    document.getElementById('total-feedback').textContent = feedbackData.length;
-                    
-                    const positiveCount = feedbackData.filter(f => f.is_accurate || f.rating >= 4).length;
-                    const positiveRate = ((positiveCount / feedbackData.length) * 100).toFixed(1);
-                    document.getElementById('positive-rate').textContent = `${positiveRate}%`;
-
-                    // Mock common issues and improvement areas
-                    document.getElementById('common-issues').textContent = 'Response accuracy, Speed';
-                    document.getElementById('improvement-areas').textContent = 'Personality analysis depth';
-                }
-
-                // Feedback Trends Chart
-                if (feedbackTrendsChart) feedbackTrendsChart.destroy();
-                const ctx4 = document.getElementById('feedback-trends-chart').getContext('2d');
-                feedbackTrendsChart = new Chart(ctx4, {
-                    type: 'line',
-                    data: {
-                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                        datasets: [{
-                            label: 'Positive Feedback',
-                            data: [65, 70, 68, 75],
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)'
-                        }, {
-                            label: 'Negative Feedback',
-                            data: [35, 30, 32, 25],
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: '#f7f5ff' } } },
-                        scales: {
-                            x: { ticks: { color: '#bdb7e6' } },
-                            y: { ticks: { color: '#bdb7e6' } }
-                        }
-                    }
-                });
-
-                // Issues Categories Chart
-                if (issuesChart) issuesChart.destroy();
-                const ctx5 = document.getElementById('issues-chart').getContext('2d');
-                issuesChart = new Chart(ctx5, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Accuracy', 'Speed', 'Understanding', 'Other'],
-                        datasets: [{
-                            data: [40, 25, 20, 15],
-                            backgroundColor: ['#ef4444', '#f59e0b', '#8B5CF6', '#bdb7e6']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: '#f7f5ff' } } }
-                    }
-                });
-
-            } catch (error) {
-                console.error('Error loading feedback analysis:', error);
-            }
-        }
-
-        // Load Conversations with Analysis
-        async function loadConversations() {
-            try {
-                const { data: conversations } = await supabaseClient
-                    .from('conversations')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-
-                const container = document.getElementById('conversations-container');
-                
-                if (conversations && conversations.length > 0) {
-                    container.innerHTML = '';
-                    
-                    conversations.forEach(convo => {
-                        const item = document.createElement('div');
-                        item.className = 'convo-item';
-                        
-                        // Mock analysis data - replace with actual analysis
-                        const sentiment = ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)];
-                        const mbtiType = ['INTJ', 'ENFP', 'ISTP', 'INFJ'][Math.floor(Math.random() * 4)];
-                        const messageCount = Math.floor(Math.random() * 15) + 3;
-                        
-                        // Generate conversation summary
-                        const summary = generateConversationSummary(convo.conversation_history);
-                        
-                        item.innerHTML = `
-                            <div class="convo-header">
-                                <div class="convo-meta">
-                                    <strong>ID:</strong> ${convo.id} | 
-                                    <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} |
-                                    <strong>Messages:</strong> ${messageCount}
-                                </div>
-                                <div class="convo-tags">
-                                    <span class="tag">${mbtiType}</span>
-                                    <span class="sentiment-indicator sentiment-${sentiment}">${sentiment}</span>
-                                </div>
-                            </div>
-                            <div class="convo-summary">${summary}</div>
-                        `;
-                        container.appendChild(item);
-                    });
-                } else {
-                    container.innerHTML = '<p>No conversations found.</p>';
-                }
-
-            } catch (error) {
-                console.error('Error loading conversations:', error);
-                document.getElementById('conversations-container').innerHTML = '<p>Error loading conversations.</p>';
-            }
-        }
-
-        // Generate conversation summary (mock function)
-        function generateConversationSummary(history) {
-            if (!history || typeof history === 'string') {
-                return 'User engaged in personality assessment discussion. Topics covered include self-reflection, behavioral patterns, and career preferences.';
-            }
-            
-            // If history is an object/array, analyze it
-            const summaries = [
-                'User explored their personality type through detailed questioning about work preferences and social interactions.',
-                'Conversation focused on career guidance based on personality traits and strengths identification.',
-                'User discussed relationship patterns and communication styles for better self-understanding.',
-                'Assessment covered decision-making processes and how the user handles stress and conflict.',
-                'User explored personal growth opportunities and areas for development based on their personality profile.'
-            ];
-            
-            return summaries[Math.floor(Math.random() * summaries.length)];
-        }
-
-        // Apply filters function
-        function applyFilters() {
-            const dateFilter = document.getElementById('date-filter').value;
-            const mbtiFilter = document.getElementById('mbti-filter').value;
-            const sentimentFilter = document.getElementById('sentiment-filter').value;
-            
-            // Reload conversations with filters
-            loadConversations();
-        }
-
-        // Export Data Functions
-        function exportData(type) {
-            switch(type) {
-                case 'conversations':
-                    exportCSV('conversations', ['id', 'created_at', 'user_id', 'conversation_summary']);
-                    break;
-                case 'feedback':
-                    exportCSV('feedback', ['id', 'conversation_id', 'is_accurate', 'rating', 'comments']);
-                    break;
-                case 'mbti':
-                    exportMBTIData();
-                    break;
-                case 'analytics':
-                    exportAnalyticsReport();
-                    break;
-            }
-        }
-
-        async function exportCSV(tableName, columns) {
-            try {
-                const { data } = await supabaseClient
-                    .from(tableName)
-                    .select(columns.join(','));
-
-                if (data) {
-                    const csv = convertToCSV(data, columns);
-                    downloadCSV(csv, `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
-                }
-            } catch (error) {
-                console.error(`Error exporting ${tableName}:`, error);
-                alert(`Error exporting ${tableName} data`);
-            }
-        }
-
-        function convertToCSV(data, columns) {
-            const header = columns.join(',');
-            const rows = data.map(row => 
-                columns.map(col => {
-                    const value = row[col];
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('\n'))) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value || '';
-                }).join(',')
-            );
-            return [header, ...rows].join('\n');
-        }
-
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        function exportMBTIData() {
-            // Mock MBTI data export
-            const mbtiData = [
-                { type: 'INTJ', count: 45, percentage: 12.5 },
-                { type: 'INTP', count: 38, percentage: 10.6 },
-                // Add all 16 types...
-            ];
-            const csv = convertToCSV(mbtiData, ['type', 'count', 'percentage']);
-            downloadCSV(csv, `mbti_distribution_${new Date().toISOString().split('T')[0]}.csv`);
-        }
-
-        function exportAnalyticsReport() {
-            // Generate comprehensive analytics report
-            const reportData = {
-                generated_at: new Date().toISOString(),
-                total_users: document.getElementById('total-users').textContent,
-                total_conversations: document.getElementById('total-convos').textContent,
-                accuracy_rate: document.getElementById('accuracy-rate').textContent,
-                user_satisfaction: document.getElementById('satisfaction').textContent
-            };
-
-            // Convert to JSON for now, could generate PDF with a library
-            const json = JSON.stringify(reportData, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        // Populate MBTI filter dropdown
-        document.addEventListener('DOMContentLoaded', () => {
-            const mbtiTypes = [
-                'INTJ', 'INTP', 'ENTJ', 'ENTP',
-                'INFJ', 'INFP', 'ENFJ', 'ENFP',
-                'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-                'ISTP', 'ISFP', 'ESTP', 'ESFP'
-            ];
-
-            const mbtiFilter = document.getElementById('mbti-filter');
-            mbtiTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                mbtiFilter.appendChild(option);
-            });
-        });
-
-        // Auto-refresh data every 5 minutes
-        setInterval(() => {
-            if (dashboardSection.style.display !== 'none') {
-                loadOverviewStats();
-            }
-        }, 300000);
-    </script>
+    // Auto-refresh
+    setInterval(()=>{ if (dashboardSection.style.display!=='none'){ loadOverviewStats(); } }, 300000);
+  </script>
 </body>
 </html>
