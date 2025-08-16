@@ -83,17 +83,63 @@
 
     .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
     .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
-    .chat-panel{ position:fixed; right:18px; bottom:78px; width:min(420px, calc(100vw - 32px)); height:min(68vh, 720px); border-radius:24px; overflow:hidden; display:none; z-index:9999; background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 30px 80px rgba(0,0,0,.55) }
-    .chat-panel.open{display:block}
-    .chat-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--glass-stroke)}
-    .chat-head h3{margin:0; font-family:'Playfair Display',serif; letter-spacing:.3px}
-    .chat-body{padding:14px; height:calc(100% - 124px); overflow:auto; display:flex; flex-direction:column; gap:12px}
+    
+    /* --- UPDATED CSS FOR CHAT PANEL --- */
+    .chat-panel{ 
+        position:fixed; 
+        right:18px; 
+        bottom:78px; 
+        width:min(420px, calc(100vw - 32px)); 
+        height:min(68vh, 720px); 
+        border-radius:24px; 
+        overflow:hidden; 
+        display: none; 
+        flex-direction: column;
+        z-index:9999; 
+        background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); 
+        -webkit-backdrop-filter:blur(20px) saturate(140%); 
+        backdrop-filter:blur(20px) saturate(140%); 
+        border:1px solid var(--glass-stroke); 
+        box-shadow:0 30px 80px rgba(0,0,0,.55); 
+    }
+    .chat-panel.open {
+        display: flex;
+    }
+    .chat-head{
+        padding:12px 14px; 
+        border-bottom:1px solid var(--glass-stroke);
+        flex-shrink: 0;
+    }
+    .chat-head h3{
+        margin:0; 
+        font-family:'Playfair Display',serif; 
+        letter-spacing:.3px;
+    }
+    .chat-body{
+        padding:14px; 
+        height: auto;
+        flex-grow: 1;
+        overflow:auto; 
+        display:flex; 
+        flex-direction:column; 
+        gap:12px
+    }
+    /* --- END OF UPDATED CSS --- */
+
     .msg{display:flex; gap:10px; align-items:flex-start}
     .msg .bubble{max-width:85%; padding:12px 14px; border-radius:14px; line-height:1.6}
     .msg.user{justify-content:flex-end}
     .msg.user .bubble{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; border-top-right-radius:4px}
     .msg.ai .bubble{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); border-top-left-radius:4px}
-    .chat-foot{padding:12px; border-top:1px solid var(--glass-stroke); display:grid; grid-template-columns:1fr; gap:8px}
+    
+    .chat-foot{
+        padding:12px; 
+        border-top:1px solid var(--glass-stroke); 
+        display:grid; 
+        grid-template-columns:1fr; 
+        gap:8px;
+        flex-shrink: 0;
+    }
     .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
     .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
     .notice{font-size:12px; color:#cfcaff; opacity:.8; padding:8px 12px;}
@@ -263,11 +309,13 @@
     // Global variables
     let conversationHistory = [];
     let chatBody, chatInputArea, resetBtn, input, sendBtn;
+    let latestProgress = null;
 
     // --- 2. Page Functions (Sparkles, Tilt, Language) ---
     function initializeSparkles() { 
       const host = document.getElementById('sparkles'); 
       if (!host) return;
+      if (host.children.length > 0) return;
       
       for(let i = 0; i < 120; i++){ 
         const s = document.createElement('i'); 
@@ -333,9 +381,15 @@
       
       chatOpen.onclick = () => { 
         panel.classList.toggle('open'); 
-        if(panel.classList.contains('open') && input){ 
-          input.focus(); 
-        } 
+        
+        if (panel.classList.contains('open')) {
+          if (latestProgress && latestProgress.current_step < latestProgress.total_steps) {
+            updateProgressBar(latestProgress);
+          }
+          if(input) { 
+            input.focus(); 
+          }
+        }
       };
     }
 
@@ -353,9 +407,9 @@
       
       let welcomeText;
       if (lang === 'vi') {
-        welcomeText = `Xin chào! Tôi là trợ lý phân tích tính cách theo MBTI. Hãy chia sẻ cách bạn học tập, kết bạn và ra quyết định. Tôi sẽ phản hồi những mẫu hình vi và khi bạn sẵn sàng, tôi có thể suy luận kiểu MBTI kèm mức độ tự tin.`;
+        welcomeText = `Chào bạn! Cùng trò chuyện một chút về tính cách nhé. Bạn cứ thoải mái chia sẻ về cách bạn học, giao tiếp với mọi người, hay cách đưa ra quyết định. Mình sẽ lắng nghe và giúp bạn khám phá bản thân. 😊`;
       } else {
-        welcomeText = `Hi! I'm your MBTI-style personality analyst. Share how you approach studying, friends, and decisions. I'll reflect back patterns and, when you're ready, I can infer a type with a confidence score.`;
+        welcomeText = `Hey there! Let's chat for a bit about your personality. Feel free to tell me about how you like to study, hang out with friends, or make decisions. I'm here to listen and help you learn a little more about yourself. 😊`;
       }
       
       bubble.innerHTML = `<span>${welcomeText}</span>`;
@@ -370,7 +424,8 @@
       if (resetBtn) resetBtn.style.display = 'none';
       if (input) input.focus();
       
-      // Clear progress bar
+      latestProgress = null;
+
       const progressContainer = document.getElementById('progress-container');
       if (progressContainer) {
         progressContainer.remove();
@@ -470,15 +525,28 @@
     }
 
     function updateProgressBar(progress) {
+      if (progress && progress.current_step >= progress.total_steps) {
+        const existingContainer = document.getElementById('progress-container');
+        if (existingContainer) {
+          existingContainer.remove();
+        }
+        latestProgress = null;
+        return;
+      }
+
       let progressContainer = document.getElementById('progress-container');
       if (!progressContainer) {
-        // Create progress bar container
         progressContainer = document.createElement('div');
         progressContainer.id = 'progress-container';
         progressContainer.style.cssText = `
-          padding: 12px 14px;
+          padding: 8px 14px;
           border-bottom: 1px solid var(--glass-stroke);
           background: rgba(255,255,255,.03);
+          text-align: center;
+          font-size: 12px;
+          color: var(--muted);
+          font-weight: 500;
+          flex-shrink: 0;
         `;
         
         const chatHead = document.querySelector('.chat-head');
@@ -488,22 +556,8 @@
       }
       
       if (progress) {
-        const percentage = (progress.current_step / progress.total_steps) * 100;
         const dimensionsCount = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        
-        progressContainer.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <span style="font-size: 12px; color: var(--muted); font-weight: 600;">
-              Step ${progress.current_step}/${progress.total_steps}: ${progress.step_description}
-            </span>
-          </div>
-          <div style="background: rgba(255,255,255,.1); border-radius: 8px; height: 6px; overflow: hidden;">
-            <div style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
-          </div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 4px; opacity: 0.8;">
-            📊 Personality dimensions explored: ${dimensionsCount}/4
-          </div>
-        `;
+        progressContainer.innerHTML = `Analysis Progress: Dimensions Explored ${dimensionsCount}/4`;
       }
     }
 
@@ -520,7 +574,7 @@
       showTyping();
       
       try {
-        const messages = conversationHistory.slice(-10); // Keep more context
+        const messages = conversationHistory.slice(-10);
         const res = await fetch('/.netlify/functions/process-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -539,12 +593,10 @@
           try {
             const mbtiResult = JSON.parse(data.reply);
             conversationHistory.push({ role: 'assistant', content: data.reply });
-
-            console.log('Enhanced MBTI Result:', mbtiResult);
             
-            // Update progress bar
             if (mbtiResult.progress) {
-              updateProgressBar(mbtiResult.progress);
+              latestProgress = mbtiResult.progress;
+              updateProgressBar(latestProgress);
             }
 
             let responseText = '';
@@ -557,6 +609,10 @@
               
               if (mbtiResult.one_liner) {
                 responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              }
+              
+              if (mbtiResult.reasoning) {
+                  responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
               }
               
               if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
@@ -575,21 +631,10 @@
                 responseText += '\n';
               }
               
-              responseText += `🎉 **Analysis Complete!**\nThank you for sharing your authentic preferences with me. This assessment is based on our natural conversation about how you approach energy, information, decisions, and lifestyle.`;
-              
               if (chatInputArea) chatInputArea.style.display = 'none';
               if (resetBtn) resetBtn.style.display = 'block';
             } else {
-              // Continuing conversation
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
-              
-              // Add subtle, natural progress encouragement only occasionally
-              if (mbtiResult.progress && mbtiResult.progress.current_step >= 3 && mbtiResult.progress.current_step <= 4) {
-                // Only show encouragement at mid-point, and make it natural
-                if (Math.random() > 0.6) { // Only 40% chance to avoid being repetitive
-                  responseText += `\n\n😊 I'm getting a good sense of your personality style!`;
-                }
-              }
             }
             
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
@@ -618,88 +663,29 @@
       input = document.getElementById('chatInput');
       sendBtn = document.getElementById('sendBtn');
       
-      console.log('Chat elements found:', {
-        chatBody: !!chatBody,
-        chatInputArea: !!chatInputArea,
-        resetBtn: !!resetBtn,
-        input: !!input,
-        sendBtn: !!sendBtn
+      if (!chatBody || !input || !sendBtn || !resetBtn) return;
+      
+      sendBtn.addEventListener('click', handleSend);
+      resetBtn.addEventListener('click', resetChat);
+      input.addEventListener('keydown', e => { 
+        if (e.key === 'Enter' && !e.shiftKey) { 
+          e.preventDefault(); 
+          handleSend(); 
+        }
       });
       
-      if (!chatBody || !input || !sendBtn || !resetBtn) {
-        console.error('Critical chat elements not found');
-        setTimeout(() => {
-          console.log('Retrying chat initialization...');
-          initializeChatControls();
-        }, 500);
-        return;
-      }
-      
-      try {
-        sendBtn.addEventListener('click', handleSend);
-        resetBtn.addEventListener('click', resetChat);
-        
-        input.addEventListener('keydown', e => { 
-          if (e.key === 'Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            handleSend(); 
-          }
-        });
-        
-        initializeFeedbackHandler();
-        displayInitialMessage();
-        
-        console.log('Chat controls initialized successfully');
-      } catch (error) {
-        console.error('Error setting up chat controls:', error);
-      }
+      initializeFeedbackHandler();
+      displayInitialMessage();
     }
 
     // --- 5. Initialize Everything When DOM is Ready ---
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM loaded, initializing...');
-      
-      try {
-        initializeSparkles();
-        initializeTilt();
-        initializeLanguage();
-        initializeChatPanel();
-        initializeChatControls();
-        
-        console.log('All systems initialized successfully');
-      } catch (error) {
-        console.error('Initialization error:', error);
-        
-        setTimeout(() => {
-          try {
-            initializeChatControls();
-            console.log('Fallback chat initialization completed');
-          } catch (e) {
-            console.error('Fallback initialization failed:', e);
-          }
-        }, 1000);
-      }
+      initializeSparkles();
+      initializeTilt();
+      initializeLanguage();
+      initializeChatPanel();
+      initializeChatControls();
     });
-
-    // Backup initialization in case DOMContentLoaded already fired
-    if (document.readyState === 'loading') {
-      // DOM is still loading, event listener will handle it
-    } else {
-      // DOM already loaded, initialize immediately
-      setTimeout(() => {
-        console.log('Late initialization...');
-        try {
-          initializeSparkles();
-          initializeTilt();
-          initializeLanguage();
-          initializeChatPanel();
-          initializeChatControls();
-          console.log('Late initialization completed');
-        } catch (error) {
-          console.error('Late initialization error:', error);
-        }
-      }, 100);
-    }
   </script>
 </body>
 </html>
