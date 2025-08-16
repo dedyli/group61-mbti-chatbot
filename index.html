@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind-Mapper AI – Sophisticated MBTI Personality Analyst</title>
+  <title>Mind-Mapper AI – Conversational MBTI Personality Insights</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
@@ -13,10 +13,11 @@
     html{scroll-behavior:smooth}
     body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
 
-    /* Bilingual helpers */
+    /* Multilingual helpers */
     [data-lang]{display:none}
     body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
     body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
+    body.lang-zh [data-lang="zh"], body.lang-zh .block-zh{display:initial}
 
     .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
       radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
@@ -39,9 +40,12 @@
     nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:999px; position:relative; overflow:hidden; }
     nav a:after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:0; transition:.35s}
     nav a:hover:after, nav a.active:after{opacity:.25}
+
+    /* Language pill - higher contrast */
     .lang{display:flex; align-items:center; gap:8px}
-    .pill{border:1px solid var(--glass-stroke); background:var(--glass); padding:8px 10px; border-radius:999px; display:flex; align-items:center; gap:8px}
-    .pill select{background:transparent; border:none; color:var(--fg); font-weight:600}
+    .pill{border:1px solid #6b61b8; background:rgba(14,12,30,.85); padding:8px 10px; border-radius:999px; display:flex; align-items:center; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.45)}
+    .pill select{background:rgba(29,25,58,.95); border:1px solid #8B5CF6; color:#f3f0ff; font-weight:700; padding:8px 10px; border-radius:999px; outline:none; appearance:none}
+    .pill select option{background:#1f1a3f; color:#f3f0ff;}
 
     .container{max-width:1200px; margin:0 auto; padding:64px 16px}
 
@@ -84,7 +88,7 @@
     .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
     .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
     
-    /* --- UPDATED CSS FOR CHAT PANEL --- */
+    /* --- UPDATED CSS FOR CHAT PANEL (pro header) --- */
     .chat-panel{ 
         position:fixed; 
         right:18px; 
@@ -93,8 +97,8 @@
         height:min(68vh, 720px); 
         border-radius:24px; 
         overflow:hidden; 
-        display: none; 
-        flex-direction: column;
+        display:none; 
+        flex-direction:column;
         z-index:9999; 
         background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); 
         -webkit-backdrop-filter:blur(20px) saturate(140%); 
@@ -102,29 +106,27 @@
         border:1px solid var(--glass-stroke); 
         box-shadow:0 30px 80px rgba(0,0,0,.55); 
     }
-    .chat-panel.open {
-        display: flex;
-    }
+    .chat-panel.open { display:flex; }
     .chat-head{
-        padding:12px 14px; 
-        border-bottom:1px solid var(--glass-stroke);
-        flex-shrink: 0;
+        padding:12px 16px; 
+        background:linear-gradient(90deg, #241b5f, #3c2c9f 45%, #6d4df7);
+        border-bottom:1px solid rgba(255,255,255,.12);
+        flex-shrink:0;
     }
     .chat-head h3{
         margin:0; 
         font-family:'Playfair Display',serif; 
         letter-spacing:.3px;
+        font-weight:800;
     }
     .chat-body{
         padding:14px; 
-        height: auto;
-        flex-grow: 1;
+        flex-grow:1;
         overflow:auto; 
         display:flex; 
         flex-direction:column; 
         gap:12px
     }
-    /* --- END OF UPDATED CSS --- */
 
     .msg{display:flex; gap:10px; align-items:flex-start}
     .msg .bubble{max-width:85%; padding:12px 14px; border-radius:14px; line-height:1.6}
@@ -138,7 +140,8 @@
         display:grid; 
         grid-template-columns:1fr; 
         gap:8px;
-        flex-shrink: 0;
+        flex-shrink:0;
+        background:rgba(255,255,255,.02);
     }
     .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
     .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
@@ -164,18 +167,35 @@
     </div>
     <nav>
       <ul>
-        <li><a class="active" href="#home"><span data-lang="en">Home</span><span data-lang="vi">Trang chủ</span></a></li>
-        <li><a href="#how"><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span></a></li>
-        <li><a href="#about"><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></a></li>
+        <li><a class="active" href="#home">
+          <span data-lang="en">Home</span>
+          <span data-lang="vi">Trang chủ</span>
+          <span data-lang="zh">首页</span>
+        </a></li>
+        <li><a href="#how">
+          <span data-lang="en">How it works</span>
+          <span data-lang="vi">Cách hoạt động</span>
+          <span data-lang="zh">使用方式</span>
+        </a></li>
+        <li><a href="#about">
+          <span data-lang="en">About Group 61</span>
+          <span data-lang="vi">Về Nhóm 61</span>
+          <span data-lang="zh">关于第61组</span>
+        </a></li>
         <li><a href="#faq"><span>FAQ</span></a></li>
-        <li><a href="#contact"><span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span></a></li>
+        <li><a href="#contact">
+          <span data-lang="en">Contact</span>
+          <span data-lang="vi">Liên hệ</span>
+          <span data-lang="zh">联系</span>
+        </a></li>
       </ul>
     </nav>
     <div class="lang pill">
       <span>🌎</span>
-      <select id="language">
+      <select id="language" aria-label="Language selector">
         <option value="en" selected>English</option>
         <option value="vi">Tiếng Việt</option>
+        <option value="zh">中文</option>
       </select>
     </div>
   </header>
@@ -184,118 +204,182 @@
     <section class="hero">
       <div>
         <h2 class="title">
-          <span data-lang="en">Conversational MBTI Personality Insights – refined for students</span>
-          <span data-lang="vi">Trò chuyện MBTI tinh tế – dành cho học sinh, sinh viên</span>
+          <span data-lang="en">Conversational MBTI Personality Insights</span>
+          <span data-lang="vi">Trò chuyện MBTI – tự nhiên, dễ hiểu</span>
+          <span data-lang="zh">对话式 MBTI 性格洞察</span>
         </h2>
         <p class="subtitle">
-          <span data-lang="en">A warm, human-like conversation that reveals strengths, tendencies, and growth tips.</span>
-          <span data-lang="vi">Một cuộc trò chuyện ấm áp, tự nhiên để hé lộ thế mạnh, xu hướng và gợi ý phát triển.</span>
+          <span data-lang="en">A warm, human-like chat that reveals strengths, tendencies, and growth tips.</span>
+          <span data-lang="vi">Cuộc trò chuyện gần gũi giúp bạn hiểu rõ điểm mạnh, xu hướng và cách phát triển.</span>
+          <span data-lang="zh">以轻松自然的对话，了解你的优势、倾向与成长建议。</span>
         </p>
         <p class="lead">
-          <span data-lang="en">No rigid multiple-choice. Just natural chat. When you're ready, open the assistant below and start talking. After a brief exchange, you'll get a thoughtful MBTI-style profile, confidence level, and practical suggestions.</span>
-          <span data-lang="vi">Không cần trắc nghiệm cứng nhắc – chỉ trò chuyện tự nhiên. Khi sẵn sàng, mở trợ lý và bắt đầu. Chỉ sau vài tin nhắn, bạn sẽ nhận được hồ sơ MBTI ngắn gọn, mức độ tự tin và các gợi ý thực tiễn.</span>
+          <span data-lang="en">No rigid multiple-choice—just natural chat. Open the assistant below and start talking. After a brief exchange, you'll get a thoughtful MBTI-style profile, confidence level, and practical suggestions.</span>
+          <span data-lang="vi">Không cần trắc nghiệm cứng nhắc—chỉ cần trò chuyện tự nhiên. Mở trợ lý bên dưới và bắt đầu. Sau vài tin nhắn, bạn sẽ nhận được hồ sơ kiểu MBTI, mức độ tự tin và gợi ý hữu ích.</span>
+          <span data-lang="zh">无需死板的选择题，只需自然聊天。开启下方助手并开始交流；很快你就会收到 MBTI 风格的简介、可信度以及实用建议。</span>
         </p>
-        <a class="cta" href="#how"><span data-lang="en">Begin your journey</span><span data-lang="vi">Bắt đầu hành trình</span> →</a>
+        <a class="cta" href="#how">
+          <span data-lang="en">Begin your journey</span>
+          <span data-lang="vi">Bắt đầu trải nghiệm</span>
+          <span data-lang="zh">开始体验</span> →
+        </a>
       </div>
       <div class="illustrationWrap">
         <div class="card3d" id="card3d">
-          <img class="hero-img" src="vietnam_students.png"/>
+          <!-- Updated hero image -->
+          <img class="hero-img" src="hero_image.png" alt="Professionals of diverse backgrounds"/>
         </div>
       </div>
     </section>
 
     <section class="section" id="how">
-      <h2><span data-lang="en">How it works</span><span data-lang="vi">Cách hoạt động</span></h2>
-      <p class="muted"><span data-lang="en">Simple, elegant, respectful of your time.</span><span data-lang="vi">Đơn giản, tinh tế, tôn trọng thời gian của bạn.</span></p>
+      <h2>
+        <span data-lang="en">How it works</span>
+        <span data-lang="vi">Cách hoạt động</span>
+        <span data-lang="zh">如何运作</span>
+      </h2>
+      <p class="muted">
+        <span data-lang="en">Simple, elegant, respectful of your time.</span>
+        <span data-lang="vi">Đơn giản, tinh gọn và tiết kiệm thời gian.</span>
+        <span data-lang="zh">简单优雅，不浪费你的时间。</span>
+      </p>
       <div class="steps">
         <div class="step">
           <span class="n">1</span>
-          <h3><span data-lang="en">Start a natural chat</span><span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span></h3>
-          <p><span data-lang="en">Say hello and share how you like to study, socialize, and make decisions.</span><span data-lang="vi">Hãy chào và chia sẻ cách bạn học, giao tiếp và ra quyết định.</span></p>
+          <h3>
+            <span data-lang="en">Start a natural chat</span>
+            <span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span>
+            <span data-lang="zh">开始自然对话</span>
+          </h3>
+          <p>
+            <span data-lang="en">Say hello and share how you work, socialize, and make decisions.</span>
+            <span data-lang="vi">Hãy chào và chia sẻ cách bạn làm việc, giao tiếp và ra quyết định.</span>
+            <span data-lang="zh">先打个招呼，说说你的工作方式、人际互动与决策习惯。</span>
+          </p>
         </div>
         <div class="step">
           <span class="n">2</span>
-          <h3><span data-lang="en">AI listens and learns</span><span data-lang="vi">AI lắng nghe và học hỏi</span></h3>
-          <p><span data-lang="en">Our AI assistant listens for patterns and compares them to past conversations to improve its insights.</span><span data-lang="vi">Trợ lý AI lắng nghe, nhận diện các mẫu hành vi và so sánh với các cuộc trò chuyện trước để cải thiện độ chính xác.</span></p>
+          <h3>
+            <span data-lang="en">AI listens and learns</span>
+            <span data-lang="vi">AI lắng nghe và học hỏi</span>
+            <span data-lang="zh">AI 认真倾听并学习</span>
+          </h3>
+          <p>
+            <span data-lang="en">The assistant looks for patterns and refines insights over the chat.</span>
+            <span data-lang="vi">Trợ lý tìm các mẫu hành vi và hoàn thiện nhận định trong suốt cuộc trò chuyện.</span>
+            <span data-lang="zh">助手在对话中识别模式，不断完善结论。</span>
+          </p>
         </div>
         <div class="step">
           <span class="n">3</span>
-          <h3><span data-lang="en">Receive your profile</span><span data-lang="vi">Nhận hồ sơ của bạn</span></h3>
-          <p><span data-lang="en">Get a concise MBTI-style type with confidence, traits, and friendly development tips.</span><span data-lang="vi">Nhận kiểu MBTI, mức tự tin, đặc trưng nổi bật và gợi ý phát triển.</span></p>
+          <h3>
+            <span data-lang="en">Receive your profile</span>
+            <span data-lang="vi">Nhận hồ sơ của bạn</span>
+            <span data-lang="zh">获取你的画像</span>
+          </h3>
+          <p>
+            <span data-lang="en">Get an MBTI-style type with confidence, traits, and friendly tips.</span>
+            <span data-lang="vi">Nhận kiểu MBTI cùng mức tự tin, đặc trưng chính và gợi ý hữu ích.</span>
+            <span data-lang="zh">获得 MBTI 风格类型、可信度、关键特质和贴心建议。</span>
+          </p>
         </div>
       </div>
     </section>
 
     <section class="section" id="about">
-      <h2><span data-lang="en">About Group 61</span><span data-lang="vi">Về Nhóm 61</span></h2>
+      <h2>
+        <span data-lang="en">About Group 61</span>
+        <span data-lang="vi">Về Nhóm 61</span>
+        <span data-lang="zh">关于第 61 组</span>
+      </h2>
       <p class="muted">
         <span data-lang="en">We are Group 61 from Tsinghua University's IEDE 2025 program. Mind-Mapper AI was born from our passion to use technology for self-awareness and growth.</span>
-        <span data-lang="vi">Chúng tôi là Nhóm 61 của chương trình IEDE 2025 (ĐH Thanh Hoa). Mind-Mapper AI xuất phát từ niềm đam mê ứng dụng công nghệ để thúc đẩy tự nhận thức và phát triển bản thân.</span>
+        <span data-lang="vi">Chúng tôi là Nhóm 61 của chương trình IEDE 2025 (ĐH Thanh Hoa). Mind-Mapper AI ra đời từ mong muốn dùng công nghệ để giúp mọi người hiểu mình và phát triển.</span>
+        <span data-lang="zh">我们来自清华大学 IEDE 2025 项目的第 61 组。Mind-Mapper AI 源于我们希望用技术帮助每个人自我认知与成长的热情。</span>
       </p>
       <p class="muted" style="margin-top:10px">
-        <span data-lang="en">Our goal is to make personality analysis accessible, engaging, and modern for students.</span>
-        <span data-lang="vi">Mục tiêu của chúng tôi là khiến phân tích tính cách trở nên gần gũi, thú vị và hiện đại cho học sinh, sinh viên.</span>
+        <span data-lang="en">Our goal is to make personality analysis accessible, engaging, and modern for everyone.</span>
+        <span data-lang="vi">Mục tiêu của chúng tôi là đưa phân tích tính cách đến với mọi người—dễ tiếp cận, thú vị và hiện đại.</span>
+        <span data-lang="zh">我们的目标：让性格分析更易用、更有趣、更现代，服务于所有人。</span>
       </p>
     </section>
 
     <section class="section faq" id="faq">
       <h2>FAQ</h2>
       <details>
-        <summary><span data-lang="en">What is the MBTI?</span><span data-lang="vi">MBTI là gì?</span></summary>
-        <p><span data-lang="en">The Myers-Briggs Type Indicator describes preferences in how people perceive information and make decisions, grouping into 16 types.</span><span data-lang="vi">MBTI mô tả khuynh hướng trong cách con người tiếp nhận thông tin và ra quyết định, phân loại thành 16 kiểu tính cách.</span></p>
+        <summary><span data-lang="en">What is the MBTI?</span><span data-lang="vi">MBTI là gì?</span><span data-lang="zh">什么是 MBTI？</span></summary>
+        <p><span data-lang="en">The Myers-Briggs Type Indicator describes preferences in how people perceive information and make decisions, grouping into 16 types.</span><span data-lang="vi">MBTI mô tả xu hướng trong cách con người tiếp nhận thông tin và ra quyết định, gồm 16 kiểu tính cách.</span><span data-lang="zh">MBTI（迈尔斯-布里格斯性格指标）描述人们在信息感知与决策方式上的偏好，共 16 种类型。</span></p>
       </details>
       <details>
-        <summary><span data-lang="en">Is this a clinical assessment?</span><span data-lang="vi">Đây có phải đánh giá lâm sàng?</span></summary>
-        <p><span data-lang="en">No—it's a self-reflection tool powered by AI. Use it for guidance, not diagnosis.</span><span data-lang="vi">Không—đây là công cụ tự phản chiếu do AI hỗ trợ. Dùng để tham khảo, không phải chẩn đoán.</span></p>
+        <summary><span data-lang="en">Is this a clinical assessment?</span><span data-lang="vi">Đây có phải đánh giá lâm sàng?</span><span data-lang="zh">这是临床评估吗？</span></summary>
+        <p><span data-lang="en">No—it's a self-reflection tool powered by AI. Use it for guidance, not diagnosis.</span><span data-lang="vi">Không—đây là công cụ tự phản chiếu do AI hỗ trợ. Dùng để tham khảo, không phải chẩn đoán.</span><span data-lang="zh">不是。这是一个由 AI 驱动的自我反思工具，仅供参考，不用于诊断。</span></p>
       </details>
       <details>
-        <summary><span data-lang="en">Is my data private and secure?</span><span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn?</span></summary>
-        <p><span data-lang="en">We securely save anonymized conversations to improve our AI's accuracy and insights. We do not store any personal identification information.</span><span data-lang="vi">Chúng tôi lưu trữ ẩn danh các cuộc trò chuyện một cách an toàn để cải thiện độ chính xác và thông tin chi tiết của AI. Chúng tôi không lưu trữ bất kỳ thông tin nhận dạng cá nhân nào.</span></p>
+        <summary><span data-lang="en">Is my data private and secure?</span><span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn?</span><span data-lang="zh">我的数据是否安全？</span></summary>
+        <p><span data-lang="en">We securely save anonymized conversations to improve our AI's accuracy and insights. We do not store any personal identification information.</span><span data-lang="vi">Chúng tôi lưu trữ ẩn danh các cuộc trò chuyện một cách an toàn để cải thiện độ chính xác của AI. Không lưu bất kỳ thông tin định danh cá nhân nào.</span><span data-lang="zh">我们仅安全保存已匿名化的对话，用于提升准确度；不存储任何可识别个人的信息。</span></p>
       </details>
       <details>
-        <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span></summary>
-        <p><span data-lang="en">Usually 5–10 minutes to get a first profile.</span><span data-lang="vi">Thường 5–10 phút để có hồ sơ đầu tiên.</span></p>
+        <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span><span data-lang="zh">需要多久？</span></summary>
+        <p><span data-lang="en">Usually 5–10 minutes to get a first profile.</span><span data-lang="vi">Thường mất 5–10 phút để có bản phân tích đầu tiên.</span><span data-lang="zh">通常 5–10 分钟即可获得初步画像。</span></p>
       </details>
     </section>
 
     <section class="section" id="contact">
-      <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span></h2>
-      <form onsubmit="event.preventDefault(); this.reset(); alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi sẽ liên hệ.' : 'Thanks! We\'ll be in touch.');">
+      <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
+      <form onsubmit="event.preventDefault(); this.reset(); 
+        alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi sẽ liên hệ.' :
+              document.body.classList.contains('lang-zh') ? '谢谢！我们会尽快联系你。' :
+              'Thanks! We\\'ll be in touch.');">
         <div class="field">
-          <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span></label>
-          <input required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" />
+          <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
+          <input required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" data-lang-zh-placeholder="你的名字" />
         </div>
         <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Email</span><span data-lang="vi">Email</span></label>
-          <input type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" />
+          <label><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
+          <input type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" data-lang-zh-placeholder="ni@example.com" />
         </div>
         <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span></label>
-          <textarea rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?…"></textarea>
+          <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
+          <textarea rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?" data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
         </div>
-        <button class="btn" style="margin-top:12px"><span data-lang="en">Send message</span><span data-lang="vi">Gửi tin nhắn</span></button>
+        <button class="btn" style="margin-top:12px">
+          <span data-lang="en">Send message</span>
+          <span data-lang="vi">Gửi tin nhắn</span>
+          <span data-lang="zh">发送</span>
+        </button>
       </form>
     </section>
   </main>
 
-  <button class="chat-launch" id="chatOpen" title="Open Mind-Mapper AI">🧠 <b><span data-lang="en">Chat</span><span data-lang="vi">Trò chuyện</span></b></button>
+  <button class="chat-launch" id="chatOpen" title="Open Mind-Mapper AI">🧠 
+    <b><span data-lang="en">Chat</span><span data-lang="vi">Trò chuyện</span><span data-lang="zh">对话</span></b>
+  </button>
+
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
-      <h3>Mind-Mapper AI – Personality Analyst</h3>
+      <h3><span data-lang="en">Mind-Mapper AI – Personality Analyst</span><span data-lang="vi">Mind-Mapper AI – Phân tích tính cách</span><span data-lang="zh">Mind-Mapper AI – 性格助手</span></h3>
     </div>
-    <div class="chat-body" id="chatBody">
-      </div>
+    <div class="chat-body" id="chatBody"></div>
     <div class="chat-foot" id="chatFoot">
-      <div id="chatInputArea" style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+      <div id="chatInputArea" style="display:grid; grid-template-columns: 1fr auto; gap: 8px;">
         <input id="chatInput" placeholder="Type your message…" />
-        <button class="btn" id="sendBtn"><span data-lang="en">Send</span><span data-lang="vi">Gửi</span></button>
+        <button class="btn" id="sendBtn">
+          <span data-lang="en">Send</span>
+          <span data-lang="vi">Gửi</span>
+          <span data-lang="zh">发送</span>
+        </button>
       </div>
-      <button class="btn" id="resetBtn" style="display: none; width: 100%;">
+      <button class="btn" id="resetBtn" style="display:none; width:100%;">
         <span data-lang="en">Start New Analysis</span>
         <span data-lang="vi">Bắt đầu phân tích mới</span>
+        <span data-lang="zh">开始新的分析</span>
       </button>
     </div>
-    <div class="notice">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</div>
+    <div class="notice">
+      <span data-lang="en">Tip: After a few messages, type <b>"Give me my MBTI"</b>.</span>
+      <span data-lang="vi">Mẹo: Sau vài tin nhắn, hãy gõ <b>"Hãy cho tôi MBTI"</b>.</span>
+      <span data-lang="zh">提示：交流几句后输入 <b>“给我我的 MBTI”</b>。</span>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -306,7 +390,7 @@
     const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
     const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
 
-    // Global variables
+    // Globals
     let conversationHistory = [];
     let chatBody, chatInputArea, resetBtn, input, sendBtn;
     let latestProgress = null;
@@ -314,14 +398,12 @@
     // --- 2. Page Functions (Sparkles, Tilt, Language) ---
     function initializeSparkles() { 
       const host = document.getElementById('sparkles'); 
-      if (!host) return;
-      if (host.children.length > 0) return;
-      
-      for(let i = 0; i < 120; i++){ 
-        const s = document.createElement('i'); 
-        s.style.left = Math.random() * 100 + 'vw';
-        s.style.top = '100vh';
-        s.style.animationDuration = (10 + Math.random() * 16) + 's'; 
+      if (!host || host.children.length) return;
+      for(let i=0;i<120;i++){ 
+        const s=document.createElement('i'); 
+        s.style.left=Math.random()*100+'vw';
+        s.style.top='100vh';
+        s.style.animationDuration=(10+Math.random()*16)+'s'; 
         host.appendChild(s);
       } 
     }
@@ -329,27 +411,23 @@
     function initializeTilt() { 
       const card = document.getElementById('card3d'); 
       if (!card) return;
-      
       let b = card.getBoundingClientRect(); 
       window.addEventListener('resize', () => b = card.getBoundingClientRect()); 
-      
       card.addEventListener('mousemove', e => { 
-        const x = (e.clientX - b.left) / b.width - 0.5; 
-        const y = (e.clientY - b.top) / b.height - 0.5; 
-        card.style.transform = `perspective(1000px) rotateX(${-y * 6}deg) rotateY(${x * 8}deg)`; 
+        const x=(e.clientX-b.left)/b.width-0.5; 
+        const y=(e.clientY-b.top)/b.height-0.5; 
+        card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`; 
       }); 
-      
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-      }); 
+      card.addEventListener('mouseleave', () => { card.style.transform='perspective(1000px) rotateX(0) rotateY(0)';}); 
     }
 
     function initializeLanguage() {
       const sel = document.getElementById('language');
       if (!sel) return;
-      
+
       function applyPlaceholders() { 
-        const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en'; 
+        const lang = document.body.classList.contains('lang-vi') ? 'vi' :
+                     document.body.classList.contains('lang-zh') ? 'zh' : 'en';
         document.querySelectorAll('[data-lang-en-placeholder]').forEach(el => { 
           const txt = el.getAttribute(`data-lang-${lang}-placeholder`); 
           if(txt) el.placeholder = txt; 
@@ -357,13 +435,11 @@
       }
       
       function setLang(lang) { 
-        document.body.classList.remove('lang-en','lang-vi'); 
+        document.body.classList.remove('lang-en','lang-vi','lang-zh'); 
         document.body.classList.add('lang-' + lang); 
         localStorage.setItem('preferredLanguage', lang); 
         applyPlaceholders();
-        if (chatBody) {
-          displayInitialMessage();
-        }
+        if (chatBody) displayInitialMessage();
       }
       
       const saved = localStorage.getItem('preferredLanguage') || 'en'; 
@@ -372,23 +448,18 @@
       sel.addEventListener('change', e => setLang(e.target.value));
     }
 
-    // --- 3. Chat Panel Logic ---
+    // --- 3. Chat Panel ---
     function initializeChatPanel() {
       const panel = document.getElementById('chatPanel');
       const chatOpen = document.getElementById('chatOpen');
-      
       if (!panel || !chatOpen) return;
-      
       chatOpen.onclick = () => { 
         panel.classList.toggle('open'); 
-        
         if (panel.classList.contains('open')) {
           if (latestProgress && latestProgress.current_step < latestProgress.total_steps) {
             updateProgressBar(latestProgress);
           }
-          if(input) { 
-            input.focus(); 
-          }
+          if(input) input.focus(); 
         }
       };
     }
@@ -396,22 +467,21 @@
     // --- 4. Chat Functions ---
     function displayInitialMessage() {
       if (!chatBody) return;
-      
-      const lang = document.body.classList.contains('lang-vi') ? 'vi' : 'en';
+      const isVI = document.body.classList.contains('lang-vi');
+      const isZH = document.body.classList.contains('lang-zh');
       chatBody.innerHTML = ''; 
-      
       const initialMsg = document.createElement('div');
       initialMsg.className = 'msg ai';
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      
       let welcomeText;
-      if (lang === 'vi') {
-        welcomeText = `Chào bạn! Cùng trò chuyện một chút về tính cách nhé. Bạn cứ thoải mái chia sẻ về cách bạn học, giao tiếp với mọi người, hay cách đưa ra quyết định. Mình sẽ lắng nghe và giúp bạn khám phá bản thân. 😊`;
+      if (isVI) {
+        welcomeText = `Chào bạn! Cùng trò chuyện một chút về tính cách nhé. Bạn cứ thoải mái chia sẻ cách làm việc, giao tiếp hay ra quyết định. Mình sẽ lắng nghe và giúp bạn hiểu mình hơn. 😊`;
+      } else if (isZH) {
+        welcomeText = `你好！我们来轻松聊聊你的性格吧。可以随意说说你的工作方式、人际相处或者决策习惯。我会认真倾听并给出有用的反馈。😊`;
       } else {
-        welcomeText = `Hey there! Let's chat for a bit about your personality. Feel free to tell me about how you like to study, hang out with friends, or make decisions. I'm here to listen and help you learn a little more about yourself. 😊`;
+        welcomeText = `Hey there! Let's chat a bit about your personality. Tell me how you like to work, socialize, or make decisions. I'm here to listen and help you learn more about yourself. 😊`;
       }
-      
       bubble.innerHTML = `<span>${welcomeText}</span>`;
       initialMsg.appendChild(bubble);
       chatBody.appendChild(initialMsg);
@@ -423,237 +493,155 @@
       if (chatInputArea) chatInputArea.style.display = 'grid';
       if (resetBtn) resetBtn.style.display = 'none';
       if (input) input.focus();
-      
       latestProgress = null;
-
-      const progressContainer = document.getElementById('progress-container');
-      if (progressContainer) {
-        progressContainer.remove();
-      }
+      const pc = document.getElementById('progress-container');
+      if (pc) pc.remove();
     }
 
     function appendMessage(role, text, conversationId = null, showFeedback = false) { 
       if (!chatBody) return;
-      
       const wrap = document.createElement('div'); 
       wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      
       let processedText = text
         .replace(/</g,'&lt;')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g,'<br>');
       bubble.innerHTML = processedText;
-      
       if (role === 'ai' && conversationId && showFeedback) {
-        const feedbackContainer = document.createElement('div');
-        feedbackContainer.className = 'feedback-buttons';
-        feedbackContainer.innerHTML = `
+        const fb = document.createElement('div');
+        fb.className = 'feedback-buttons';
+        fb.innerHTML = `
           <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
-          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>
-        `;
-        bubble.appendChild(feedbackContainer);
+          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>`;
+        bubble.appendChild(fb);
       }
-      
       wrap.appendChild(bubble);
       chatBody.appendChild(wrap); 
       chatBody.scrollTop = chatBody.scrollHeight; 
     }
 
     async function handleFeedback(conversationId, isAccurate) {
-        try {
-            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-            buttons.forEach(b => b.disabled = true);
-            
-            const res = await fetch('/.netlify/functions/save-feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    conversation_id: Number(conversationId),
-                    is_accurate: Boolean(isAccurate)
-                })
-            });
-            
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || `HTTP ${res.status}`);
-            }
-            
-            buttons.forEach(btn => {
-                if (btn.getAttribute('data-rating') === String(isAccurate)) {
-                    btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
-                    btn.classList.add('selected');
-                }
-            });
-        } catch (error) {
-            console.error('Error saving feedback:', error);
-            alert('Could not save feedback: ' + (error.message || String(error)));
-            const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-            buttons.forEach(b => b.disabled = false);
-        }
+      try {
+        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+        buttons.forEach(b => b.disabled = true);
+        const res = await fetch('/.netlify/functions/save-feedback', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ conversation_id:Number(conversationId), is_accurate:Boolean(isAccurate) })
+        });
+        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+        buttons.forEach(btn => {
+          if (btn.getAttribute('data-rating') === String(isAccurate)) {
+            btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
+            btn.classList.add('selected');
+          }
+        });
+      } catch (error) {
+        console.error('Error saving feedback:', error);
+        alert('Could not save feedback: ' + (error.message || String(error)));
+        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
+        buttons.forEach(b => b.disabled = false);
+      }
     }
 
     function initializeFeedbackHandler() {
       if (!chatBody) return;
-      
-      chatBody.addEventListener('click', (event) => {
-          const target = event.target;
-          if (target.tagName === 'BUTTON' && target.hasAttribute('data-convo-id')) {
-              const conversationId = target.getAttribute('data-convo-id');
-              const isAccurate = target.getAttribute('data-rating') === 'true';
-              handleFeedback(conversationId, isAccurate);
-          }
+      chatBody.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t.tagName === 'BUTTON' && t.hasAttribute('data-convo-id')) {
+          const id = t.getAttribute('data-convo-id');
+          const ok = t.getAttribute('data-rating') === 'true';
+          handleFeedback(id, ok);
+        }
       });
     }
 
     function showTyping() {
       if (!chatBody) return;
-      
       const wrap = document.createElement('div');
       wrap.className = 'msg ai typing';
-      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
       wrap.id = 'typing-indicator';
+      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
       chatBody.appendChild(wrap);
       chatBody.scrollTop = chatBody.scrollHeight;
     }
-
-    function hideTyping() {
-      const typing = document.getElementById('typing-indicator');
-      if (typing) typing.remove();
-    }
+    function hideTyping(){ const t=document.getElementById('typing-indicator'); if(t) t.remove(); }
 
     function updateProgressBar(progress) {
       if (progress && progress.current_step >= progress.total_steps) {
-        const existingContainer = document.getElementById('progress-container');
-        if (existingContainer) {
-          existingContainer.remove();
-        }
-        latestProgress = null;
-        return;
+        const ex = document.getElementById('progress-container'); if (ex) ex.remove();
+        latestProgress = null; return;
       }
-
-      let progressContainer = document.getElementById('progress-container');
-      if (!progressContainer) {
-        progressContainer = document.createElement('div');
-        progressContainer.id = 'progress-container';
-        progressContainer.style.cssText = `
-          padding: 8px 14px;
-          border-bottom: 1px solid var(--glass-stroke);
-          background: rgba(255,255,255,.03);
-          text-align: center;
-          font-size: 12px;
-          color: var(--muted);
-          font-weight: 500;
-          flex-shrink: 0;
-        `;
-        
-        const chatHead = document.querySelector('.chat-head');
-        if (chatHead && chatHead.parentNode) {
-          chatHead.parentNode.insertBefore(progressContainer, chatHead.nextSibling);
-        }
+      let pc = document.getElementById('progress-container');
+      if (!pc) {
+        pc = document.createElement('div');
+        pc.id = 'progress-container';
+        pc.style.cssText = `
+          padding: 8px 14px;border-bottom:1px solid var(--glass-stroke);
+          background: rgba(255,255,255,.03); text-align:center; font-size:12px;
+          color: var(--muted); font-weight:500; flex-shrink:0;`;
+        const head = document.querySelector('.chat-head');
+        if (head && head.parentNode) head.parentNode.insertBefore(pc, head.nextSibling);
       }
-      
       if (progress) {
-        const dimensionsCount = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        progressContainer.innerHTML = `Analysis Progress: Dimensions Explored ${dimensionsCount}/4`;
+        const count = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
+        pc.innerHTML = `Analysis Progress: Dimensions Explored ${count}/4`;
       }
     }
 
     async function handleSend() { 
       if (!input || !chatBody) return;
-      
       const text = input.value.trim(); 
       if (!text) return; 
-      
-      input.value = ''; 
+      input.value=''; 
       appendMessage('user', text);
-      conversationHistory.push({ role: 'user', content: text });
-      
+      conversationHistory.push({ role:'user', content:text });
       showTyping();
-      
       try {
         const messages = conversationHistory.slice(-10);
         const res = await fetch('/.netlify/functions/process-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages })
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ messages })
         });
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`HTTP error! status: ${res.status}, message: ${errorText}`);
-        }
-        
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ` + await res.text());
         const data = await res.json();
         hideTyping();
-        
         if (data.reply) {
           try {
             const mbtiResult = JSON.parse(data.reply);
-            conversationHistory.push({ role: 'assistant', content: data.reply });
-            
-            if (mbtiResult.progress) {
-              latestProgress = mbtiResult.progress;
-              updateProgressBar(latestProgress);
-            }
-
+            conversationHistory.push({ role:'assistant', content:data.reply });
+            if (mbtiResult.progress) { latestProgress = mbtiResult.progress; updateProgressBar(latestProgress); }
             let responseText = '';
             let isActualResult = false;
-            
             if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
               responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              
-              if (mbtiResult.one_liner) {
-                responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
+              if (mbtiResult.reasoning) responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
+              if (mbtiResult.strengths?.length) {
+                responseText += `✨ **Your Strengths:**\n`; mbtiResult.strengths.forEach(s => responseText += `• ${s}\n`); responseText += '\n';
               }
-              
-              if (mbtiResult.reasoning) {
-                  responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
+              if (mbtiResult.growth_tips?.length) {
+                responseText += `🌱 **Growth Tips:**\n`; mbtiResult.growth_tips.forEach(t => responseText += `• ${t}\n`); responseText += '\n';
               }
-              
-              if (mbtiResult.strengths && mbtiResult.strengths.length > 0) {
-                responseText += `✨ **Your Strengths:**\n`;
-                mbtiResult.strengths.forEach(strength => {
-                  responseText += `• ${strength}\n`;
-                });
-                responseText += '\n';
-              }
-              
-              if (mbtiResult.growth_tips && mbtiResult.growth_tips.length > 0) {
-                responseText += `🌱 **Growth Tips:**\n`;
-                mbtiResult.growth_tips.forEach(tip => {
-                  responseText += `• ${tip}\n`;
-                });
-                responseText += '\n';
-              }
-              
-              if (chatInputArea) chatInputArea.style.display = 'none';
-              if (resetBtn) resetBtn.style.display = 'block';
+              if (chatInputArea) chatInputArea.style.display='none';
+              if (resetBtn) resetBtn.style.display='block';
             } else {
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
             }
-            
             appendMessage('ai', responseText, data.conversation_id, isActualResult);
-            
-          } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            console.log('Raw AI response:', data.reply);
-            appendMessage('ai', data.reply);
-            conversationHistory.push({ role: 'assistant', content: data.reply });
+          } catch (e) {
+            console.error('JSON parse error:', e); console.log('Raw AI response:', data.reply);
+            appendMessage('ai', data.reply); conversationHistory.push({ role:'assistant', content:data.reply });
           }
         } else if (data.error) {
-            appendMessage('ai', `Sorry, there was an error: ${data.error}`);
+          appendMessage('ai', `Sorry, there was an error: ${data.error}`);
         } else {
-            appendMessage('ai', 'Sorry, I received an unexpected response format.');
+          appendMessage('ai', 'Sorry, I received an unexpected response format.');
         }
-      } catch (err) {
-        hideTyping();
-        appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);
-      }
+      } catch (err) { hideTyping(); appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`); }
     }
 
     function initializeChatControls() {
@@ -662,23 +650,15 @@
       resetBtn = document.getElementById('resetBtn');
       input = document.getElementById('chatInput');
       sendBtn = document.getElementById('sendBtn');
-      
       if (!chatBody || !input || !sendBtn || !resetBtn) return;
-      
       sendBtn.addEventListener('click', handleSend);
       resetBtn.addEventListener('click', resetChat);
-      input.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' && !e.shiftKey) { 
-          e.preventDefault(); 
-          handleSend(); 
-        }
-      });
-      
+      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }});
       initializeFeedbackHandler();
       displayInitialMessage();
     }
 
-    // --- 5. Initialize Everything When DOM is Ready ---
+    // --- 5. Initialize ---
     document.addEventListener('DOMContentLoaded', () => {
       initializeSparkles();
       initializeTilt();
