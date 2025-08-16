@@ -200,8 +200,6 @@
 
     <section class="section" id="contact">
       <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
-
-      <!-- UPDATED: real submit + status -->
       <form id="contactForm">
         <div class="field">
           <label for="nameField"><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
@@ -210,7 +208,6 @@
                  data-lang-vi-placeholder="Tên của bạn"
                  data-lang-zh-placeholder="你的名字" />
         </div>
-
         <div class="field" style="margin-top:10px">
           <label for="emailField"><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
           <input id="emailField" name="email" type="email" required
@@ -218,7 +215,6 @@
                  data-lang-vi-placeholder="ban@example.com"
                  data-lang-zh-placeholder="ni@example.com" />
         </div>
-
         <div class="field" style="margin-top:10px">
           <label for="messageField"><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
           <textarea id="messageField" name="message" rows="5" required
@@ -226,9 +222,7 @@
                     data-lang-vi-placeholder="Chúng tôi có thể giúp gì?"
                     data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
         </div>
-
         <div id="contactStatus" style="margin:10px 2px 0; font-size:13px; color:#cfcaff;"></div>
-
         <button class="btn" id="contactBtn" style="margin-top:12px">
           <span data-lang="en">Send message</span>
           <span data-lang="vi">Gửi tin nhắn</span>
@@ -257,7 +251,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
     // --- Supabase client (your existing project) ---
     const supa_url = 'https://okbqkkfmtdxazdfkiovjj.supabase.co';
@@ -287,7 +280,6 @@
     async function handleSend(){ if(!input||!chatBody) return; const text=input.value.trim(); if(!text) return; input.value=''; appendMessage('user', text); conversationHistory.push({role:'user', content:text}); showTyping(); try{ const messages=conversationHistory.slice(-10); const res=await fetch('/.netlify/functions/process-chat',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages})}); if(!res.ok) throw new Error(`HTTP ${res.status}: `+await res.text()); const data=await res.json(); hideTyping(); if(data.reply){ appendMessage('ai', data.reply); conversationHistory.push({role:'assistant', content:data.reply}); } else if(data.error){ appendMessage('ai', `Sorry, there was an error: ${data.error}`); } else { appendMessage('ai','Sorry, I received an unexpected response format.'); } }catch(err){ hideTyping(); appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`);} }
     function initializeChatControls(){ chatBody=document.getElementById('chatBody'); chatInputArea=document.getElementById('chatInputArea'); resetBtn=document.getElementById('resetBtn'); input=document.getElementById('chatInput'); sendBtn=document.getElementById('sendBtn'); if(!chatBody||!input||!sendBtn||!resetBtn) return; sendBtn.addEventListener('click', handleSend); resetBtn.addEventListener('click', resetChat); input.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); }}); displayInitialMessage(); }
 
-    // ---------- CONTACT FORM -> SUPABASE ----------
     function currentLang(){ return document.body.classList.contains('lang-vi') ? 'vi' : document.body.classList.contains('lang-zh') ? 'zh' : 'en'; }
     const i18nContact = {
       en: { sending:'Sending…', sent:"Thanks! We'll be in touch.", error:'Could not send. Please try again.' },
@@ -296,7 +288,6 @@
     };
 
     async function saveContactToSupabase(name, email, message, lang){
-      // Table: public.contact_messages (see SQL below)
       return await supabaseClient
         .from('contact_messages')
         .insert([{ name, email, message, lang, user_agent: navigator.userAgent }])
@@ -344,7 +335,6 @@
         }
       });
     }
-    // ---------- END CONTACT FORM ----------
 
     document.addEventListener('DOMContentLoaded', () => {
       initializeSparkles();
