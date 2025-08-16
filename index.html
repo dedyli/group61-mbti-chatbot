@@ -226,7 +226,6 @@
       </div>
       <div class="illustrationWrap">
         <div class="card3d" id="card3d">
-          <!-- Updated hero image -->
           <img class="hero-img" src="hero_image.png" alt="Professionals of diverse backgrounds"/>
         </div>
       </div>
@@ -326,21 +325,18 @@
 
     <section class="section" id="contact">
       <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
-      <form onsubmit="event.preventDefault(); this.reset(); 
-        alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi sẽ liên hệ.' :
-              document.body.classList.contains('lang-zh') ? '谢谢！我们会尽快联系你。' :
-              'Thanks! We\\'ll be in touch.');">
+      <form id="contactForm">
         <div class="field">
           <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
-          <input required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" data-lang-zh-placeholder="你的名字" />
+          <input id="contact-name" required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" data-lang-zh-placeholder="你的名字" />
         </div>
         <div class="field" style="margin-top:10px">
           <label><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
-          <input type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" data-lang-zh-placeholder="ni@example.com" />
+          <input id="contact-email" type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" data-lang-zh-placeholder="ni@example.com" />
         </div>
         <div class="field" style="margin-top:10px">
           <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
-          <textarea rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?" data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
+          <textarea id="contact-message" rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?" data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
         </div>
         <button class="btn" style="margin-top:12px">
           <span data-lang="en">Send message</span>
@@ -463,6 +459,57 @@
         }
       };
     }
+    
+    // --- CHANGE #5: NEW FUNCTION TO HANDLE CONTACT FORM SUBMISSION ---
+    async function handleContactSubmit(event) {
+        event.preventDefault(); // Prevent the form from reloading the page
+        const form = event.target;
+        const submitButton = form.querySelector('button');
+        
+        // Get form data
+        const formData = {
+            name: document.getElementById('contact-name').value,
+            email: document.getElementById('contact-email').value,
+            message: document.getElementById('contact-message').value,
+            lang: localStorage.getItem('preferredLanguage') || 'en', // Get current language
+            user_agent: navigator.userAgent // Get browser info
+        };
+
+        // Disable button to prevent multiple submissions
+        submitButton.disabled = true;
+        submitButton.textContent = 'Sending...';
+
+        try {
+            // Insert data into the 'contact_messages' table in Supabase
+            const { data, error } = await supabaseClient
+                .from('contact_messages')
+                .insert([formData]);
+
+            if (error) {
+                // If there's an error, throw it to be caught by the catch block
+                throw error;
+            }
+
+            // Show success message based on current language
+            alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi đã nhận được tin nhắn của bạn.' :
+                  document.body.classList.contains('lang-zh') ? '谢谢！我们已收到你的留言。' :
+                  'Thanks! We have received your message.');
+            
+            form.reset(); // Clear the form fields
+
+        } catch (error) {
+            console.error('Error submitting contact form:', error.message);
+            alert('Sorry, there was an error sending your message. Please try again.');
+        
+        } finally {
+            // Re-enable the button
+            submitButton.disabled = false;
+            // Restore button text using a small trick to get the current language span
+            const lang = document.body.className.split(' ').find(c => c.startsWith('lang-')).split('-')[1] || 'en';
+            submitButton.innerHTML = form.querySelector(`[data-lang="${lang}"]`).outerHTML;
+        }
+    }
+
 
     // --- 4. Chat Functions ---
     function displayInitialMessage() {
@@ -665,6 +712,12 @@
       initializeLanguage();
       initializeChatPanel();
       initializeChatControls();
+
+      // --- CHANGE #6: Add event listener for the new contact form handler ---
+      const contactForm = document.getElementById('contactForm');
+      if (contactForm) {
+          contactForm.addEventListener('submit', handleContactSubmit);
+      }
     });
   </script>
 </body>
