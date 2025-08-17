@@ -182,7 +182,20 @@
   let accessToken = null;
 
   function debug(msg, data){ console.log('[Admin]', msg, data ?? ''); }
-  function escapeHTML(str){ return String(str||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // patched: safer, no parser issues
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c];
+    });
+  }
 
   async function secureApiCall(action, payload={}){
     if(!accessToken) throw new Error('Not authenticated');
@@ -278,6 +291,8 @@
   }
 
   // --- Overview ---
+  let conversationsChart, sentimentChart, mbtiChart, traitsChart, feedbackTrendsChart, issuesChart;
+
   async function loadOverviewData(){
     try{
       const stats = await callWithFallbacks(['overview_stats','overview','stats']);
@@ -441,16 +456,13 @@
 
   // --- Boot ---
   document.addEventListener('DOMContentLoaded',()=>{
-    // restore token if present
     accessToken = sessionStorage.getItem('admin_access_token');
     showDashboard(!!accessToken);
 
-    // populate MBTI filter
     const types=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
     const sel=document.getElementById('mbti-filter'); types.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
   });
 
-  // periodic light refresh
   setInterval(()=>{ if(dashboardSection.style.display!=='none' && accessToken){ loadOverviewData(); } }, 300000);
 </script>
 </body>
