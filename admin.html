@@ -162,8 +162,8 @@
 
 <script>
   // Supabase Configuration (Replace with your actual credentials)
-  const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Your project URL from Supabase dashboard
-  const SUPABASE_ANON_KEY = 'your-anon-key-here'; // Your anon public key from Supabase dashboard
+  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // Your project URL from Supabase dashboard
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // Your anon public key from Supabase dashboard
   
   // Alternative: If you prefer to keep URLs in a separate config
   // const config = {
@@ -177,8 +177,17 @@
   let conversationsChart, feedbackChart;
 
   function initializeSupabase() {
+    console.log('Initializing Supabase...');
+    console.log('URL:', SUPABASE_URL);
+    console.log('Anon Key:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'Missing');
+    
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      showError('Supabase configuration missing');
+      showError('Supabase configuration missing - please set URL and anon key');
+      return false;
+    }
+
+    if (SUPABASE_URL.includes('your-project-id') || SUPABASE_ANON_KEY.includes('your-anon-key')) {
+      showError('Please replace placeholder Supabase credentials with your actual values');
       return false;
     }
 
@@ -189,10 +198,31 @@
     
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('Supabase client created successfully');
+      
+      // Test connection
+      testSupabaseConnection();
+      
       return true;
     } catch (error) {
+      console.error('Supabase initialization error:', error);
       showError('Failed to initialize Supabase: ' + error.message);
       return false;
+    }
+  }
+
+  // Test Supabase connection
+  async function testSupabaseConnection() {
+    try {
+      console.log('Testing Supabase connection...');
+      const { data, error } = await supabase.auth.getSession();
+      console.log('Connection test result:', { data, error });
+      
+      if (error && error.message.includes('fetch')) {
+        showError('Cannot connect to Supabase. Please verify your URL and internet connection.');
+      }
+    } catch (error) {
+      console.error('Connection test failed:', error);
     }
   }
 
@@ -234,19 +264,26 @@
     }
 
     try {
+      console.log('Attempting login for:', email);
+      console.log('Supabase URL:', SUPABASE_URL);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
+      console.log('Login response:', { data, error });
+
       if (error) {
-        showError(error.message);
+        console.error('Supabase auth error:', error);
+        showError(`Login failed: ${error.message}`);
         return;
       }
 
       currentUser = data.user;
+      console.log('Login successful for:', currentUser.email);
       
-      // Check if user has admin role (you can customize this check)
+      // Check if user has admin role
       if (!isAdminUser(currentUser)) {
         await supabase.auth.signOut();
         showError('Access denied. Admin privileges required.');
@@ -256,7 +293,16 @@
       showDashboard(true);
       
     } catch (error) {
-      showError('Login failed: ' + error.message);
+      console.error('Login catch error:', error);
+      
+      // More specific error messages
+      if (error.message.includes('fetch')) {
+        showError('Connection failed. Please check:\n1. Internet connection\n2. Supabase URL and key\n3. Supabase project status');
+      } else if (error.message.includes('CORS')) {
+        showError('CORS error. Check your Supabase project settings.');
+      } else {
+        showError(`Login failed: ${error.message}`);
+      }
     }
   });
 
