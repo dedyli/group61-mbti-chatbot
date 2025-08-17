@@ -1,5 +1,6 @@
 [build]
   functions = "netlify/functions"
+  NODE_VERSION = "18"
 
 [functions]
   external_node_modules = ["@supabase/supabase-js"]
