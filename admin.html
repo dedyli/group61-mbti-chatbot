@@ -317,13 +317,14 @@
 
 <script>
   // ⚠️ SECURITY CONFIGURATION
-  const SECURITY_CONFIG = {
-    allowedDomains: ['yourdomain.com', 'localhost', '127.0.0.1'],
-    maxLoginAttempts: 5,
-    lockoutDuration: 15 * 60 * 1000,
-    sessionTimeout: 30 * 60 * 1000,
-    showSecurityNotice: true
-  };
+const SECURITY_CONFIG = {
+  // Add your actual domain here
+  allowedDomains: ['group61project.netlify.app', '6estates.com', 'localhost', '127.0.0.1'],
+  maxLoginAttempts: 5,
+  lockoutDuration: 15 * 60 * 1000,
+  sessionTimeout: 30 * 60 * 1000,
+  showSecurityNotice: true
+};
 
   // ⚠️ REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
   const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co';
