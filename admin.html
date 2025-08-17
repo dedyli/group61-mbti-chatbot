@@ -161,15 +161,9 @@
   </section>
 
 <script>
-  // Supabase Configuration (Replace with your actual credentials)
+  // ⚠️ REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
   const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // Your project URL from Supabase dashboard
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // Your anon public key from Supabase dashboard
-  
-  // Alternative: If you prefer to keep URLs in a separate config
-  // const config = {
-  //   supabaseUrl: 'https://your-project-id.supabase.co',
-  //   supabaseAnonKey: 'your-anon-key-here'
-  // };
   
   // Initialize Supabase client
   let supabase;
@@ -245,7 +239,7 @@
     }
   }
 
-  // Authentication
+  // Authentication - Simplified: Any Supabase user gets admin access
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError();
@@ -265,7 +259,6 @@
 
     try {
       console.log('Attempting login for:', email);
-      console.log('Supabase URL:', SUPABASE_URL);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -276,30 +269,31 @@
 
       if (error) {
         console.error('Supabase auth error:', error);
-        showError(`Login failed: ${error.message}`);
+        
+        // More specific error handling
+        if (error.message.includes('Invalid login credentials')) {
+          showError('Invalid email or password. Please check your credentials.');
+        } else if (error.message.includes('Email not confirmed')) {
+          showError('Please confirm your email address before logging in.');
+        } else if (error.message.includes('Too many requests')) {
+          showError('Too many login attempts. Please wait a few minutes and try again.');
+        } else {
+          showError(`Login failed: ${error.message}`);
+        }
         return;
       }
 
       currentUser = data.user;
       console.log('Login successful for:', currentUser.email);
       
-      // Check if user has admin role
-      if (!isAdminUser(currentUser)) {
-        await supabase.auth.signOut();
-        showError('Access denied. Admin privileges required.');
-        return;
-      }
-
+      // If login succeeds, user gets admin access - simple!
       showDashboard(true);
       
     } catch (error) {
       console.error('Login catch error:', error);
       
-      // More specific error messages
       if (error.message.includes('fetch')) {
-        showError('Connection failed. Please check:\n1. Internet connection\n2. Supabase URL and key\n3. Supabase project status');
-      } else if (error.message.includes('CORS')) {
-        showError('CORS error. Check your Supabase project settings.');
+        showError('Connection failed. Please check your internet connection.');
       } else {
         showError(`Login failed: ${error.message}`);
       }
@@ -316,29 +310,6 @@
       console.error('Logout error:', error);
     }
   });
-
-  // Admin user check - works with your existing Supabase auth
-  function isAdminUser(user) {
-    // Option 1: Check by specific emails (for existing users)
-    const adminEmails = [
-      'dedyli@6estates.com',           // Your existing account
-      'admin@6estates.com'             // Add other existing users
-    ];
-    
-    // Option 2: Check by domain (any user from your company)
-    const adminDomains = ['6estates.com'];
-    const emailDomain = user.email.split('@')[1];
-    
-    // Option 3: Check for admin role in user metadata
-    const isAdminByRole = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
-    
-    // Option 4: Check if user has specific permissions in your existing system
-    // You can add custom logic here based on your existing user roles
-    
-    return adminEmails.includes(user.email) || 
-           adminDomains.includes(emailDomain) || 
-           isAdminByRole;
-  }
 
   // Tab Management
   function switchTab(btn, tab) {
@@ -363,39 +334,59 @@
 
   async function loadOverviewStats() {
     try {
+      console.log('Loading overview stats...');
+      
       // Load conversations count
-      const { count: conversationsCount } = await supabase
+      console.log('Fetching conversations...');
+      const { count: conversationsCount, error: convError } = await supabase
         .from('conversations')
         .select('*', { count: 'exact', head: true });
 
+      console.log('Conversations result:', { count: conversationsCount, error: convError });
+
       // Load unique users (by IP hash)
-      const { data: uniqueIPs } = await supabase
+      console.log('Fetching unique users...');
+      const { data: uniqueIPs, error: ipError } = await supabase
         .from('conversations')
         .select('client_ip_hash')
         .not('client_ip_hash', 'is', null);
 
+      console.log('Unique IPs result:', { data: uniqueIPs, error: ipError });
+
       const uniqueUsers = new Set(uniqueIPs?.map(u => u.client_ip_hash)).size;
 
       // Load completed conversations
-      const { count: completedCount } = await supabase
+      console.log('Fetching completed conversations...');
+      const { count: completedCount, error: completedError } = await supabase
         .from('conversations')
         .select('*', { count: 'exact', head: true })
         .eq('final_analysis', true);
 
+      console.log('Completed conversations result:', { count: completedCount, error: completedError });
+
       // Load feedback count
-      const { count: feedbackCount } = await supabase
+      console.log('Fetching feedback...');
+      const { count: feedbackCount, error: feedbackCountError } = await supabase
         .from('feedback')
         .select('*', { count: 'exact', head: true });
 
+      console.log('Feedback count result:', { count: feedbackCount, error: feedbackCountError });
+
       // Load contact messages count
-      const { count: contactsCount } = await supabase
+      console.log('Fetching contact messages...');
+      const { count: contactsCount, error: contactsError } = await supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true });
 
+      console.log('Contact messages result:', { count: contactsCount, error: contactsError });
+
       // Load feedback accuracy
-      const { data: feedbackData } = await supabase
+      console.log('Fetching feedback accuracy...');
+      const { data: feedbackData, error: feedbackDataError } = await supabase
         .from('feedback')
         .select('is_accurate');
+
+      console.log('Feedback data result:', { data: feedbackData, error: feedbackDataError });
 
       let accuracyRate = 'N/A';
       if (feedbackData && feedbackData.length > 0) {
@@ -403,7 +394,14 @@
         accuracyRate = Math.round((accurate / feedbackData.length) * 100) + '%';
       }
 
-      // Update UI
+      // Check for any errors
+      const errors = [convError, ipError, completedError, feedbackCountError, contactsError, feedbackDataError].filter(e => e);
+      if (errors.length > 0) {
+        console.error('Database errors found:', errors);
+        showError(`Database access errors found. You may need to set up Row Level Security policies. Check console for details.`);
+      }
+
+      // Update UI (even with partial data)
       document.getElementById('total-users').textContent = uniqueUsers || 0;
       document.getElementById('total-convos').textContent = conversationsCount || 0;
       document.getElementById('completion-rate').textContent = 
@@ -412,9 +410,11 @@
       document.getElementById('total-contacts').textContent = contactsCount || 0;
       document.getElementById('accuracy-rate').textContent = accuracyRate;
 
+      console.log('Overview stats loaded successfully');
+
     } catch (error) {
       console.error('Error loading overview stats:', error);
-      showError('Failed to load overview statistics');
+      showError('Failed to load overview statistics: ' + error.message);
     }
   }
 
@@ -639,13 +639,8 @@
         
         if (session?.user) {
           currentUser = session.user;
-          
-          if (isAdminUser(currentUser)) {
-            showDashboard(true);
-          } else {
-            await supabase.auth.signOut();
-            showError('Access denied. Admin privileges required.');
-          }
+          console.log('Existing session found for:', currentUser.email);
+          showDashboard(true);
         }
       } catch (error) {
         console.error('Session check error:', error);
@@ -656,6 +651,9 @@
         if (event === 'SIGNED_OUT') {
           currentUser = null;
           showDashboard(false);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          currentUser = session.user;
+          showDashboard(true);
         }
       });
     }, 100); // Small delay to ensure library loads
