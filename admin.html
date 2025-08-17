@@ -86,7 +86,6 @@
   </style>
 </head>
 <body>
-  <!-- LOGIN -->
   <section id="login-section">
     <h1>Admin Login</h1>
     <form id="login-form">
@@ -103,7 +102,6 @@
     <p id="error-message"></p>
   </section>
 
-  <!-- DASHBOARD -->
   <section id="dashboard-section" class="container">
     <header class="dashboard-header">
       <h1>Admin Dashboard</h1>
@@ -120,7 +118,6 @@
     </nav>
 
     <main>
-      <!-- OVERVIEW -->
       <div id="overview-tab" class="tab-content active">
         <div class="stats-grid">
           <div class="stat-card"><h3>Total Users</h3><div id="total-users" class="value">0</div></div>
@@ -136,7 +133,6 @@
         </div>
       </div>
 
-      <!-- MBTI -->
       <div id="mbti-tab" class="tab-content">
         <div id="mbti-grid"></div>
         <div class="charts-grid" style="grid-template-columns:1fr 1fr">
@@ -145,7 +141,6 @@
         </div>
       </div>
 
-      <!-- FEEDBACK -->
       <div id="feedback-tab" class="tab-content">
         <div class="stats-grid" style="grid-template-columns:repeat(4,minmax(200px,1fr))">
           <div class="stat-card"><h3>Total Feedback</h3><div id="total-feedback" class="value">0</div></div>
@@ -160,7 +155,6 @@
         </div>
       </div>
 
-      <!-- CONVERSATIONS -->
       <div id="conversations-tab" class="tab-content">
         <div class="filters">
           <select id="mbti-filter" class="select"><option value="">All MBTI Types</option></select>
@@ -169,7 +163,6 @@
         <div id="conversations-container"></div>
       </div>
 
-      <!-- CONTACTS -->
       <div id="contacts-tab" class="tab-content">
         <div class="contacts-controls">
           <input id="contacts-q" type="search" class="form-group" placeholder="Search by name, email, or message..." onchange="loadContacts(1)" />
@@ -188,7 +181,6 @@
         </div>
       </div>
 
-      <!-- EXPORT -->
       <div id="export-tab" class="tab-content">
         <h2>Export Data</h2>
         <p>Select a dataset to export as CSV.</p>
@@ -249,7 +241,7 @@
     }
     throw lastErr||new Error('No matching API action');
   }
-  function escapeHTML(str){ return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;'}[c])); }
+  function escapeHTML(str){ return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   // ---- Auth (fixed) ----
   async function showDashboard(session){
