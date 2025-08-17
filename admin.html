@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Dashboard</title>
+  <title>System Access</title>
+  <meta name="robots" content="noindex, nofollow">
   
   <!-- Supabase Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root{--bg-dark:#111827;--bg-light:#1f2937;--primary:#8B5CF6;--text-light:#f7f5ff;--text-muted:#bdb7e6;--border:#374151;--success:#22c55e;--danger:#ef4444}
+    :root{--bg-dark:#111827;--bg-light:#1f2937;--primary:#8B5CF6;--text-light:#f7f5ff;--text-muted:#bdb7e6;--border:#374151;--success:#22c55e;--danger:#ef4444;--info:#3b82f6}
     *{box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg-dark);color:var(--text-light);margin:0;min-height:100vh;display:flex;align-items:flex-start;justify-content:center}
-    .container{width:100%;max-width:1200px;padding:24px}
+    .container{width:100%;max-width:1400px;padding:24px}
+    
+    /* Security Warning */
+    .security-notice{background:var(--danger);color:white;padding:8px 16px;text-align:center;font-size:0.9rem;position:fixed;top:0;left:0;right:0;z-index:1000}
     
     /* Login */
     #login-section{width:100%;max-width:420px;margin:10vh auto;background:var(--bg-light);padding:24px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
@@ -48,39 +52,91 @@
     @media (max-width:900px){.charts-grid{grid-template-columns:1fr}}
     .chart-card{background:var(--bg-light);padding:14px;border-radius:12px;min-height:340px}
     
+    /* Table Controls */
+    .table-controls{display:flex;justify-content:space-between;align-items:center;margin:16px 0;flex-wrap:wrap;gap:12px}
+    .table-controls-left{display:flex;align-items:center;gap:12px}
+    .table-controls-right{display:flex;align-items:center;gap:12px}
+    .page-size-selector{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-dark);color:var(--text-light);font-size:0.9rem}
+    .search-input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-dark);color:var(--text-light);min-width:200px}
+    .refresh-btn{padding:8px 16px;background:var(--info);border-radius:6px;font-size:0.9rem}
+    
     /* Tables */
-    .data-table{width:100%;border-collapse:collapse;background:var(--bg-light);border-radius:12px;overflow:hidden;margin:16px 0}
+    .table-container{background:var(--bg-light);border-radius:12px;overflow:hidden;margin:16px 0}
+    .data-table{width:100%;border-collapse:collapse}
     .data-table th,.data-table td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:left}
-    .data-table th{color:var(--text-muted);background:var(--bg-dark)}
+    .data-table th{color:var(--text-muted);background:var(--bg-dark);font-weight:600;position:sticky;top:0}
     .data-table tr:hover{background:rgba(139,92,246,.1)}
+    .data-table td{font-size:0.9rem}
+    
+    /* Pagination */
+    .pagination-container{background:var(--bg-light);padding:16px;border-top:1px solid var(--border);display:flex;justify-content:between;align-items:center;flex-wrap:wrap;gap:16px}
+    .pagination-info{color:var(--text-muted);font-size:0.9rem}
+    .pagination-controls{display:flex;align-items:center;gap:8px}
+    .pagination-controls button{padding:8px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-light);font-size:0.9rem;min-width:40px}
+    .pagination-controls button:hover:not(:disabled){background:var(--primary);border-color:var(--primary)}
+    .pagination-controls button.active{background:var(--primary);border-color:var(--primary)}
+    .pagination-controls button:disabled{opacity:0.5;cursor:not-allowed}
+    .pagination-jump{display:flex;align-items:center;gap:8px;margin-left:16px}
+    .pagination-jump input{width:60px;padding:6px 8px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--bg-dark);color:var(--text-light)}
+    
+    /* Status badges */
+    .status-badge{padding:4px 8px;border-radius:12px;font-size:0.8rem;font-weight:600}
+    .status-completed{background:var(--success);color:white}
+    .status-pending{background:var(--danger);color:white}
+    .status-accurate{background:var(--success);color:white}
+    .status-inaccurate{background:var(--danger);color:white}
     
     .alert{background:var(--bg-light);border:1px dashed var(--border);padding:12px;border-radius:10px;color:var(--text-muted);margin:16px 0}
     .loading{text-align:center;padding:20px;color:var(--text-muted)}
     .error{color:var(--danger);background:rgba(239,68,68,.1);border:1px solid var(--danger);padding:12px;border-radius:8px;margin:16px 0}
+    .lockout-message{background:var(--danger);color:white;padding:16px;border-radius:8px;margin:16px 0;text-align:center}
+    
+    /* Responsive */
+    @media (max-width:768px){
+      .table-controls{flex-direction:column;align-items:stretch}
+      .table-controls-left,.table-controls-right{justify-content:center}
+      .pagination-container{flex-direction:column;text-align:center}
+      .pagination-controls{justify-content:center}
+      .data-table{font-size:0.8rem}
+      .data-table th,.data-table td{padding:8px 6px}
+    }
   </style>
 </head>
 <body>
+  <!-- Security Notice -->
+  <div class="security-notice" id="security-notice" style="display:none;">
+    🔒 Secure Admin Access - Authorized Personnel Only
+  </div>
+
   <section id="login-section">
-    <h1>Admin Login</h1>
+    <h1>System Access</h1>
+    <div id="lockout-warning" class="lockout-message" style="display:none;">
+      <strong>Account Temporarily Locked</strong><br>
+      Too many failed attempts. Please try again in <span id="lockout-time">15</span> minutes.
+    </div>
     <form id="login-form">
       <div class="form-group">
         <label for="email">Email</label>
-        <input id="email" type="email" required/>
+        <input id="email" type="email" required autocomplete="username"/>
       </div>
       <div class="form-group">
         <label for="password">Password</label>
-        <input id="password" type="password" required/>
+        <input id="password" type="password" required autocomplete="current-password"/>
       </div>
-      <button type="submit">Login</button>
+      <button type="submit" id="login-btn">Access System</button>
     </form>
     <p id="error-message"></p>
+    <div id="attempts-warning" style="color:var(--danger);font-size:0.9rem;margin-top:8px;display:none;">
+      <span id="attempts-count">0</span> failed attempts. Account will be locked after 5 attempts.
+    </div>
   </section>
 
   <section id="dashboard-section" class="container">
     <header class="dashboard-header">
-      <h1>Admin Dashboard</h1>
+      <h1>System Dashboard</h1>
       <div>
         <span id="user-email" style="margin-right:16px;color:var(--text-muted)"></span>
+        <span id="session-timer" style="margin-right:16px;color:var(--text-muted);font-size:0.9rem;"></span>
         <button id="logout-btn">Logout</button>
       </div>
     </header>
@@ -108,115 +164,297 @@
         </div>
       </div>
 
+      <!-- Conversations Tab -->
       <div id="conversations-tab" class="tab-content">
+        <div class="table-controls">
+          <div class="table-controls-left">
+            <label for="conversations-page-size">Show:</label>
+            <select id="conversations-page-size" class="page-size-selector" onchange="changeConversationsPageSize()">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>entries</span>
+          </div>
+          <div class="table-controls-right">
+            <input id="conversations-search" type="search" class="search-input" placeholder="Search conversations..." onchange="searchConversations()">
+            <button class="refresh-btn" onclick="loadConversations(1)">Refresh</button>
+          </div>
+        </div>
+        
         <div id="conversations-loading" class="loading">Loading conversations...</div>
         <div id="conversations-error" class="error" style="display:none"></div>
-        <table id="conversations-table" class="data-table" style="display:none">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Messages</th>
-              <th>Completed</th>
-              <th>Language</th>
-              <th>Client IP Hash</th>
-            </tr>
-          </thead>
-          <tbody id="conversations-tbody"></tbody>
-        </table>
+        
+        <div id="conversations-table-container" class="table-container" style="display:none">
+          <table id="conversations-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Messages</th>
+                <th>Status</th>
+                <th>Language</th>
+                <th>Client IP</th>
+              </tr>
+            </thead>
+            <tbody id="conversations-tbody"></tbody>
+          </table>
+          <div class="pagination-container">
+            <div class="pagination-info" id="conversations-pagination-info">
+              Showing 0 to 0 of 0 entries
+            </div>
+            <div class="pagination-controls" id="conversations-pagination-controls">
+              <!-- Pagination buttons will be generated here -->
+            </div>
+            <div class="pagination-jump">
+              <span>Go to page:</span>
+              <input type="number" id="conversations-page-jump" min="1" onchange="jumpToConversationsPage()">
+            </div>
+          </div>
+        </div>
       </div>
 
+      <!-- Feedback Tab -->
       <div id="feedback-tab" class="tab-content">
+        <div class="table-controls">
+          <div class="table-controls-left">
+            <label for="feedback-page-size">Show:</label>
+            <select id="feedback-page-size" class="page-size-selector" onchange="changeFeedbackPageSize()">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>entries</span>
+          </div>
+          <div class="table-controls-right">
+            <input id="feedback-search" type="search" class="search-input" placeholder="Search feedback..." onchange="searchFeedback()">
+            <button class="refresh-btn" onclick="loadFeedback(1)">Refresh</button>
+          </div>
+        </div>
+        
         <div id="feedback-loading" class="loading">Loading feedback...</div>
         <div id="feedback-error" class="error" style="display:none"></div>
-        <table id="feedback-table" class="data-table" style="display:none">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Conversation ID</th>
-              <th>Accurate</th>
-              <th>Comments</th>
-            </tr>
-          </thead>
-          <tbody id="feedback-tbody"></tbody>
-        </table>
+        
+        <div id="feedback-table-container" class="table-container" style="display:none">
+          <table id="feedback-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Conversation ID</th>
+                <th>Accuracy</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody id="feedback-tbody"></tbody>
+          </table>
+          <div class="pagination-container">
+            <div class="pagination-info" id="feedback-pagination-info">
+              Showing 0 to 0 of 0 entries
+            </div>
+            <div class="pagination-controls" id="feedback-pagination-controls">
+              <!-- Pagination buttons will be generated here -->
+            </div>
+            <div class="pagination-jump">
+              <span>Go to page:</span>
+              <input type="number" id="feedback-page-jump" min="1" onchange="jumpToFeedbackPage()">
+            </div>
+          </div>
+        </div>
       </div>
 
+      <!-- Contacts Tab -->
       <div id="contacts-tab" class="tab-content">
+        <div class="table-controls">
+          <div class="table-controls-left">
+            <label for="contacts-page-size">Show:</label>
+            <select id="contacts-page-size" class="page-size-selector" onchange="changeContactsPageSize()">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>entries</span>
+          </div>
+          <div class="table-controls-right">
+            <input id="contacts-search" type="search" class="search-input" placeholder="Search contacts..." onchange="searchContacts()">
+            <button class="refresh-btn" onclick="loadContacts(1)">Refresh</button>
+          </div>
+        </div>
+        
         <div id="contacts-loading" class="loading">Loading contacts...</div>
         <div id="contacts-error" class="error" style="display:none"></div>
-        <table id="contacts-table" class="data-table" style="display:none">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Language</th>
-              <th>Message</th>
-            </tr>
-          </thead>
-          <tbody id="contacts-tbody"></tbody>
-        </table>
+        
+        <div id="contacts-table-container" class="table-container" style="display:none">
+          <table id="contacts-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Language</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-tbody"></tbody>
+          </table>
+          <div class="pagination-container">
+            <div class="pagination-info" id="contacts-pagination-info">
+              Showing 0 to 0 of 0 entries
+            </div>
+            <div class="pagination-controls" id="contacts-pagination-controls">
+              <!-- Pagination buttons will be generated here -->
+            </div>
+            <div class="pagination-jump">
+              <span>Go to page:</span>
+              <input type="number" id="contacts-page-jump" min="1" onchange="jumpToContactsPage()">
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </section>
 
 <script>
+  // ⚠️ SECURITY CONFIGURATION
+  const SECURITY_CONFIG = {
+    allowedDomains: ['yourdomain.com', 'localhost', '127.0.0.1'],
+    maxLoginAttempts: 5,
+    lockoutDuration: 15 * 60 * 1000,
+    sessionTimeout: 30 * 60 * 1000,
+    showSecurityNotice: true
+  };
+
   // ⚠️ REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // Your project URL from Supabase dashboard
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // Your anon public key from Supabase dashboard
+  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
   
-  // Initialize Supabase client
+  // Initialize variables
   let supabase;
   let currentUser = null;
   let conversationsChart, feedbackChart;
 
-  function initializeSupabase() {
-    console.log('Initializing Supabase...');
-    console.log('URL:', SUPABASE_URL);
-    console.log('Anon Key:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'Missing');
-    
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      showError('Supabase configuration missing - please set URL and anon key');
-      return false;
-    }
+  // Pagination state
+  const paginationState = {
+    conversations: { currentPage: 1, pageSize: 25, totalCount: 0, searchTerm: '' },
+    feedback: { currentPage: 1, pageSize: 25, totalCount: 0, searchTerm: '' },
+    contacts: { currentPage: 1, pageSize: 25, totalCount: 0, searchTerm: '' }
+  };
 
-    if (SUPABASE_URL.includes('your-project-id') || SUPABASE_ANON_KEY.includes('your-anon-key')) {
-      showError('Please replace placeholder Supabase credentials with your actual values');
+  // Security functions (simplified for space - same as before)
+  function validateDomain() {
+    const currentDomain = window.location.hostname;
+    if (!SECURITY_CONFIG.allowedDomains.includes(currentDomain)) {
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;"><h1>🔒 Access Denied</h1></div>';
+      throw new Error('Unauthorized domain');
+    }
+  }
+
+  function checkRateLimit() {
+    const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
+    const lastAttempt = parseInt(sessionStorage.getItem('lastAttempt') || '0');
+    
+    if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
+      const timeSinceLastAttempt = Date.now() - lastAttempt;
+      if (timeSinceLastAttempt < SECURITY_CONFIG.lockoutDuration) {
+        const minutesLeft = Math.ceil((SECURITY_CONFIG.lockoutDuration - timeSinceLastAttempt) / 60000);
+        showLockoutMessage(minutesLeft);
+        return false;
+      } else {
+        sessionStorage.removeItem('loginAttempts');
+        sessionStorage.removeItem('lastAttempt');
+        hideLockoutMessage();
+      }
+    }
+    return true;
+  }
+
+  function recordFailedAttempt() {
+    const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0') + 1;
+    sessionStorage.setItem('loginAttempts', attempts.toString());
+    sessionStorage.setItem('lastAttempt', Date.now().toString());
+    updateAttemptsWarning(attempts);
+    
+    if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
+      showLockoutMessage(Math.ceil(SECURITY_CONFIG.lockoutDuration / 60000));
+    }
+  }
+
+  function resetAttempts() {
+    sessionStorage.removeItem('loginAttempts');
+    sessionStorage.removeItem('lastAttempt');
+    hideAttemptsWarning();
+  }
+
+  function showLockoutMessage(minutes) {
+    document.getElementById('lockout-time').textContent = minutes;
+    document.getElementById('lockout-warning').style.display = 'block';
+    document.getElementById('login-btn').disabled = true;
+  }
+
+  function hideLockoutMessage() {
+    document.getElementById('lockout-warning').style.display = 'none';
+    document.getElementById('login-btn').disabled = false;
+  }
+
+  function updateAttemptsWarning(attempts) {
+    if (attempts > 0 && attempts < SECURITY_CONFIG.maxLoginAttempts) {
+      document.getElementById('attempts-count').textContent = attempts;
+      document.getElementById('attempts-warning').style.display = 'block';
+    }
+  }
+
+  function hideAttemptsWarning() {
+    document.getElementById('attempts-warning').style.display = 'none';
+  }
+
+  // Session timer
+  let sessionTimer;
+  let sessionStartTime;
+
+  function startSessionTimer() {
+    sessionStartTime = Date.now();
+    sessionTimer = setInterval(() => {
+      const elapsed = Date.now() - sessionStartTime;
+      const remaining = SECURITY_CONFIG.sessionTimeout - elapsed;
+      
+      if (remaining <= 0) {
+        clearInterval(sessionTimer);
+        alert('Session expired for security. Please login again.');
+        logout();
+      } else {
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        document.getElementById('session-timer').textContent = `Session: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }, 1000);
+  }
+
+  function stopSessionTimer() {
+    if (sessionTimer) clearInterval(sessionTimer);
+    document.getElementById('session-timer').textContent = '';
+  }
+
+  // Initialize Supabase
+  function initializeSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || 
+        SUPABASE_URL.includes('your-project-id') || 
+        SUPABASE_ANON_KEY.includes('your-anon-key')) {
+      showError('System not properly configured');
       return false;
     }
 
     if (!window.supabase) {
-      showError('Supabase library not loaded. Please check your internet connection.');
+      showError('System libraries not loaded. Please check your connection.');
       return false;
     }
     
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log('Supabase client created successfully');
-      
-      // Test connection
-      testSupabaseConnection();
-      
       return true;
     } catch (error) {
-      console.error('Supabase initialization error:', error);
-      showError('Failed to initialize Supabase: ' + error.message);
+      showError('Failed to initialize system');
       return false;
-    }
-  }
-
-  // Test Supabase connection
-  async function testSupabaseConnection() {
-    try {
-      console.log('Testing Supabase connection...');
-      const { data, error } = await supabase.auth.getSession();
-      console.log('Connection test result:', { data, error });
-      
-      if (error && error.message.includes('fetch')) {
-        showError('Cannot connect to Supabase. Please verify your URL and internet connection.');
-      }
-    } catch (error) {
-      console.error('Connection test failed:', error);
     }
   }
 
@@ -228,26 +466,25 @@
     document.getElementById('error-message').textContent = '';
   }
 
-  // UI Management
   function showDashboard(show) {
     document.getElementById('login-section').style.display = show ? 'none' : 'block';
     document.getElementById('dashboard-section').style.display = show ? 'block' : 'none';
     
     if (show && currentUser) {
       document.getElementById('user-email').textContent = currentUser.email;
+      startSessionTimer();
       loadDashboardData();
+    } else {
+      stopSessionTimer();
     }
   }
 
-  // Authentication - Simplified: Any Supabase user gets admin access
+  // Authentication
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError();
     
-    if (!supabase) {
-      showError('Supabase not initialized');
-      return;
-    }
+    if (!checkRateLimit() || !supabase) return;
 
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -258,58 +495,33 @@
     }
 
     try {
-      console.log('Attempting login for:', email);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      console.log('Login response:', { data, error });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        console.error('Supabase auth error:', error);
-        
-        // More specific error handling
-        if (error.message.includes('Invalid login credentials')) {
-          showError('Invalid email or password. Please check your credentials.');
-        } else if (error.message.includes('Email not confirmed')) {
-          showError('Please confirm your email address before logging in.');
-        } else if (error.message.includes('Too many requests')) {
-          showError('Too many login attempts. Please wait a few minutes and try again.');
-        } else {
-          showError(`Login failed: ${error.message}`);
-        }
+        recordFailedAttempt();
+        showError('Authentication failed');
         return;
       }
 
       currentUser = data.user;
-      console.log('Login successful for:', currentUser.email);
-      
-      // If login succeeds, user gets admin access - simple!
+      resetAttempts();
       showDashboard(true);
       
     } catch (error) {
-      console.error('Login catch error:', error);
-      
-      if (error.message.includes('fetch')) {
-        showError('Connection failed. Please check your internet connection.');
-      } else {
-        showError(`Login failed: ${error.message}`);
-      }
+      recordFailedAttempt();
+      showError('System error during authentication');
     }
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    try {
-      await supabase.auth.signOut();
-      currentUser = null;
-      showDashboard(false);
-      document.getElementById('login-form').reset();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  });
+  function logout() {
+    if (supabase) supabase.auth.signOut();
+    currentUser = null;
+    showDashboard(false);
+    document.getElementById('login-form').reset();
+    stopSessionTimer();
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', logout);
 
   // Tab Management
   function switchTab(btn, tab) {
@@ -318,90 +530,176 @@
     document.getElementById(tab + '-tab')?.classList.add('active');
     btn.classList.add('active');
     
-    // Load tab-specific data
-    if (tab === 'conversations') loadConversations();
-    if (tab === 'feedback') loadFeedback();
-    if (tab === 'contacts') loadContacts();
+    if (tab === 'conversations') loadConversations(1);
+    if (tab === 'feedback') loadFeedback(1);
+    if (tab === 'contacts') loadContacts(1);
+  }
+
+  // Pagination Helper Functions
+  function generatePaginationControls(type, currentPage, totalPages) {
+    const controlsContainer = document.getElementById(`${type}-pagination-controls`);
+    controlsContainer.innerHTML = '';
+
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '‹';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => type === 'conversations' ? loadConversations(currentPage - 1) :
+                            type === 'feedback' ? loadFeedback(currentPage - 1) :
+                            loadContacts(currentPage - 1);
+    controlsContainer.appendChild(prevBtn);
+
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+      const firstBtn = document.createElement('button');
+      firstBtn.textContent = '1';
+      firstBtn.onclick = () => type === 'conversations' ? loadConversations(1) :
+                              type === 'feedback' ? loadFeedback(1) :
+                              loadContacts(1);
+      controlsContainer.appendChild(firstBtn);
+
+      if (startPage > 2) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.style.padding = '8px';
+        controlsContainer.appendChild(ellipsis);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const pageBtn = document.createElement('button');
+      pageBtn.textContent = i;
+      pageBtn.className = i === currentPage ? 'active' : '';
+      pageBtn.onclick = () => type === 'conversations' ? loadConversations(i) :
+                              type === 'feedback' ? loadFeedback(i) :
+                              loadContacts(i);
+      controlsContainer.appendChild(pageBtn);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.style.padding = '8px';
+        controlsContainer.appendChild(ellipsis);
+      }
+
+      const lastBtn = document.createElement('button');
+      lastBtn.textContent = totalPages;
+      lastBtn.onclick = () => type === 'conversations' ? loadConversations(totalPages) :
+                              type === 'feedback' ? loadFeedback(totalPages) :
+                              loadContacts(totalPages);
+      controlsContainer.appendChild(lastBtn);
+    }
+
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '›';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => type === 'conversations' ? loadConversations(currentPage + 1) :
+                            type === 'feedback' ? loadFeedback(currentPage + 1) :
+                            loadContacts(currentPage + 1);
+    controlsContainer.appendChild(nextBtn);
+  }
+
+  function updatePaginationInfo(type, currentPage, pageSize, totalCount) {
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalCount);
+    const infoElement = document.getElementById(`${type}-pagination-info`);
+    infoElement.textContent = `Showing ${start} to ${end} of ${totalCount} entries`;
+  }
+
+  // Page size change functions
+  function changeConversationsPageSize() {
+    paginationState.conversations.pageSize = parseInt(document.getElementById('conversations-page-size').value);
+    loadConversations(1);
+  }
+
+  function changeFeedbackPageSize() {
+    paginationState.feedback.pageSize = parseInt(document.getElementById('feedback-page-size').value);
+    loadFeedback(1);
+  }
+
+  function changeContactsPageSize() {
+    paginationState.contacts.pageSize = parseInt(document.getElementById('contacts-page-size').value);
+    loadContacts(1);
+  }
+
+  // Search functions
+  function searchConversations() {
+    paginationState.conversations.searchTerm = document.getElementById('conversations-search').value;
+    loadConversations(1);
+  }
+
+  function searchFeedback() {
+    paginationState.feedback.searchTerm = document.getElementById('feedback-search').value;
+    loadFeedback(1);
+  }
+
+  function searchContacts() {
+    paginationState.contacts.searchTerm = document.getElementById('contacts-search').value;
+    loadContacts(1);
+  }
+
+  // Jump to page functions
+  function jumpToConversationsPage() {
+    const page = parseInt(document.getElementById('conversations-page-jump').value);
+    const maxPage = Math.ceil(paginationState.conversations.totalCount / paginationState.conversations.pageSize);
+    if (page >= 1 && page <= maxPage) {
+      loadConversations(page);
+    }
+  }
+
+  function jumpToFeedbackPage() {
+    const page = parseInt(document.getElementById('feedback-page-jump').value);
+    const maxPage = Math.ceil(paginationState.feedback.totalCount / paginationState.feedback.pageSize);
+    if (page >= 1 && page <= maxPage) {
+      loadFeedback(page);
+    }
+  }
+
+  function jumpToContactsPage() {
+    const page = parseInt(document.getElementById('contacts-page-jump').value);
+    const maxPage = Math.ceil(paginationState.contacts.totalCount / paginationState.contacts.pageSize);
+    if (page >= 1 && page <= maxPage) {
+      loadContacts(page);
+    }
   }
 
   // Data Loading Functions
   async function loadDashboardData() {
-    await Promise.all([
-      loadOverviewStats(),
-      loadOverviewCharts()
-    ]);
+    await Promise.all([loadOverviewStats(), loadOverviewCharts()]);
   }
 
   async function loadOverviewStats() {
     try {
-      console.log('Loading overview stats...');
-      
-      // Load conversations count
-      console.log('Fetching conversations...');
-      const { count: conversationsCount, error: convError } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true });
+      const results = await Promise.allSettled([
+        supabase.from('conversations').select('*', { count: 'exact', head: true }),
+        supabase.from('conversations').select('client_ip_hash').not('client_ip_hash', 'is', null),
+        supabase.from('conversations').select('*', { count: 'exact', head: true }).eq('final_analysis', true),
+        supabase.from('feedback').select('*', { count: 'exact', head: true }),
+        supabase.from('contact_messages').select('*', { count: 'exact', head: true }),
+        supabase.from('feedback').select('is_accurate')
+      ]);
 
-      console.log('Conversations result:', { count: conversationsCount, error: convError });
-
-      // Load unique users (by IP hash)
-      console.log('Fetching unique users...');
-      const { data: uniqueIPs, error: ipError } = await supabase
-        .from('conversations')
-        .select('client_ip_hash')
-        .not('client_ip_hash', 'is', null);
-
-      console.log('Unique IPs result:', { data: uniqueIPs, error: ipError });
+      const conversationsCount = results[0].status === 'fulfilled' ? results[0].value.count : 0;
+      const uniqueIPs = results[1].status === 'fulfilled' ? results[1].value.data : [];
+      const completedCount = results[2].status === 'fulfilled' ? results[2].value.count : 0;
+      const feedbackCount = results[3].status === 'fulfilled' ? results[3].value.count : 0;
+      const contactsCount = results[4].status === 'fulfilled' ? results[4].value.count : 0;
+      const feedbackData = results[5].status === 'fulfilled' ? results[5].value.data : [];
 
       const uniqueUsers = new Set(uniqueIPs?.map(u => u.client_ip_hash)).size;
-
-      // Load completed conversations
-      console.log('Fetching completed conversations...');
-      const { count: completedCount, error: completedError } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
-        .eq('final_analysis', true);
-
-      console.log('Completed conversations result:', { count: completedCount, error: completedError });
-
-      // Load feedback count
-      console.log('Fetching feedback...');
-      const { count: feedbackCount, error: feedbackCountError } = await supabase
-        .from('feedback')
-        .select('*', { count: 'exact', head: true });
-
-      console.log('Feedback count result:', { count: feedbackCount, error: feedbackCountError });
-
-      // Load contact messages count
-      console.log('Fetching contact messages...');
-      const { count: contactsCount, error: contactsError } = await supabase
-        .from('contact_messages')
-        .select('*', { count: 'exact', head: true });
-
-      console.log('Contact messages result:', { count: contactsCount, error: contactsError });
-
-      // Load feedback accuracy
-      console.log('Fetching feedback accuracy...');
-      const { data: feedbackData, error: feedbackDataError } = await supabase
-        .from('feedback')
-        .select('is_accurate');
-
-      console.log('Feedback data result:', { data: feedbackData, error: feedbackDataError });
-
+      
       let accuracyRate = 'N/A';
       if (feedbackData && feedbackData.length > 0) {
         const accurate = feedbackData.filter(f => f.is_accurate).length;
         accuracyRate = Math.round((accurate / feedbackData.length) * 100) + '%';
       }
 
-      // Check for any errors
-      const errors = [convError, ipError, completedError, feedbackCountError, contactsError, feedbackDataError].filter(e => e);
-      if (errors.length > 0) {
-        console.error('Database errors found:', errors);
-        showError(`Database access errors found. You may need to set up Row Level Security policies. Check console for details.`);
-      }
-
-      // Update UI (even with partial data)
       document.getElementById('total-users').textContent = uniqueUsers || 0;
       document.getElementById('total-convos').textContent = conversationsCount || 0;
       document.getElementById('completion-rate').textContent = 
@@ -410,21 +708,17 @@
       document.getElementById('total-contacts').textContent = contactsCount || 0;
       document.getElementById('accuracy-rate').textContent = accuracyRate;
 
-      console.log('Overview stats loaded successfully');
-
     } catch (error) {
       console.error('Error loading overview stats:', error);
-      showError('Failed to load overview statistics: ' + error.message);
     }
   }
 
   async function loadOverviewCharts() {
     try {
-      // Destroy existing charts
       if (conversationsChart) conversationsChart.destroy();
       if (feedbackChart) feedbackChart.destroy();
 
-      // Load conversations over time (last 7 days)
+      // Load conversations over time
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -433,7 +727,6 @@
         .select('created_at')
         .gte('created_at', sevenDaysAgo.toISOString());
 
-      // Group by day
       const conversationsByDay = {};
       const last7Days = [];
       for (let i = 6; i >= 0; i--) {
@@ -451,7 +744,6 @@
         }
       });
 
-      // Conversations chart
       const ctx1 = document.getElementById('conversations-chart').getContext('2d');
       conversationsChart = new Chart(ctx1, {
         type: 'line',
@@ -468,9 +760,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#f7f5ff' } }
-          },
+          plugins: { legend: { labels: { color: '#f7f5ff' } } },
           scales: {
             x: { ticks: { color: '#bdb7e6' } },
             y: { ticks: { color: '#bdb7e6' } }
@@ -478,11 +768,7 @@
         }
       });
 
-      // Feedback chart
-      const { data: feedbackData } = await supabase
-        .from('feedback')
-        .select('is_accurate');
-
+      const { data: feedbackData } = await supabase.from('feedback').select('is_accurate');
       const accurate = feedbackData?.filter(f => f.is_accurate).length || 0;
       const inaccurate = (feedbackData?.length || 0) - accurate;
 
@@ -491,17 +777,12 @@
         type: 'doughnut',
         data: {
           labels: ['Accurate', 'Inaccurate'],
-          datasets: [{
-            data: [accurate, inaccurate],
-            backgroundColor: ['#22c55e', '#ef4444']
-          }]
+          datasets: [{ data: [accurate, inaccurate], backgroundColor: ['#22c55e', '#ef4444'] }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#f7f5ff' } }
-          }
+          plugins: { legend: { labels: { color: '#f7f5ff' } } }
         }
       });
 
@@ -510,37 +791,56 @@
     }
   }
 
-  async function loadConversations() {
+  async function loadConversations(page = 1) {
     const loading = document.getElementById('conversations-loading');
     const error = document.getElementById('conversations-error');
-    const table = document.getElementById('conversations-table');
+    const tableContainer = document.getElementById('conversations-table-container');
     const tbody = document.getElementById('conversations-tbody');
 
     loading.style.display = 'block';
     error.style.display = 'none';
-    table.style.display = 'none';
+    tableContainer.style.display = 'none';
+
+    paginationState.conversations.currentPage = page;
+    const { pageSize, searchTerm } = paginationState.conversations;
+    const offset = (page - 1) * pageSize;
 
     try {
-      const { data: conversations, error: convError } = await supabase
+      let query = supabase
         .from('conversations')
-        .select('id, created_at, message_count, final_analysis, language, client_ip_hash')
+        .select('id, created_at, message_count, final_analysis, language, client_ip_hash', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(50);
+        .range(offset, offset + pageSize - 1);
+
+      if (searchTerm) {
+        query = query.or(`language.ilike.%${searchTerm}%,client_ip_hash.ilike.%${searchTerm}%`);
+      }
+
+      const { data: conversations, count, error: convError } = await query;
 
       if (convError) throw convError;
+
+      paginationState.conversations.totalCount = count || 0;
+      const totalPages = Math.ceil(paginationState.conversations.totalCount / pageSize);
 
       tbody.innerHTML = conversations?.map(conv => `
         <tr>
           <td>${new Date(conv.created_at).toLocaleString()}</td>
           <td>${conv.message_count || 'N/A'}</td>
-          <td>${conv.final_analysis ? 'Yes' : 'No'}</td>
+          <td><span class="status-badge ${conv.final_analysis ? 'status-completed' : 'status-pending'}">${conv.final_analysis ? 'Completed' : 'Pending'}</span></td>
           <td>${conv.language || 'N/A'}</td>
           <td>${conv.client_ip_hash ? conv.client_ip_hash.substring(0, 8) + '...' : 'N/A'}</td>
         </tr>
-      `).join('') || '<tr><td colspan="5">No conversations found</td></tr>';
+      `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No conversations found</td></tr>';
+
+      updatePaginationInfo('conversations', page, pageSize, paginationState.conversations.totalCount);
+      generatePaginationControls('conversations', page, totalPages);
+      
+      document.getElementById('conversations-page-jump').max = totalPages;
+      document.getElementById('conversations-page-jump').value = page;
 
       loading.style.display = 'none';
-      table.style.display = 'table';
+      tableContainer.style.display = 'block';
 
     } catch (err) {
       loading.style.display = 'none';
@@ -549,36 +849,55 @@
     }
   }
 
-  async function loadFeedback() {
+  async function loadFeedback(page = 1) {
     const loading = document.getElementById('feedback-loading');
     const error = document.getElementById('feedback-error');
-    const table = document.getElementById('feedback-table');
+    const tableContainer = document.getElementById('feedback-table-container');
     const tbody = document.getElementById('feedback-tbody');
 
     loading.style.display = 'block';
     error.style.display = 'none';
-    table.style.display = 'none';
+    tableContainer.style.display = 'none';
+
+    paginationState.feedback.currentPage = page;
+    const { pageSize, searchTerm } = paginationState.feedback;
+    const offset = (page - 1) * pageSize;
 
     try {
-      const { data: feedback, error: feedError } = await supabase
+      let query = supabase
         .from('feedback')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(50);
+        .range(offset, offset + pageSize - 1);
+
+      if (searchTerm) {
+        query = query.or(`comments.ilike.%${searchTerm}%,conversation_id.ilike.%${searchTerm}%`);
+      }
+
+      const { data: feedback, count, error: feedError } = await query;
 
       if (feedError) throw feedError;
+
+      paginationState.feedback.totalCount = count || 0;
+      const totalPages = Math.ceil(paginationState.feedback.totalCount / pageSize);
 
       tbody.innerHTML = feedback?.map(fb => `
         <tr>
           <td>${new Date(fb.created_at).toLocaleString()}</td>
           <td>${fb.conversation_id || 'N/A'}</td>
-          <td>${fb.is_accurate ? 'Yes' : 'No'}</td>
-          <td>${fb.comments || 'N/A'}</td>
+          <td><span class="status-badge ${fb.is_accurate ? 'status-accurate' : 'status-inaccurate'}">${fb.is_accurate ? 'Accurate' : 'Inaccurate'}</span></td>
+          <td>${fb.comments ? fb.comments.substring(0, 100) + (fb.comments.length > 100 ? '...' : '') : 'N/A'}</td>
         </tr>
-      `).join('') || '<tr><td colspan="4">No feedback found</td></tr>';
+      `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No feedback found</td></tr>';
+
+      updatePaginationInfo('feedback', page, pageSize, paginationState.feedback.totalCount);
+      generatePaginationControls('feedback', page, totalPages);
+      
+      document.getElementById('feedback-page-jump').max = totalPages;
+      document.getElementById('feedback-page-jump').value = page;
 
       loading.style.display = 'none';
-      table.style.display = 'table';
+      tableContainer.style.display = 'block';
 
     } catch (err) {
       loading.style.display = 'none';
@@ -587,37 +906,56 @@
     }
   }
 
-  async function loadContacts() {
+  async function loadContacts(page = 1) {
     const loading = document.getElementById('contacts-loading');
     const error = document.getElementById('contacts-error');
-    const table = document.getElementById('contacts-table');
+    const tableContainer = document.getElementById('contacts-table-container');
     const tbody = document.getElementById('contacts-tbody');
 
     loading.style.display = 'block';
     error.style.display = 'none';
-    table.style.display = 'none';
+    tableContainer.style.display = 'none';
+
+    paginationState.contacts.currentPage = page;
+    const { pageSize, searchTerm } = paginationState.contacts;
+    const offset = (page - 1) * pageSize;
 
     try {
-      const { data: contacts, error: contactError } = await supabase
+      let query = supabase
         .from('contact_messages')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(50);
+        .range(offset, offset + pageSize - 1);
+
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,message.ilike.%${searchTerm}%`);
+      }
+
+      const { data: contacts, count, error: contactError } = await query;
 
       if (contactError) throw contactError;
+
+      paginationState.contacts.totalCount = count || 0;
+      const totalPages = Math.ceil(paginationState.contacts.totalCount / pageSize);
 
       tbody.innerHTML = contacts?.map(contact => `
         <tr>
           <td>${new Date(contact.created_at).toLocaleString()}</td>
           <td>${contact.name || 'N/A'}</td>
-          <td><a href="mailto:${contact.email || ''}">${contact.email || 'N/A'}</a></td>
+          <td><a href="mailto:${contact.email || ''}" style="color:var(--primary);">${contact.email || 'N/A'}</a></td>
           <td>${contact.lang || 'N/A'}</td>
-          <td>${contact.message || 'N/A'}</td>
+          <td>${contact.message ? contact.message.substring(0, 100) + (contact.message.length > 100 ? '...' : '') : 'N/A'}</td>
         </tr>
-      `).join('') || '<tr><td colspan="5">No contact messages found</td></tr>';
+      `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No contact messages found</td></tr>';
+
+      updatePaginationInfo('contacts', page, pageSize, paginationState.contacts.totalCount);
+      generatePaginationControls('contacts', page, totalPages);
+      
+      document.getElementById('contacts-page-jump').max = totalPages;
+      document.getElementById('contacts-page-jump').value = page;
 
       loading.style.display = 'none';
-      table.style.display = 'table';
+      tableContainer.style.display = 'block';
 
     } catch (err) {
       loading.style.display = 'none';
@@ -626,37 +964,52 @@
     }
   }
 
-  // Check for existing session on page load
+  // Initialize everything
   document.addEventListener('DOMContentLoaded', async () => {
-    // Wait a bit for the Supabase library to load
-    setTimeout(async () => {
-      if (!initializeSupabase()) {
-        return;
+    try {
+      validateDomain();
+      
+      if (SECURITY_CONFIG.showSecurityNotice) {
+        document.getElementById('security-notice').style.display = 'block';
       }
+      
+      checkRateLimit();
+      
+      setTimeout(async () => {
+        if (!initializeSupabase()) return;
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          currentUser = session.user;
-          console.log('Existing session found for:', currentUser.email);
-          showDashboard(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            currentUser = session.user;
+            showDashboard(true);
+          }
+        } catch (error) {
+          console.error('Session check error:', error);
         }
-      } catch (error) {
-        console.error('Session check error:', error);
-      }
 
-      // Listen for auth changes
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
-          currentUser = null;
-          showDashboard(false);
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          currentUser = session.user;
-          showDashboard(true);
-        }
-      });
-    }, 100); // Small delay to ensure library loads
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            showDashboard(false);
+          } else if (event === 'SIGNED_IN' && session?.user) {
+            currentUser = session.user;
+            showDashboard(true);
+          }
+        });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Initialization error:', error);
+    }
+  });
+
+  // Security measures
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+      e.preventDefault();
+    }
   });
 </script>
 </body>
