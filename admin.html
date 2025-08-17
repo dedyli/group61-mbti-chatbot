@@ -162,8 +162,8 @@
 
 <script>
   // Supabase Configuration (Replace with your actual credentials)
-  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // Your project URL from Supabase dashboard
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // Your anon public key from Supabase dashboard
+  const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Your project URL from Supabase dashboard
+  const SUPABASE_ANON_KEY = 'your-anon-key-here'; // Your anon public key from Supabase dashboard
   
   // Alternative: If you prefer to keep URLs in a separate config
   // const config = {
@@ -271,17 +271,23 @@
     }
   });
 
-  // Admin user check - customize this based on your needs
+  // Admin user check - works with your existing Supabase auth
   function isAdminUser(user) {
-    // Option 1: Check by email domain
-    const adminDomains = ['yourdomain.com', 'admin.yoursite.com'];
+    // Option 1: Check by specific emails (for existing users)
+    const adminEmails = [
+      'dedyli@6estates.com',           // Your existing account
+      'admin@6estates.com'             // Add other existing users
+    ];
+    
+    // Option 2: Check by domain (any user from your company)
+    const adminDomains = ['6estates.com'];
     const emailDomain = user.email.split('@')[1];
     
-    // Option 2: Check by specific emails
-    const adminEmails = ['admin@yoursite.com', 'your-email@domain.com'];
-    
-    // Option 3: Check user metadata (if you set admin role in Supabase)
+    // Option 3: Check for admin role in user metadata
     const isAdminByRole = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
+    
+    // Option 4: Check if user has specific permissions in your existing system
+    // You can add custom logic here based on your existing user roles
     
     return adminEmails.includes(user.email) || 
            adminDomains.includes(emailDomain) || 
