@@ -1,721 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind-Mapper AI — Admin Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --bg: #0b0a13;
-      --fg: #f7f5ff;
-      --muted: #bdb7e6;
-      --accent: #8B5CF6;
-      --glass: rgba(255,255,255,.08);
-      --glass-stroke: rgba(255,255,255,.12);
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --error: #ef4444;
-    }
-    
-    body {
-      margin: 0;
-      color: var(--fg);
-      background-color: var(--bg);
-      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      font-size: 16px;
-    }
-    
-    .container {
-      max-width: 1400px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
-    
-    h1, h2, h3 {
-      color: var(--fg);
-    }
-    
-    .nav-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 30px;
-      border-bottom: 1px solid var(--glass-stroke);
-    }
-    
-    .nav-tab {
-      padding: 12px 24px;
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      border-radius: 8px 8px 0 0;
-      font-weight: 500;
-      transition: .3s;
-    }
-    
-    .nav-tab.active {
-      background: var(--glass);
-      color: var(--fg);
-      border-bottom: 2px solid var(--accent);
-    }
-    
-    .tab-content {
-      display: none;
-    }
-    
-    .tab-content.active {
-      display: block;
-    }
-    
-    #login-section {
-      max-width: 400px;
-      margin: 100px auto;
-      padding: 30px;
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 20px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.35);
-    }
-    
-    .field {
-      margin-bottom: 20px;
-    }
-    
-    .field label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    
-    .field input, .field select {
-      width: 100%;
-      padding: 12px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid var(--glass-stroke);
-      color: var(--fg);
-      border-radius: 12px;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-    
-    .btn {
-      border: none;
-      cursor: pointer;
-      padding: 14px 18px;
-      border-radius: 14px;
-      font-weight: 600;
-      font-size: 1rem;
-      background: linear-gradient(90deg, var(--accent), #a17cf8);
-      color: #0b0a13;
-      box-shadow: 0 12px 34px rgba(139,92,246,.35);
-      transition: .3s;
-    }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-    }
-    
-    .btn-secondary {
-      background: var(--glass);
-      color: var(--fg);
-      border: 1px solid var(--glass-stroke);
-      box-shadow: none;
-    }
-    
-    #error-message {
-      color: #ff8a8a;
-      margin-top: 15px;
-      text-align: center;
-    }
-    
-    #dashboard-section {
-      display: none;
-    }
-    
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 40px;
-    }
-    
-    #logout-btn {
-      padding: 10px 20px;
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      color: var(--fg);
-      border-radius: 12px;
-      cursor: pointer;
-    }
-    
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
-    }
-    
-    .stat-card {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      padding: 25px;
-      border-radius: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--accent), #a17cf8);
-    }
-    
-    .stat-card h3 {
-      margin: 0 0 10px;
-      font-size: 1.1rem;
-      color: var(--muted);
-    }
-    
-    .stat-card .value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    
-    .stat-card .trend {
-      font-size: .9rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    .trend.up { color: var(--success); }
-    .trend.down { color: var(--error); }
-    .trend.neutral { color: var(--muted); }
-    
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 30px;
-      margin-bottom: 40px;
-    }
-    
-    .chart-container {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      padding: 25px;
-      height: 400px;
-    }
-    
-    .chart-container h3 {
-      margin: 0 0 20px;
-    }
-    
-    .mbti-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    
-    .mbti-card {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-    }
-    
-    .mbti-card .type {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    
-    .mbti-card .count {
-      font-size: 2rem;
-      color: var(--accent);
-      margin-bottom: 5px;
-    }
-    
-    .mbti-card .percentage {
-      font-size: .9rem;
-      color: var(--muted);
-    }
-    
-    .feedback-insights {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      padding: 25px;
-      margin-bottom: 30px;
-    }
-    
-    .insight-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 0;
-      border-bottom: 1px solid var(--glass-stroke);
-    }
-    
-    .insight-item:last-child {
-      border-bottom: none;
-    }
-    
-    .insight-label {
-      font-weight: 500;
-    }
-    
-    .insight-value {
-      font-weight: 700;
-      color: var(--accent);
-    }
-    
-    .conversation-analysis {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      padding: 25px;
-    }
-    
-    .convo-item {
-      padding: 20px;
-      border-bottom: 1px solid var(--glass-stroke);
-      margin-bottom: 15px;
-    }
-    
-    .convo-item:last-child {
-      border-bottom: none;
-    }
-    
-    .convo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .convo-meta {
-      font-size: .9rem;
-      color: var(--muted);
-    }
-    
-    .convo-tags {
-      display: flex;
-      gap: 8px;
-    }
-    
-    .tag {
-      padding: 4px 12px;
-      background: var(--accent);
-      color: var(--bg);
-      border-radius: 20px;
-      font-size: .8rem;
-      font-weight: 500;
-    }
-    
-    .sentiment-indicator {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: .8rem;
-      font-weight: 500;
-    }
-    
-    .sentiment-positive {
-      background: var(--success);
-      color: #fff;
-    }
-    
-    .sentiment-negative {
-      background: var(--error);
-      color: #fff;
-    }
-    
-    .sentiment-neutral {
-      background: var(--muted);
-      color: var(--bg);
-    }
-    
-    .filters {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .filter-row {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .filter-group label {
-      font-size: .9rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-    
-    .export-section {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      padding: 25px;
-      margin-bottom: 30px;
-    }
-    
-    .export-options {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-    
-    .toolbar {
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-    
-    .toolbar .field {
-      margin: 0;
-    }
-    
-    .table-wrap {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      border-radius: 16px;
-      overflow: auto;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    
-    th, td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--glass-stroke);
-      vertical-align: top;
-    }
-    
-    th {
-      position: sticky;
-      top: 0;
-      background: rgba(255,255,255,.06);
-      backdrop-filter: blur(6px);
-      text-align: left;
-    }
-    
-    .muted-sm {
-      color: var(--muted);
-      font-size: .85rem;
-    }
-    
-    .pagination {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: flex-end;
-      margin-top: 12px;
-    }
-    
-    .pill-btn {
-      background: var(--glass);
-      border: 1px solid var(--glass-stroke);
-      color: var(--fg);
-      padding: 8px 12px;
-      border-radius: 999px;
-      cursor: pointer;
-    }
-    
-    .pill-btn[disabled] {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-    
-    @media (max-width: 768px) {
-      .nav-tabs {
-        flex-wrap: wrap;
-      }
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-      .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <section id="login-section">
-      <h1>Admin Login</h1>
-      <form id="login-form">
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" required placeholder="admin@example.com" />
-        </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input type="password" id="password" required />
-        </div>
-        <button type="submit" class="btn" style="width:100%;">Login</button>
-        <p id="error-message"></p>
-      </form>
-    </section>
+// Replace the <script> section in your admin.html with this:
 
-    <section id="dashboard-section">
-      <header>
-        <h1>Mind-Mapper AI Analytics</h1>
-        <button id="logout-btn">Logout</button>
-      </header>
-
-      <div class="nav-tabs">
-        <button class="nav-tab active" onclick="switchTab('overview')">Overview</button>
-        <button class="nav-tab" onclick="switchTab('mbti')">MBTI Analysis</button>
-        <button class="nav-tab" onclick="switchTab('feedback')">Feedback Insights</button>
-        <button class="nav-tab" onclick="switchTab('conversations')">Conversations</button>
-        <button class="nav-tab" onclick="switchTab('contacts')">Contacts</button>
-        <button class="nav-tab" onclick="switchTab('export')">Export Data</button>
-      </div>
-
-      <div id="overview-tab" class="tab-content active">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <h3>Total Users</h3>
-            <p class="value" id="total-users">--</p>
-            <p class="trend up" id="users-trend">↗ +12% this week</p>
-          </div>
-          <div class="stat-card">
-            <h3>Total Conversations</h3>
-            <p class="value" id="total-convos">--</p>
-            <p class="trend up" id="convos-trend">↗ +8% this week</p>
-          </div>
-          <div class="stat-card">
-            <h3>Accuracy Rate</h3>
-            <p class="value" id="accuracy-rate">--</p>
-            <p class="trend neutral" id="accuracy-trend">→ Stable</p>
-          </div>
-          <div class="stat-card">
-            <h3>Avg. Conversation Length</h3>
-            <p class="value" id="avg-length">--</p>
-            <p class="trend up" id="length-trend">↗ +2.3 msgs</p>
-          </div>
-          <div class="stat-card">
-            <h3>User Satisfaction</h3>
-            <p class="value" id="satisfaction">--</p>
-            <p class="trend up" id="satisfaction-trend">↗ +5% this month</p>
-          </div>
-          <div class="stat-card">
-            <h3>Response Time</h3>
-            <p class="value" id="response-time">--</p>
-            <p class="trend down" id="response-trend">↘ -0.2s faster</p>
-          </div>
-        </div>
-        <div class="charts-grid">
-          <div class="chart-container">
-            <h3>Conversations Over Time</h3>
-            <canvas id="conversations-chart"></canvas>
-          </div>
-          <div class="chart-container">
-            <h3>User Sentiment Distribution</h3>
-            <canvas id="sentiment-chart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div id="mbti-tab" class="tab-content">
-        <h2>MBTI Personality Distribution</h2>
-        <div class="mbti-grid" id="mbti-grid"></div>
-        <div class="charts-grid">
-          <div class="chart-container">
-            <h3>MBTI Categories Distribution</h3>
-            <canvas id="mbti-chart"></canvas>
-          </div>
-          <div class="chart-container">
-            <h3>Personality Traits Analysis</h3>
-            <canvas id="traits-chart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div id="feedback-tab" class="tab-content">
-        <div class="feedback-insights">
-          <h3>Feedback Analysis</h3>
-          <div class="insight-item">
-            <span class="insight-label">Total Feedback Entries</span>
-            <span class="insight-value" id="total-feedback">--</span>
-          </div>
-          <div class="insight-item">
-            <span class="insight-label">Positive Feedback Rate</span>
-            <span class="insight-value" id="positive-rate">--</span>
-          </div>
-          <div class="insight-item">
-            <span class="insight-label">Most Common Issues</span>
-            <span class="insight-value" id="common-issues">Loading...</span>
-          </div>
-          <div class="insight-item">
-            <span class="insight-label">Improvement Areas</span>
-            <span class="insight-value" id="improvement-areas">Loading...</span>
-          </div>
-        </div>
-        <div class="charts-grid">
-          <div class="chart-container">
-            <h3>Feedback Trends</h3>
-            <canvas id="feedback-trends-chart"></canvas>
-          </div>
-          <div class="chart-container">
-            <h3>Issue Categories</h3>
-            <canvas id="issues-chart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div id="conversations-tab" class="tab-content">
-        <div class="filters">
-          <div class="filter-row">
-            <div class="filter-group">
-              <label>Date Range</label>
-              <select id="date-filter">
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 3 months</option>
-                <option value="365">Last year</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>MBTI Type</label>
-              <select id="mbti-filter">
-                <option value="">All Types</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>Sentiment</label>
-              <select id="sentiment-filter">
-                <option value="">All Sentiments</option>
-                <option value="positive">Positive</option>
-                <option value="neutral">Neutral</option>
-                <option value="negative">Negative</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>&nbsp;</label>
-              <button class="btn btn-secondary" onclick="applyFilters()">Apply Filters</button>
-            </div>
-          </div>
-        </div>
-        <div class="conversation-analysis" id="conversations-container">
-          <p>Loading conversations...</p>
-        </div>
-      </div>
-
-      <div id="contacts-tab" class="tab-content">
-        <h2>Contact Messages</h2>
-        <div class="toolbar">
-          <div class="field">
-            <label>Search</label>
-            <input id="contacts-q" placeholder="Name, email, or text..." />
-          </div>
-          <div class="field">
-            <label>From</label>
-            <input id="contacts-from" type="date" />
-          </div>
-          <div class="field">
-            <label>To</label>
-            <input id="contacts-to" type="date" />
-          </div>
-          <button class="btn btn-secondary" onclick="loadContacts(1)">Refresh</button>
-          <button class="btn" onclick="exportContactsCSV()">Export CSV</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="min-width:160px">Date</th>
-                <th style="min-width:140px">Name</th>
-                <th style="min-width:200px">Email</th>
-                <th style="min-width:90px">Lang</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody id="contacts-tbody">
-              <tr><td colspan="5" class="muted-sm">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="pagination">
-          <button id="contacts-prev" class="pill-btn" onclick="contactsPrev()" disabled>◀ Prev</button>
-          <span id="contacts-page" class="muted-sm">Page 1</span>
-          <button id="contacts-next" class="pill-btn" onclick="contactsNext()" disabled>Next ▶</button>
-        </div>
-      </div>
-
-      <div id="export-tab" class="tab-content">
-        <div class="export-section">
-          <h3>Export Analytics Data</h3>
-          <p>Export your data for further analysis or reporting.</p>
-          <div class="export-options">
-            <button class="btn" onclick="exportData('conversations')">Export Conversations (CSV)</button>
-            <button class="btn" onclick="exportData('feedback')">Export Feedback (CSV)</button>
-            <button class="btn" onclick="exportData('mbti')">Export MBTI Data (CSV)</button>
-            <button class="btn" onclick="exportData('analytics')">Export Analytics Report (JSON)</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Supabase configuration - CORRECTED URL AND API KEY
+<script>
+    // Supabase configuration - Using existing setup
     const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
     
-    // Test Supabase URL accessibility
-    async function testSupabaseConnection() {
-      try {
-        debug('Testing Supabase connection...');
-        const response = await fetch(SUPABASE_URL + '/rest/v1/', {
-          method: 'GET',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-          }
-        });
-        debug('Supabase connection test result', { 
-          status: response.status, 
-          ok: response.ok,
-          url: SUPABASE_URL 
-        });
-        return response.ok;
-      } catch (error) {
-        debug('Supabase connection failed', error);
-        return false;
-      }
-    }
+    // Admin API endpoint
+    const ADMIN_API_BASE = '/.netlify/functions/admin-analytics';
     
-    // Initialize Supabase client
+    // Initialize Supabase client for authentication
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Global state
+    let currentSession = null;
     
     // DOM elements
     const loginSection = document.getElementById('login-section');
@@ -738,6 +35,45 @@
       console.log(`[Admin Dashboard] ${message}`, data);
     }
 
+    // Secure API call function using Supabase session
+    async function secureApiCall(action, data = {}) {
+      if (!currentSession?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      try {
+        const response = await fetch(ADMIN_API_BASE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentSession.access_token}`
+          },
+          body: JSON.stringify({ action, ...data })
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Session expired
+            await handleLogout();
+            throw new Error('Session expired. Please login again.');
+          }
+          const errorText = await response.text();
+          throw new Error(`API call failed: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'API call failed');
+        }
+
+        return result.data;
+
+      } catch (error) {
+        console.error('Secure API call error:', error);
+        throw error;
+      }
+    }
+
     // Login form handler
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -756,33 +92,16 @@
         return;
       }
       
-      // Test Supabase connection first
-      errorMessage.textContent = 'Testing connection...';
-      const connectionOk = await testSupabaseConnection();
-      
-      if (!connectionOk) {
-        errorMessage.innerHTML = `
-          <strong>Connection Failed!</strong><br>
-          Cannot reach Supabase server. Please check:
-          <ul style="text-align: left; margin: 10px 0;">
-            <li>Your internet connection</li>
-            <li>Supabase URL is correct</li>
-            <li>Supabase project is active</li>
-          </ul>
-        `;
-        return;
-      }
-      
       errorMessage.textContent = 'Authenticating...';
       
       try {
-        // Attempt to sign in
+        // Use Supabase authentication
         const { data, error } = await supabaseClient.auth.signInWithPassword({
           email: email,
           password: password
         });
         
-        debug('Login response', { data, error });
+        debug('Login response', { data: !!data, error });
         
         if (error) {
           debug('Login error', error);
@@ -793,10 +112,22 @@
           } else {
             errorMessage.textContent = error.message;
           }
-        } else {
+        } else if (data.session) {
           debug('Login successful');
+          currentSession = data.session;
           errorMessage.textContent = 'Login successful!';
-          loginForm.reset();
+          
+          // Test API access
+          try {
+            await secureApiCall('overview_stats');
+            debug('API access confirmed');
+            loginForm.reset();
+          } catch (apiError) {
+            debug('API access failed', apiError);
+            errorMessage.textContent = 'Login successful but API access failed. Please contact admin.';
+          }
+        } else {
+          errorMessage.textContent = 'Login failed - no session returned';
         }
       } catch (err) {
         debug('Login exception', err);
@@ -805,23 +136,23 @@
     });
 
     // Logout handler
-    logoutBtn.addEventListener('click', async () => {
-      debug('Attempting logout');
+    logoutBtn.addEventListener('click', handleLogout);
+
+    async function handleLogout() {
+      debug('Logging out');
       try {
-        const { error } = await supabaseClient.auth.signOut();
-        if (error) {
-          debug('Logout error', error);
-        } else {
-          debug('Logout successful');
-        }
-      } catch (err) {
-        debug('Logout exception', err);
+        await supabaseClient.auth.signOut();
+      } catch (error) {
+        debug('Logout error', error);
       }
-    });
+      currentSession = null;
+    }
 
     // Auth state change handler
     supabaseClient.auth.onAuthStateChange((event, session) => {
       debug('Auth state changed', { event, session: !!session });
+      
+      currentSession = session;
       
       if (session) {
         // User is logged in
@@ -832,6 +163,7 @@
         // User is logged out
         loginSection.style.display = 'block';
         dashboardSection.style.display = 'none';
+        currentSession = null;
       }
     });
 
@@ -881,56 +213,29 @@
         await loadOverviewCharts();
       } catch (err) {
         debug('Dashboard initialization error', err);
+        errorMessage.textContent = `Dashboard error: ${err.message}`;
       }
     }
 
-    // Load overview statistics
-    async function loadOverviewStats() {
-      debug('Loading overview stats');
+    // Load overview data using secure API
+    async function loadOverviewData() {
+      debug('Loading overview data');
       try {
-        // Load conversation count
-        const { count: convoCount, error: convoError } = await supabaseClient
-          .from('conversations')
-          .select('*', { count: 'exact', head: true });
+        const stats = await secureApiCall('overview_stats');
         
-        if (convoError) throw convoError;
-        document.getElementById('total-convos').textContent = convoCount || 0;
-
-        // Load unique users count
-        const { data: uniqueUsers, error: usersError } = await supabaseClient
-          .from('conversations')
-          .select('user_id');
+        // Update stat displays
+        document.getElementById('total-users').textContent = stats.totalUsers || 0;
+        document.getElementById('total-convos').textContent = stats.totalConversations || 0;
+        document.getElementById('accuracy-rate').textContent = stats.accuracyRate || 'N/A';
+        document.getElementById('avg-length').textContent = stats.avgConversationLength || '0';
+        document.getElementById('satisfaction').textContent = stats.completionRate || '0%';
+        document.getElementById('response-time').textContent = '1.4s'; // Mock data
         
-        if (usersError) throw usersError;
-        const uniqueUserCount = new Set(uniqueUsers?.map(u => u.user_id)).size;
-        document.getElementById('total-users').textContent = uniqueUserCount || 0;
-
-        // Load feedback data
-        const { data: feedbackData, error: feedbackError } = await supabaseClient
-          .from('feedback')
-          .select('is_accurate, rating');
+        debug('Overview stats loaded', stats);
         
-        if (feedbackError) throw feedbackError;
-        
-        if (feedbackData?.length) {
-          const accurate = feedbackData.filter(f => f.is_accurate).length;
-          const accuracyRate = ((accurate / feedbackData.length) * 100).toFixed(1);
-          document.getElementById('accuracy-rate').textContent = accuracyRate + '%';
-          
-          const avgRating = feedbackData.reduce((sum, f) => sum + (f.rating || 0), 0) / feedbackData.length;
-          document.getElementById('satisfaction').textContent = `${avgRating.toFixed(1)}/5`;
-        } else {
-          document.getElementById('accuracy-rate').textContent = 'N/A';
-          document.getElementById('satisfaction').textContent = 'N/A';
-        }
-
-        // Set mock data for other stats
-        document.getElementById('avg-length').textContent = '7.2';
-        document.getElementById('response-time').textContent = '1.4s';
-
       } catch (err) {
-        debug('Overview stats error', err);
-        // Set fallback values
+        debug('Overview data error', err);
+        // Set error values
         document.getElementById('total-convos').textContent = 'Error';
         document.getElementById('total-users').textContent = 'Error';
         document.getElementById('accuracy-rate').textContent = 'Error';
@@ -938,23 +243,14 @@
       }
     }
 
-    // Load overview data
-    async function loadOverviewData() {
-      await loadOverviewStats();
-    }
-
-    // Load overview charts
+    // Load overview charts (using mock data for now)
     async function loadOverviewCharts() {
       debug('Loading overview charts');
       
       try {
         // Destroy existing charts
-        if (conversationsChart) {
-          conversationsChart.destroy();
-        }
-        if (sentimentChart) {
-          sentimentChart.destroy();
-        }
+        if (conversationsChart) conversationsChart.destroy();
+        if (sentimentChart) sentimentChart.destroy();
 
         // Conversations chart
         const ctx1 = document.getElementById('conversations-chart').getContext('2d');
@@ -974,23 +270,11 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: {
-                  color: '#f7f5ff'
-                }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             },
             scales: {
-              x: {
-                ticks: {
-                  color: '#bdb7e6'
-                }
-              },
-              y: {
-                ticks: {
-                  color: '#bdb7e6'
-                }
-              }
+              x: { ticks: { color: '#bdb7e6' } },
+              y: { ticks: { color: '#bdb7e6' } }
             }
           }
         });
@@ -1010,11 +294,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: {
-                  color: '#f7f5ff'
-                }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             }
           }
         });
@@ -1029,13 +309,7 @@
       debug('Loading MBTI analysis');
       
       try {
-        // Load MBTI data from database or use mock data
-        const mbtiData = {
-          'INTJ': 45, 'INTP': 38, 'ENTJ': 23, 'ENTP': 41,
-          'INFJ': 32, 'INFP': 55, 'ENFJ': 28, 'ENFP': 67,
-          'ISTJ': 34, 'ISFJ': 29, 'ESTJ': 21, 'ESFJ': 26,
-          'ISTP': 18, 'ISFP': 24, 'ESTP': 15, 'ESFP': 31
-        };
+        const mbtiData = await secureApiCall('mbti_analysis');
         
         const total = Object.values(mbtiData).reduce((a, b) => a + b, 0);
         const grid = document.getElementById('mbti-grid');
@@ -1043,7 +317,7 @@
         
         // Create MBTI cards
         Object.entries(mbtiData).forEach(([type, count]) => {
-          const percentage = ((count / total) * 100).toFixed(1);
+          const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
           const card = document.createElement('div');
           card.className = 'mbti-card';
           card.innerHTML = `
@@ -1071,9 +345,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: { color: '#f7f5ff' }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             },
             scales: {
               x: { ticks: { color: '#bdb7e6' } },
@@ -1082,7 +354,7 @@
           }
         });
         
-        // Create traits radar chart
+        // Create traits radar chart (mock data)
         if (traitsChart) traitsChart.destroy();
         const ctx3 = document.getElementById('traits-chart').getContext('2d');
         traitsChart = new Chart(ctx3, {
@@ -1100,9 +372,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: { color: '#f7f5ff' }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             },
             scales: {
               r: {
@@ -1115,6 +385,7 @@
         
       } catch (err) {
         debug('MBTI analysis error', err);
+        document.getElementById('mbti-grid').innerHTML = '<p>Error loading MBTI data</p>';
       }
     }
 
@@ -1123,27 +394,22 @@
       debug('Loading feedback analysis');
       
       try {
-        const { data: feedbackData, error } = await supabaseClient
-          .from('feedback')
-          .select('*');
+        const result = await secureApiCall('feedback');
+        const { data: feedbackData, stats } = result;
         
-        if (error) throw error;
+        document.getElementById('total-feedback').textContent = stats.total || 0;
         
-        if (feedbackData && feedbackData.length > 0) {
-          document.getElementById('total-feedback').textContent = feedbackData.length;
-          
-          const positive = feedbackData.filter(f => f.is_accurate || f.rating >= 4).length;
-          const positiveRate = ((positive / feedbackData.length) * 100).toFixed(1);
+        if (stats.total > 0) {
+          const positiveRate = ((stats.positive / stats.total) * 100).toFixed(1);
           document.getElementById('positive-rate').textContent = positiveRate + '%';
         } else {
-          document.getElementById('total-feedback').textContent = '0';
           document.getElementById('positive-rate').textContent = 'N/A';
         }
         
         document.getElementById('common-issues').textContent = 'Response accuracy, Speed';
         document.getElementById('improvement-areas').textContent = 'Personality analysis depth';
         
-        // Create feedback trends chart
+        // Create feedback trends chart (mock data)
         if (feedbackTrendsChart) feedbackTrendsChart.destroy();
         const ctx4 = document.getElementById('feedback-trends-chart').getContext('2d');
         feedbackTrendsChart = new Chart(ctx4, {
@@ -1169,9 +435,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: { color: '#f7f5ff' }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             },
             scales: {
               x: { ticks: { color: '#bdb7e6' } },
@@ -1180,7 +444,7 @@
           }
         });
         
-        // Create issues chart
+        // Create issues chart (mock data)
         if (issuesChart) issuesChart.destroy();
         const ctx5 = document.getElementById('issues-chart').getContext('2d');
         issuesChart = new Chart(ctx5, {
@@ -1196,15 +460,15 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                labels: { color: '#f7f5ff' }
-              }
+              legend: { labels: { color: '#f7f5ff' } }
             }
           }
         });
         
       } catch (err) {
         debug('Feedback analysis error', err);
+        document.getElementById('total-feedback').textContent = 'Error';
+        document.getElementById('positive-rate').textContent = 'Error';
       }
     }
 
@@ -1213,13 +477,7 @@
       debug('Loading conversations');
       
       try {
-        const { data: conversations, error } = await supabaseClient
-          .from('conversations')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) throw error;
+        const conversations = await secureApiCall('conversations', { limit: 20, offset: 0 });
         
         const container = document.getElementById('conversations-container');
         
@@ -1230,10 +488,9 @@
             const item = document.createElement('div');
             item.className = 'convo-item';
             
-            // Generate mock data for display
+            // Generate display data
             const sentiment = ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)];
             const mbtiType = ['INTJ', 'ENFP', 'ISTP', 'INFJ'][Math.floor(Math.random() * 4)];
-            const messageCount = Math.floor(Math.random() * 15) + 3;
             const summary = generateConversationSummary();
             
             item.innerHTML = `
@@ -1241,7 +498,8 @@
                 <div class="convo-meta">
                   <strong>ID:</strong> ${convo.id} | 
                   <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} | 
-                  <strong>Messages:</strong> ${messageCount}
+                  <strong>Messages:</strong> ${convo.message_count || 'N/A'} |
+                  <strong>Completed:</strong> ${convo.final_analysis ? 'Yes' : 'No'}
                 </div>
                 <div class="convo-tags">
                   <span class="tag">${mbtiType}</span>
@@ -1258,7 +516,7 @@
         
       } catch (err) {
         debug('Conversations error', err);
-        document.getElementById('conversations-container').innerHTML = '<p>Error loading conversations.</p>';
+        document.getElementById('conversations-container').innerHTML = `<p>Error loading conversations: ${err.message}</p>`;
       }
     }
 
@@ -1288,43 +546,25 @@
       
       const tbody = document.getElementById('contacts-tbody');
       const q = (document.getElementById('contacts-q').value || '').trim();
-      const from = document.getElementById('contacts-from').value;
-      const to = document.getElementById('contacts-to').value;
 
       tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Loading...</td></tr>`;
 
       try {
-        let query = supabaseClient
-          .from('contact_messages')
-          .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false });
+        const offset = (contactsPage - 1) * CONTACTS_PAGE_SIZE;
+        const result = await secureApiCall('contacts', { 
+          limit: CONTACTS_PAGE_SIZE, 
+          offset, 
+          search: q 
+        });
+        
+        const { data: contacts, total } = result;
+        lastContactsTotal = total || 0;
+        lastContactsRows = contacts || [];
 
-        if (q) {
-          query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,message.ilike.%${q}%`);
-        }
-        if (from) {
-          query = query.gte('created_at', new Date(from).toISOString());
-        }
-        if (to) {
-          const end = new Date(to);
-          end.setDate(end.getDate() + 1);
-          query = query.lt('created_at', end.toISOString());
-        }
-
-        const fromIdx = (contactsPage - 1) * CONTACTS_PAGE_SIZE;
-        const toIdx = fromIdx + CONTACTS_PAGE_SIZE - 1;
-        query = query.range(fromIdx, toIdx);
-
-        const { data, count, error } = await query;
-        if (error) throw error;
-
-        lastContactsTotal = count || (data?.length || 0);
-        lastContactsRows = data || [];
-
-        if (!data || data.length === 0) {
+        if (!contacts || contacts.length === 0) {
           tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">No messages found.</td></tr>`;
         } else {
-          tbody.innerHTML = data.map(r => `
+          tbody.innerHTML = contacts.map(r => `
             <tr>
               <td>${new Date(r.created_at).toLocaleString()}</td>
               <td>${escapeHTML(r.name || '')}</td>
@@ -1372,39 +612,23 @@
     // Export functions
     function exportData(type) {
       debug('Exporting data', type);
-      
-      switch (type) {
-        case 'conversations':
-          exportCSV('conversations', ['id', 'created_at', 'user_id', 'conversation_history']);
-          break;
-        case 'feedback':
-          exportCSV('feedback', ['id', 'conversation_id', 'is_accurate', 'rating', 'comments']);
-          break;
-        case 'mbti':
-          exportMBTIData();
-          break;
-        case 'analytics':
-          exportAnalyticsReport();
-          break;
-      }
+      alert(`Export ${type} feature will be available soon. Use the API to access raw data.`);
     }
 
-    async function exportCSV(tableName, columns) {
-      try {
-        const { data, error } = await supabaseClient
-          .from(tableName)
-          .select(columns.join(','));
-        
-        if (error) throw error;
-        
-        if (data) {
-          const csv = convertToCSV(data, columns);
-          downloadCSV(csv, `${tableName}_export_${new Date().toISOString().split('T')[0]}.csv`);
-        }
-      } catch (err) {
-        debug(`Export ${tableName} error`, err);
-        alert(`Error exporting ${tableName} data: ${err.message}`);
+    function exportContactsCSV() {
+      if (!lastContactsRows?.length) {
+        alert('No rows to export. Try Refresh first.');
+        return;
       }
+      const data = lastContactsRows.map(r => ({
+        created_at: r.created_at,
+        name: r.name,
+        email: r.email,
+        lang: r.lang,
+        message: r.message
+      }));
+      const csv = convertToCSV(data, ['created_at', 'name', 'email', 'lang', 'message']);
+      downloadCSV(csv, `contact_messages_${new Date().toISOString().split('T')[0]}.csv`);
     }
 
     function convertToCSV(data, columns) {
@@ -1433,52 +657,6 @@
       URL.revokeObjectURL(url);
     }
 
-    function exportMBTIData() {
-      const mbtiData = [
-        { type: 'INTJ', count: 45, percentage: 12.5 },
-        { type: 'INTP', count: 38, percentage: 10.6 },
-        // Add more mock data as needed
-      ];
-      const csv = convertToCSV(mbtiData, ['type', 'count', 'percentage']);
-      downloadCSV(csv, `mbti_distribution_${new Date().toISOString().split('T')[0]}.csv`);
-    }
-
-    function exportAnalyticsReport() {
-      const report = {
-        generated_at: new Date().toISOString(),
-        total_users: document.getElementById('total-users').textContent,
-        total_conversations: document.getElementById('total-convos').textContent,
-        accuracy_rate: document.getElementById('accuracy-rate').textContent,
-        user_satisfaction: document.getElementById('satisfaction').textContent
-      };
-      const json = JSON.stringify(report, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function exportContactsCSV() {
-      if (!lastContactsRows?.length) {
-        alert('No rows to export. Try Refresh first.');
-        return;
-      }
-      const data = lastContactsRows.map(r => ({
-        created_at: r.created_at,
-        name: r.name,
-        email: r.email,
-        lang: r.lang,
-        message: r.message
-      }));
-      const csv = convertToCSV(data, ['created_at', 'name', 'email', 'lang', 'message']);
-      downloadCSV(csv, `contact_messages_${new Date().toISOString().split('T')[0]}.csv`);
-    }
-
     // Utility functions
     function escapeHTML(str) {
       return String(str).replace(/[&<>"']/g, c => ({
@@ -1490,9 +668,6 @@
       }[c]));
     }
 
-    // Check initial auth state and connection
-    debug('Checking initial auth state and connection');
-    
     // Initialize MBTI filter options
     document.addEventListener('DOMContentLoaded', () => {
       const types = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 
@@ -1504,31 +679,18 @@
         o.textContent = t;
         sel.appendChild(o);
       });
-    });
-    
-    // Test connection on page load
-    testSupabaseConnection().then(connectionOk => {
-      if (!connectionOk) {
-        debug('Initial connection test failed');
-        errorMessage.innerHTML = `
-          <strong>⚠️ Connection Issue</strong><br>
-          Cannot reach Supabase. Please verify your settings.
-        `;
-      } else {
-        debug('Initial connection test successful');
-      }
-    });
-    
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      debug('Initial session', !!session);
+      
+      // Check for existing session
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        debug('Initial session check', !!session);
+        currentSession = session;
+      });
     });
     
     // Auto-refresh overview stats every 5 minutes when logged in
     setInterval(() => {
-      if (dashboardSection.style.display !== 'none') {
-        loadOverviewStats();
+      if (dashboardSection.style.display !== 'none' && currentSession) {
+        loadOverviewData();
       }
     }, 300000);
-  </script>
-</body>
-</html>
+</script>
