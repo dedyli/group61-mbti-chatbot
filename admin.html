@@ -1,4 +1,387 @@
-// Replace the <script> section in your admin.html with this:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-light: #1f2937;
+            --primary: #8B5CF6;
+            --text-light: #f7f5ff;
+            --text-muted: #bdb7e6;
+            --border-color: #374151;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Login Section */
+        #login-section {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            background-color: var(--bg-light);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        #login-section h1 {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #7c3aed;
+        }
+        
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        #error-message {
+            color: var(--danger);
+            text-align: center;
+            margin-top: 1rem;
+            min-height: 1.2em;
+        }
+        
+        /* Dashboard Section */
+        #dashboard-section {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            display: none;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+        }
+
+        #logout-btn {
+            width: auto;
+            padding: 0.5rem 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            width: auto;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Overview Tab */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-light);
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            height: 350px;
+        }
+        
+        .chart-container {
+             background-color: var(--bg-light);
+             padding: 1rem;
+             border-radius: 8px;
+        }
+
+        /* MBTI Tab */
+        #mbti-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .mbti-card {
+            background-color: var(--bg-light);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .mbti-card .type { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .mbti-card .count { font-size: 1.2rem; margin: 0.5rem 0; }
+        .mbti-card .percentage { font-size: 0.9rem; color: var(--text-muted); }
+
+        /* Conversations Tab */
+        #conversations-container .convo-item {
+            background-color: var(--bg-light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        .convo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .convo-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .tag { background-color: var(--primary); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .sentiment-indicator { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; text-transform: capitalize;}
+        .sentiment-positive { background-color: var(--success); }
+        .sentiment-neutral { background-color: var(--text-muted); color: var(--bg-dark); }
+        .sentiment-negative { background-color: var(--danger); }
+        .convo-summary { font-size: 0.9rem; }
+        
+        /* Contacts Tab */
+        .contacts-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-light);
+        }
+        .contacts-table th, .contacts-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .contacts-table th { color: var(--text-muted); font-weight: bold; }
+        .muted-sm { color: var(--text-muted); text-align: center; }
+        .contacts-controls { margin-bottom: 1rem; display: flex; gap: 1rem; }
+        #contacts-q { flex-grow: 1; }
+        
+    </style>
+</head>
+<body>
+
+    <section id="login-section">
+        <h1>Admin Login</h1>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <p id="error-message"></p>
+    </section>
+
+    <section id="dashboard-section">
+        <header class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <button id="logout-btn">Logout</button>
+        </header>
+
+        <nav class="tabs">
+            <button class="nav-tab active" onclick="switchTab('overview')">Overview</button>
+            <button class="nav-tab" onclick="switchTab('mbti')">MBTI Analysis</button>
+            <button class="nav-tab" onclick="switchTab('feedback')">Feedback</button>
+            <button class="nav-tab" onclick="switchTab('conversations')">Conversations</button>
+            <button class="nav-tab" onclick="switchTab('contacts')">Contacts</button>
+            <button class="nav-tab" onclick="switchTab('export')">Export</button>
+        </nav>
+
+        <main>
+            <div id="overview-tab" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Users</h3>
+                        <div id="total-users" class="value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Conversations</h3>
+                        <div id="total-convos" class="value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Accuracy Rate</h3>
+                        <div id="accuracy-rate" class="value">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Completion Rate</h3>
+                        <div id="satisfaction" class="value">0%</div>
+                    </div>
+                     <div class="stat-card">
+                        <h3>Avg. Length</h3>
+                        <div id="avg-length" class="value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg. Response</h3>
+                        <div id="response-time" class="value">0s</div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="conversations-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="sentiment-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mbti-tab" class="tab-content">
+                 <div id="mbti-grid"></div>
+                 <div class="charts-grid" style="grid-template-columns: 1fr 1fr; margin-top: 2rem;">
+                    <div class="chart-container">
+                        <canvas id="mbti-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="traits-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="feedback-tab" class="tab-content">
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-card"><h3>Total Feedback</h3><div id="total-feedback" class="value">0</div></div>
+                    <div class="stat-card"><h3>Positive Rate</h3><div id="positive-rate" class="value">0%</div></div>
+                    <div class="stat-card"><h3>Common Issues</h3><p id="common-issues">N/A</p></div>
+                    <div class="stat-card"><h3>Improvement Areas</h3><p id="improvement-areas">N/A</p></div>
+                </div>
+                <div class="charts-grid" style="grid-template-columns: 2fr 1fr;">
+                    <div class="chart-container"><canvas id="feedback-trends-chart"></canvas></div>
+                    <div class="chart-container"><canvas id="issues-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div id="conversations-tab" class="tab-content">
+                 <div class="filters" style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+                    <select id="mbti-filter" class="form-group" style="background: var(--bg-light); color: var(--text-light); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"><option value="">All MBTI Types</option></select>
+                    <button onclick="applyFilters()">Apply Filters</button>
+                </div>
+                <div id="conversations-container"></div>
+            </div>
+            
+             <div id="contacts-tab" class="tab-content">
+                <div class="contacts-controls">
+                    <input type="search" id="contacts-q" placeholder="Search by name, email, or message..." class="form-group" onchange="loadContacts(1)" style="margin:0;"/>
+                    <button onclick="loadContacts(1)">Refresh</button>
+                    <button onclick="exportContactsCSV()">Export CSV</button>
+                </div>
+                <table class="contacts-table">
+                    <thead>
+                        <tr><th>Date</th><th>Name</th><th>Email</th><th>Lang</th><th>Message</th></tr>
+                    </thead>
+                    <tbody id="contacts-tbody"></tbody>
+                </table>
+                <div class="pagination" style="margin-top: 1rem; text-align: center;">
+                    <button id="contacts-prev" onclick="contactsPrev()">&laquo; Prev</button>
+                    <span id="contacts-page" style="margin: 0 1rem;">Page 1 of 1</span>
+                    <button id="contacts-next" onclick="contactsNext()">Next &raquo;</button>
+                </div>
+            </div>
+            
+            <div id="export-tab" class="tab-content">
+                <h2>Export Data</h2>
+                <p>Select a dataset to export as CSV. For large datasets, this may take a moment.</p>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button onclick="exportData('conversations')">Export Conversations</button>
+                    <button onclick="exportData('feedback')">Export Feedback</button>
+                </div>
+            </div>
+        </main>
+    </section>
 
 <script>
     // Supabase configuration - Using existing setup
@@ -74,66 +457,48 @@
       }
     }
 
-    // Login form handler
+    // Login form handler (CORRECTED VERSION)
     loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      // Clear previous error
-      errorMessage.textContent = '';
-      
-      // Get form data
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      
-      debug('Attempting login', { email });
-      
-      if (!email || !password) {
-        errorMessage.textContent = 'Please enter both email and password';
-        return;
-      }
-      
-      errorMessage.textContent = 'Authenticating...';
-      
-      try {
-        // Use Supabase authentication
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
+        e.preventDefault();
         
-        debug('Login response', { data: !!data, error });
+        errorMessage.textContent = '';
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
         
-        if (error) {
-          debug('Login error', error);
-          if (error.message.includes('Invalid login credentials')) {
-            errorMessage.textContent = 'Invalid email or password. Please check your credentials.';
-          } else if (error.message.includes('Email not confirmed')) {
-            errorMessage.textContent = 'Please confirm your email address before logging in.';
-          } else {
-            errorMessage.textContent = error.message;
-          }
-        } else if (data.session) {
-          debug('Login successful');
-          currentSession = data.session;
-          errorMessage.textContent = 'Login successful!';
-          
-          // Test API access
-          try {
-            await secureApiCall('overview_stats');
-            debug('API access confirmed');
-            loginForm.reset();
-          } catch (apiError) {
-            debug('API access failed', apiError);
-            errorMessage.textContent = 'Login successful but API access failed. Please contact admin.';
-          }
-        } else {
-          errorMessage.textContent = 'Login failed - no session returned';
+        debug('Attempting login', { email });
+        
+        if (!email || !password) {
+            errorMessage.textContent = 'Please enter both email and password';
+            return;
         }
-      } catch (err) {
-        debug('Login exception', err);
-        errorMessage.textContent = 'Network error. Please check your connection and try again.';
-      }
+        
+        errorMessage.textContent = 'Authenticating...';
+        
+        try {
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) {
+                debug('Login error', error);
+                if (error.message.includes('Invalid login credentials')) {
+                    errorMessage.textContent = 'Invalid email or password. Please check your credentials.';
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorMessage.textContent = 'Please confirm your email address before logging in.';
+                } else {
+                    errorMessage.textContent = error.message;
+                }
+            } else {
+                errorMessage.textContent = '';
+                loginForm.reset();
+            }
+        } catch (err) {
+            debug('Login exception', err);
+            errorMessage.textContent = 'Network error. Please check your connection and try again.';
+        }
     });
+
 
     // Logout handler
     logoutBtn.addEventListener('click', handleLogout);
@@ -171,18 +536,12 @@
     function switchTab(tabName) {
       debug('Switching to tab', tabName);
       
-      // Remove active class from all tabs and content
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
       
-      // Add active class to selected tab
-      const tabElement = document.getElementById(tabName + '-tab');
-      if (tabElement) {
-        tabElement.classList.add('active');
-      }
+      document.getElementById(tabName + '-tab').classList.add('active');
       event.target.classList.add('active');
       
-      // Load tab-specific data
       switch(tabName) {
         case 'overview':
           loadOverviewData();
@@ -200,7 +559,6 @@
           loadContacts();
           break;
         case 'export':
-          // Export tab doesn't need to load data
           break;
       }
     }
@@ -223,7 +581,6 @@
       try {
         const stats = await secureApiCall('overview_stats');
         
-        // Update stat displays
         document.getElementById('total-users').textContent = stats.totalUsers || 0;
         document.getElementById('total-convos').textContent = stats.totalConversations || 0;
         document.getElementById('accuracy-rate').textContent = stats.accuracyRate || 'N/A';
@@ -235,7 +592,6 @@
         
       } catch (err) {
         debug('Overview data error', err);
-        // Set error values
         document.getElementById('total-convos').textContent = 'Error';
         document.getElementById('total-users').textContent = 'Error';
         document.getElementById('accuracy-rate').textContent = 'Error';
@@ -243,16 +599,14 @@
       }
     }
 
-    // Load overview charts (using mock data for now)
+    // Load overview charts
     async function loadOverviewCharts() {
       debug('Loading overview charts');
       
       try {
-        // Destroy existing charts
         if (conversationsChart) conversationsChart.destroy();
         if (sentimentChart) sentimentChart.destroy();
 
-        // Conversations chart
         const ctx1 = document.getElementById('conversations-chart').getContext('2d');
         conversationsChart = new Chart(ctx1, {
           type: 'line',
@@ -269,9 +623,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            },
+            plugins: { legend: { labels: { color: '#f7f5ff' } } },
             scales: {
               x: { ticks: { color: '#bdb7e6' } },
               y: { ticks: { color: '#bdb7e6' } }
@@ -279,7 +631,6 @@
           }
         });
 
-        // Sentiment chart
         const ctx2 = document.getElementById('sentiment-chart').getContext('2d');
         sentimentChart = new Chart(ctx2, {
           type: 'doughnut',
@@ -293,9 +644,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            }
+            plugins: { legend: { labels: { color: '#f7f5ff' } } }
           }
         });
 
@@ -307,54 +656,36 @@
     // MBTI Analysis functions
     async function loadMBTIAnalysis() {
       debug('Loading MBTI analysis');
-      
       try {
         const mbtiData = await secureApiCall('mbti_analysis');
-        
         const total = Object.values(mbtiData).reduce((a, b) => a + b, 0);
         const grid = document.getElementById('mbti-grid');
         grid.innerHTML = '';
         
-        // Create MBTI cards
         Object.entries(mbtiData).forEach(([type, count]) => {
           const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
           const card = document.createElement('div');
           card.className = 'mbti-card';
-          card.innerHTML = `
-            <div class="type">${type}</div>
-            <div class="count">${count}</div>
-            <div class="percentage">${percentage}%</div>
-          `;
+          card.innerHTML = `<div class="type">${type}</div><div class="count">${count}</div><div class="percentage">${percentage}%</div>`;
           grid.appendChild(card);
         });
         
-        // Create MBTI distribution chart
         if (mbtiChart) mbtiChart.destroy();
         const ctx = document.getElementById('mbti-chart').getContext('2d');
         mbtiChart = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: Object.keys(mbtiData),
-            datasets: [{
-              label: 'Count',
-              data: Object.values(mbtiData),
-              backgroundColor: '#8B5CF6'
-            }]
+            datasets: [{ label: 'Count', data: Object.values(mbtiData), backgroundColor: '#8B5CF6' }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            },
-            scales: {
-              x: { ticks: { color: '#bdb7e6' } },
-              y: { ticks: { color: '#bdb7e6' } }
-            }
+            plugins: { legend: { labels: { color: '#f7f5ff' } } },
+            scales: { x: { ticks: { color: '#bdb7e6' } }, y: { ticks: { color: '#bdb7e6' } } }
           }
         });
         
-        // Create traits radar chart (mock data)
         if (traitsChart) traitsChart.destroy();
         const ctx3 = document.getElementById('traits-chart').getContext('2d');
         traitsChart = new Chart(ctx3, {
@@ -371,18 +702,10 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            },
-            scales: {
-              r: {
-                ticks: { color: '#bdb7e6' },
-                grid: { color: 'rgba(255,255,255,.1)' }
-              }
-            }
+            plugins: { legend: { labels: { color: '#f7f5ff' } } },
+            scales: { r: { ticks: { color: '#bdb7e6' }, grid: { color: 'rgba(255,255,255,.1)' } } }
           }
         });
-        
       } catch (err) {
         debug('MBTI analysis error', err);
         document.getElementById('mbti-grid').innerHTML = '<p>Error loading MBTI data</p>';
@@ -392,24 +715,15 @@
     // Feedback Analysis functions
     async function loadFeedbackAnalysis() {
       debug('Loading feedback analysis');
-      
       try {
         const result = await secureApiCall('feedback');
-        const { data: feedbackData, stats } = result;
+        const { stats } = result;
         
         document.getElementById('total-feedback').textContent = stats.total || 0;
-        
-        if (stats.total > 0) {
-          const positiveRate = ((stats.positive / stats.total) * 100).toFixed(1);
-          document.getElementById('positive-rate').textContent = positiveRate + '%';
-        } else {
-          document.getElementById('positive-rate').textContent = 'N/A';
-        }
-        
+        document.getElementById('positive-rate').textContent = stats.total > 0 ? `${((stats.positive / stats.total) * 100).toFixed(1)}%` : 'N/A';
         document.getElementById('common-issues').textContent = 'Response accuracy, Speed';
         document.getElementById('improvement-areas').textContent = 'Personality analysis depth';
         
-        // Create feedback trends chart (mock data)
         if (feedbackTrendsChart) feedbackTrendsChart.destroy();
         const ctx4 = document.getElementById('feedback-trends-chart').getContext('2d');
         feedbackTrendsChart = new Chart(ctx4, {
@@ -417,54 +731,30 @@
           data: {
             labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
             datasets: [
-              {
-                label: 'Positive Feedback',
-                data: [65, 70, 68, 75],
-                borderColor: '#22c55e',
-                backgroundColor: 'rgba(34,197,94,.1)'
-              },
-              {
-                label: 'Negative Feedback',
-                data: [35, 30, 32, 25],
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239,68,68,.1)'
-              }
+              { label: 'Positive Feedback', data: [65, 70, 68, 75], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)' },
+              { label: 'Negative Feedback', data: [35, 30, 32, 25], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)' }
             ]
           },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            },
-            scales: {
-              x: { ticks: { color: '#bdb7e6' } },
-              y: { ticks: { color: '#bdb7e6' } }
-            }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#f7f5ff' } } },
+            scales: { x: { ticks: { color: '#bdb7e6' } }, y: { ticks: { color: '#bdb7e6' } } }
           }
         });
         
-        // Create issues chart (mock data)
         if (issuesChart) issuesChart.destroy();
         const ctx5 = document.getElementById('issues-chart').getContext('2d');
         issuesChart = new Chart(ctx5, {
           type: 'pie',
           data: {
             labels: ['Accuracy', 'Speed', 'Understanding', 'Other'],
-            datasets: [{
-              data: [40, 25, 20, 15],
-              backgroundColor: ['#ef4444', '#f59e0b', '#8B5CF6', '#bdb7e6']
-            }]
+            datasets: [{ data: [40, 25, 20, 15], backgroundColor: ['#ef4444', '#f59e0b', '#8B5CF6', '#bdb7e6'] }]
           },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: '#f7f5ff' } }
-            }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#f7f5ff' } } }
           }
         });
-        
       } catch (err) {
         debug('Feedback analysis error', err);
         document.getElementById('total-feedback').textContent = 'Error';
@@ -475,45 +765,35 @@
     // Conversations functions
     async function loadConversations() {
       debug('Loading conversations');
-      
       try {
         const conversations = await secureApiCall('conversations', { limit: 20, offset: 0 });
-        
         const container = document.getElementById('conversations-container');
-        
         if (conversations && conversations.length > 0) {
-          container.innerHTML = '';
-          
-          conversations.forEach(convo => {
-            const item = document.createElement('div');
-            item.className = 'convo-item';
-            
-            // Generate display data
+          container.innerHTML = conversations.map(convo => {
             const sentiment = ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)];
             const mbtiType = ['INTJ', 'ENFP', 'ISTP', 'INFJ'][Math.floor(Math.random() * 4)];
             const summary = generateConversationSummary();
-            
-            item.innerHTML = `
-              <div class="convo-header">
-                <div class="convo-meta">
-                  <strong>ID:</strong> ${convo.id} | 
-                  <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} | 
-                  <strong>Messages:</strong> ${convo.message_count || 'N/A'} |
-                  <strong>Completed:</strong> ${convo.final_analysis ? 'Yes' : 'No'}
+            return `
+              <div class="convo-item">
+                <div class="convo-header">
+                  <div class="convo-meta">
+                    <strong>ID:</strong> ${convo.id} | 
+                    <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} | 
+                    <strong>Messages:</strong> ${convo.message_count || 'N/A'} |
+                    <strong>Completed:</strong> ${convo.final_analysis ? 'Yes' : 'No'}
+                  </div>
+                  <div class="convo-tags">
+                    <span class="tag">${mbtiType}</span>
+                    <span class="sentiment-indicator sentiment-${sentiment}">${sentiment}</span>
+                  </div>
                 </div>
-                <div class="convo-tags">
-                  <span class="tag">${mbtiType}</span>
-                  <span class="sentiment-indicator sentiment-${sentiment}">${sentiment}</span>
-                </div>
+                <div class="convo-summary">${summary}</div>
               </div>
-              <div class="convo-summary">${summary}</div>
             `;
-            container.appendChild(item);
-          });
+          }).join('');
         } else {
           container.innerHTML = '<p>No conversations found.</p>';
         }
-        
       } catch (err) {
         debug('Conversations error', err);
         document.getElementById('conversations-container').innerHTML = `<p>Error loading conversations: ${err.message}</p>`;
@@ -526,10 +806,6 @@
         'Career guidance based on MBTI traits and preferences',
         'Relationship patterns and communication style analysis',
         'Decision-making processes and stress handling discussion',
-        'Growth opportunities and personal development areas',
-        'Leadership style and team dynamics exploration',
-        'Learning preferences and study strategies',
-        'Work environment and culture fit analysis'
       ];
       return summaries[Math.floor(Math.random() * summaries.length)];
     }
@@ -543,40 +819,29 @@
     async function loadContacts(page = 1) {
       debug('Loading contacts', { page });
       contactsPage = page;
-      
       const tbody = document.getElementById('contacts-tbody');
       const q = (document.getElementById('contacts-q').value || '').trim();
-
       tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Loading...</td></tr>`;
 
       try {
         const offset = (contactsPage - 1) * CONTACTS_PAGE_SIZE;
-        const result = await secureApiCall('contacts', { 
-          limit: CONTACTS_PAGE_SIZE, 
-          offset, 
-          search: q 
-        });
-        
+        const result = await secureApiCall('contacts', { limit: CONTACTS_PAGE_SIZE, offset, search: q });
         const { data: contacts, total } = result;
         lastContactsTotal = total || 0;
         lastContactsRows = contacts || [];
 
-        if (!contacts || contacts.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">No messages found.</td></tr>`;
-        } else {
-          tbody.innerHTML = contacts.map(r => `
+        tbody.innerHTML = (contacts && contacts.length > 0)
+          ? contacts.map(r => `
             <tr>
               <td>${new Date(r.created_at).toLocaleString()}</td>
               <td>${escapeHTML(r.name || '')}</td>
               <td><a href="mailto:${encodeURIComponent(r.email || '')}">${escapeHTML(r.email || '')}</a></td>
               <td>${escapeHTML(r.lang || '')}</td>
               <td>${escapeHTML(r.message || '')}</td>
-            </tr>
-          `).join('');
-        }
-
+            </tr>`).join('')
+          : `<tr><td colspan="5" class="muted-sm">No messages found.</td></tr>`;
+        
         updateContactsPagination();
-
       } catch (err) {
         debug('Contacts load error', err);
         tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Error: ${escapeHTML(err.message || String(err))}</td></tr>`;
@@ -588,25 +853,15 @@
       const prevEl = document.getElementById('contacts-prev');
       const nextEl = document.getElementById('contacts-next');
       const maxPage = Math.max(1, Math.ceil(lastContactsTotal / CONTACTS_PAGE_SIZE));
-      
       pageEl.textContent = `Page ${contactsPage} of ${maxPage}`;
       prevEl.disabled = contactsPage <= 1;
       nextEl.disabled = contactsPage >= maxPage;
     }
 
-    function contactsPrev() {
-      if (contactsPage > 1) {
-        contactsPage--;
-        loadContacts(contactsPage);
-      }
-    }
-
+    function contactsPrev() { if (contactsPage > 1) { loadContacts(contactsPage - 1); } }
     function contactsNext() {
       const maxPage = Math.max(1, Math.ceil(lastContactsTotal / CONTACTS_PAGE_SIZE));
-      if (contactsPage < maxPage) {
-        contactsPage++;
-        loadContacts(contactsPage);
-      }
+      if (contactsPage < maxPage) { loadContacts(contactsPage + 1); }
     }
 
     // Export functions
@@ -620,13 +875,7 @@
         alert('No rows to export. Try Refresh first.');
         return;
       }
-      const data = lastContactsRows.map(r => ({
-        created_at: r.created_at,
-        name: r.name,
-        email: r.email,
-        lang: r.lang,
-        message: r.message
-      }));
+      const data = lastContactsRows.map(r => ({ ...r }));
       const csv = convertToCSV(data, ['created_at', 'name', 'email', 'lang', 'message']);
       downloadCSV(csv, `contact_messages_${new Date().toISOString().split('T')[0]}.csv`);
     }
@@ -636,10 +885,7 @@
       const rows = data.map(row => 
         columns.map(col => {
           const v = row[col];
-          if (typeof v === 'string' && (v.includes(',') || v.includes('\n'))) {
-            return `"${v.replace(/"/g, '""')}"`;
-          }
-          return v ?? '';
+          return (typeof v === 'string' && (v.includes(',') || v.includes('\n'))) ? `"${v.replace(/"/g, '""')}"` : v ?? '';
         }).join(',')
       );
       return [header, ...rows].join('\n');
@@ -657,40 +903,30 @@
       URL.revokeObjectURL(url);
     }
 
-    // Utility functions
     function escapeHTML(str) {
-      return String(str).replace(/[&<>"']/g, c => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[c]));
+      return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    // Initialize MBTI filter options
     document.addEventListener('DOMContentLoaded', () => {
-      const types = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 
-                     'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'];
+      const types = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
       const sel = document.getElementById('mbti-filter');
       types.forEach(t => {
         const o = document.createElement('option');
-        o.value = t;
-        o.textContent = t;
-        sel.appendChild(o);
+        o.value = t; o.textContent = t; sel.appendChild(o);
       });
       
-      // Check for existing session
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
         debug('Initial session check', !!session);
         currentSession = session;
       });
     });
     
-    // Auto-refresh overview stats every 5 minutes when logged in
     setInterval(() => {
       if (dashboardSection.style.display !== 'none' && currentSession) {
         loadOverviewData();
       }
-    }, 300000);
+    }, 300000); // Auto-refresh overview stats every 5 minutes
 </script>
+
+</body>
+</html>
