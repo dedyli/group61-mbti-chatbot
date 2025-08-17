@@ -6,7 +6,7 @@
   <title>Admin Dashboard</title>
   
   <!-- Supabase Client Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.38.4/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -161,9 +161,15 @@
   </section>
 
 <script>
-  // ⚠️ IMPORTANT: Replace these with your actual Supabase credentials
-  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // e.g., 'https://xxxxx.supabase.co'
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // This is safe to expose in client
+  // Supabase Configuration (Replace with your actual credentials)
+  const SUPABASE_URL = 'https://okbqkkftdxazdfkiovjj.supabase.co'; // Your project URL from Supabase dashboard
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c'; // Your anon public key from Supabase dashboard
+  
+  // Alternative: If you prefer to keep URLs in a separate config
+  // const config = {
+  //   supabaseUrl: 'https://your-project-id.supabase.co',
+  //   supabaseAnonKey: 'your-anon-key-here'
+  // };
   
   // Initialize Supabase client
   let supabase;
@@ -171,13 +177,18 @@
   let conversationsChart, feedbackChart;
 
   function initializeSupabase() {
-    if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-      showError('Please configure your Supabase credentials in the script');
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      showError('Supabase configuration missing');
+      return false;
+    }
+
+    if (!window.supabase) {
+      showError('Supabase library not loaded. Please check your internet connection.');
       return false;
     }
     
     try {
-      supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return true;
     } catch (error) {
       showError('Failed to initialize Supabase: ' + error.message);
@@ -565,34 +576,37 @@
 
   // Check for existing session on page load
   document.addEventListener('DOMContentLoaded', async () => {
-    if (!initializeSupabase()) {
-      return;
-    }
+    // Wait a bit for the Supabase library to load
+    setTimeout(async () => {
+      if (!initializeSupabase()) {
+        return;
+      }
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        currentUser = session.user;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (isAdminUser(currentUser)) {
-          showDashboard(true);
-        } else {
-          await supabase.auth.signOut();
-          showError('Access denied. Admin privileges required.');
+        if (session?.user) {
+          currentUser = session.user;
+          
+          if (isAdminUser(currentUser)) {
+            showDashboard(true);
+          } else {
+            await supabase.auth.signOut();
+            showError('Access denied. Admin privileges required.');
+          }
         }
+      } catch (error) {
+        console.error('Session check error:', error);
       }
-    } catch (error) {
-      console.error('Session check error:', error);
-    }
 
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        showDashboard(false);
-      }
-    });
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          showDashboard(false);
+        }
+      });
+    }, 100); // Small delay to ensure library loads
   });
 </script>
 </body>
