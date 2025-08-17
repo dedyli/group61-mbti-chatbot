@@ -343,13 +343,10 @@ const SECURITY_CONFIG = {
   };
 
   // Security functions (simplified for space - same as before)
-  function validateDomain() {
-    const currentDomain = window.location.hostname;
-    if (!SECURITY_CONFIG.allowedDomains.includes(currentDomain)) {
-      document.body.innerHTML = '<div style="text-align:center;padding:50px;"><h1>🔒 Access Denied</h1></div>';
-      throw new Error('Unauthorized domain');
-    }
-  }
+function validateDomain() {
+  // Allow all domains - remove security check
+  return true;
+}
 
   function checkRateLimit() {
     const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
