@@ -85,8 +85,44 @@
     .field input,.field textarea{ background:rgba(255,255,255,.04); border:1px solid var(--glass-stroke); color:var(--fg); padding:14px 16px; border-radius:12px }
     .btn{ border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; box-shadow:0 12px 34px rgba(139,92,246,.35) }
 
-    .chat-launch{ position:fixed; right:18px; bottom:18px; z-index:10000; display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); border:1px solid var(--glass-stroke); padding:10px 12px; border-radius:999px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 14px 42px rgba(0,0,0,.45); cursor:pointer }
-    .chat-launch b{background:linear-gradient(90deg,var(--gold),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
+    /* Updated mascot chat button styles */
+    .chat-launch{ 
+      position:fixed; 
+      right:18px; 
+      bottom:18px; 
+      z-index:10000; 
+      width:80px; 
+      height:80px; 
+      border:none; 
+      background:transparent; 
+      cursor:pointer; 
+      padding:0;
+      animation:mascotFloat 3s ease-in-out infinite, mascotGlow 2s ease-in-out infinite alternate;
+    }
+    
+    .chat-launch img {
+      width:100%; 
+      height:100%; 
+      object-fit:contain; 
+      border-radius:50%; 
+      filter:drop-shadow(0 0 20px rgba(139,92,246,.6)) drop-shadow(0 0 40px rgba(139,92,246,.4)) drop-shadow(0 0 60px rgba(139,92,246,.2));
+      transition:transform .3s ease, filter .3s ease;
+    }
+    
+    .chat-launch:hover img {
+      transform:scale(1.1) rotate(5deg);
+      filter:drop-shadow(0 0 25px rgba(139,92,246,.8)) drop-shadow(0 0 50px rgba(139,92,246,.6)) drop-shadow(0 0 80px rgba(139,92,246,.4));
+    }
+    
+    @keyframes mascotFloat {
+      0%, 100% { transform:translateY(0px); }
+      50% { transform:translateY(-10px); }
+    }
+    
+    @keyframes mascotGlow {
+      0% { filter:drop-shadow(0 0 20px rgba(139,92,246,.6)) drop-shadow(0 0 40px rgba(139,92,246,.4)); }
+      100% { filter:drop-shadow(0 0 30px rgba(139,92,246,.8)) drop-shadow(0 0 60px rgba(139,92,246,.6)); }
+    }
     
     /* --- UPDATED CSS FOR CHAT PANEL (pro header) --- */
     .chat-panel{ 
@@ -319,7 +355,7 @@
       </details>
       <details>
         <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span><span data-lang="zh">需要多久？</span></summary>
-        <p><span data-lang="en">Usually 5–10 minutes to get a first profile.</span><span data-lang="vi">Thường mất 5–10 phút để có bản phân tích đầu tiên.</span><span data-lang="zh">通常 5–10 分钟即可获得初步画像。</span></p>
+        <p><span data-lang="en">Usually 5—10 minutes to get a first profile.</span><span data-lang="vi">Thường mất 5—10 phút để có bản phân tích đầu tiên.</span><span data-lang="zh">通常 5—10 分钟即可获得初步画像。</span></p>
       </details>
     </section>
 
@@ -347,10 +383,9 @@
     </section>
   </main>
 
-<button class="chat-launch" id="chatOpen" title="Open Mind-Mapper AI">
-  <img src="mascot.png" alt="Chat Mascot" style="width:72px; height:72px; border-radius:50%;" />
-</button>
-
+  <button class="chat-launch" id="chatOpen" title="Chat with Mind-Mapper AI">
+    <img src="mascot.png" alt="AI Mascot" />
+  </button>
 
   <div class="chat-panel" id="chatPanel" aria-live="polite">
     <div class="chat-head">
