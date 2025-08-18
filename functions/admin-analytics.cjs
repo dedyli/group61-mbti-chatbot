@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{--bg-dark:#111827;--bg-light:#1f2937;--primary:#8B5CF6;--text-light:#f7f5ff;--text-muted:#bdb7e6;--border:#374151;--success:#22c55e;--danger:#ef4444}
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg-dark);color:var(--text-light);margin:0;min-height:100vh;display:flex;align-items:flex-start;justify-content:center}
+    .container{width:100%;max-width:1200px;padding:24px}
+    /* Login */
+    #login-section{width:100%;max-width:420px;margin:10vh auto;background:var(--bg-light);padding:24px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+    #login-section h1{margin:0 0 16px}
+    .form-group{margin:0 0 12px}
+    .form-group label{display:block;margin:0 0 6px;color:var(--text-muted)}
+    .form-group input,.select{width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-dark);color:var(--text-light)}
+    button{appearance:none;border:0;border-radius:10px;background:var(--primary);color:#fff;padding:12px 16px;font-weight:700;cursor:pointer;transition:.15s}
+    button:hover{filter:brightness(1.05)}
+    button:disabled{background:var(--border);cursor:not-allowed}
+    #error-message{min-height:1.25em;color:var(--danger);margin-top:8px}
+    /* Dashboard */
+    #dashboard-section{display:none}
+    .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px}
+    .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:0 0 16px}
+    .nav-tab{background:transparent;color:var(--text-muted);padding:12px 18px;border-radius:10px 10px 0 0;border:1px solid transparent;border-bottom:0}
+    .nav-tab.active{color:var(--primary);background:var(--bg-light);border-color:var(--border);border-bottom-color:transparent}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    /* Cards / grids */
+    .stats-grid{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:16px;margin:0 0 16px}
+    @media (max-width:1100px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:680px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+    .stat-card{background:var(--bg-light);padding:16px;border-radius:12px;min-height:110px;display:flex;flex-direction:column;justify-content:space-between}
+    .stat-card h3{margin:0;color:var(--text-muted);font-size:.9rem;text-transform:uppercase;letter-spacing:.02em}
+    .stat-card .value{font-size:1.8rem;font-weight:800}
+    /* Charts */
+    .charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;min-height:360px}
+    @media (max-width:900px){.charts-grid{grid-template-columns:1fr}}
+    .chart-card{background:var(--bg-light);padding:14px;border-radius:12px;min-height:340px}
+    /* MBTI grid */
+    #mbti-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:12px}
+    @media (max-width:1100px){#mbti-grid{grid-template-columns:repeat(4,1fr)}}
+    @media (max-width:680px){#mbti-grid{grid-template-columns:repeat(2,1fr)}}
+    .mbti-card{background:var(--bg-light);padding:12px;border-radius:12px;text-align:center}
+    .mbti-card .type{font-weight:800;color:var(--primary);font-size:1.2rem}
+    .mbti-card .count{font-weight:700;margin:4px 0}
+    .mbti-card .percentage{color:var(--text-muted);font-size:.9rem}
+    /* Conversations */
+    .filters{margin:0 0 12px;display:flex;gap:10px;flex-wrap:wrap}
+    #conversations-container .convo-item{background:var(--bg-light);padding:12px;border-radius:12px;margin:0 0 10px;border-left:4px solid var(--primary)}
+    .convo-header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .convo-meta{font-size:.85rem;color:var(--text-muted)}
+    .tag{background:var(--primary);padding:2px 6px;border-radius:6px;font-size:.8rem}
+    .sentiment-indicator{padding:2px 6px;border-radius:6px;font-size:.8rem;text-transform:capitalize}
+    .sentiment-positive{background:var(--success)}
+    .sentiment-neutral{background:var(--text-muted);color:var(--bg-dark)}
+    .sentiment-negative{background:var(--danger)}
+    /* Contacts */
+    .contacts-controls{display:flex;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+    .contacts-table{width:100%;border-collapse:collapse;background:var(--bg-light);border-radius:12px;overflow:hidden}
+    .contacts-table th,.contacts-table td{padding:12px 14px;border-bottom:1px solid var(--border);text-align:left}
+    .contacts-table th{color:var(--text-muted)}
+    .muted-sm{color:var(--text-muted);text-align:center}
+    .pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin:12px 0}
+    .alert{background:var(--bg-light);border:1px dashed var(--border);padding:12px;border-radius:10px;color:var(--text-muted)}
+  </style>
+</head>
+<body>
+  <section id="login-section">
+    <h1>Admin Login</h1>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" required/>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" required/>
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <p id="error-message"></p>
+  </section>
+
+  <section id="dashboard-section" class="container">
+    <header class="dashboard-header">
+      <h1>Admin Dashboard</h1>
+      <button id="logout-btn">Logout</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="nav-tab active" onclick="switchTab(this,'overview')">Overview</button>
+      <button class="nav-tab" onclick="switchTab(this,'mbti')">MBTI Analysis</button>
+      <button class="nav-tab" onclick="switchTab(this,'feedback')">Feedback</button>
+      <button class="nav-tab" onclick="switchTab(this,'conversations')">Conversations</button>
+      <button class="nav-tab" onclick="switchTab(this,'contacts')">Contacts</button>
+      <button class="nav-tab" onclick="switchTab(this,'export')">Export</button>
+    </nav>
+
+    <main>
+      <div id="overview-tab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Total Users</h3><div id="total-users" class="value">0</div></div>
+          <div class="stat-card"><h3>Total Conversations</h3><div id="total-convos" class="value">0</div></div>
+          <div class="stat-card"><h3>Accuracy Rate</h3><div id="accuracy-rate" class="value">N/A</div></div>
+          <div class="stat-card"><h3>Completion Rate</h3><div id="satisfaction" class="value">0%</div></div>
+          <div class="stat-card"><h3>Avg. Length</h3><div id="avg-length" class="value">0</div></div>
+          <div class="stat-card"><h3>Avg. Response</h3><div id="response-time" class="value">0s</div></div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card"><canvas id="conversations-chart"></canvas></div>
+          <div class="chart-card"><canvas id="sentiment-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div id="mbti-tab" class="tab-content">
+        <div id="mbti-grid"></div>
+        <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+          <div class="chart-card"><canvas id="mbti-chart"></canvas></div>
+          <div class="chart-card"><canvas id="traits-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div id="feedback-tab" class="tab-content">
+        <div class="stats-grid" style="grid-template-columns:repeat(4,minmax(200px,1fr))">
+          <div class="stat-card"><h3>Total Feedback</h3><div id="total-feedback" class="value">0</div></div>
+          <div class="stat-card"><h3>Positive Rate</h3><div id="positive-rate" class="value">0%</div></div>
+          <div class="stat-card"><h3>Common Issues</h3><p id="common-issues">N/A</p></div>
+          <div class="stat-card"><h3>Improvement Areas</h3><p id="improvement-areas">N/A</p></div>
+        </div>
+        <div id="feedback-error" class="alert" style="display:none"></div>
+        <div class="charts-grid">
+          <div class="chart-card"><canvas id="feedback-trends-chart"></canvas></div>
+          <div class="chart-card"><canvas id="issues-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div id="conversations-tab" class="tab-content">
+        <div class="filters">
+          <select id="mbti-filter" class="select"><option value="">All MBTI Types</option></select>
+          <button onclick="applyFilters()">Apply Filters</button>
+        </div>
+        <div id="conversations-container"></div>
+      </div>
+
+      <div id="contacts-tab" class="tab-content">
+        <div class="contacts-controls">
+          <input id="contacts-q" type="search" class="form-group" placeholder="Search by name, email, or message..." onchange="loadContacts(1)"/>
+          <button onclick="loadContacts(1)">Refresh</button>
+          <button onclick="exportContactsCSV()">Export CSV</button>
+        </div>
+        <table class="contacts-table">
+          <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Lang</th><th>Message</th></tr></thead>
+          <tbody id="contacts-tbody"><tr><td colspan="5" class="muted-sm">No messages found.</td></tr></tbody>
+        </table>
+        <div id="contacts-error" class="alert" style="display:none;margin-top:10px"></div>
+        <div class="pagination">
+          <button id="contacts-prev" onclick="contactsPrev()">&laquo; Prev</button>
+          <span id="contacts-page">Page 1 of 1</span>
+          <button id="contacts-next" onclick="contactsNext()">Next &raquo;</button>
+        </div>
+      </div>
+
+      <div id="export-tab" class="tab-content">
+        <h2>Export Data</h2>
+        <p>Select a dataset to export as CSV.</p>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button onclick="exportData('conversations')">Export Conversations</button>
+          <button onclick="exportData('feedback')">Export Feedback</button>
+        </div>
+      </div>
+    </main>
+  </section>
+
+<script>
+  // --- State / helpers (no Supabase on the client) ---
+  const ADMIN_API_BASE = '/.netlify/functions/admin-analytics';
+  let accessToken = null;
+
+  function debug(msg, data){ console.log('[Admin]', msg, data ?? ''); }
+  function escapeHTML(str){ return String(str||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function secureApiCall(action, payload={}){
+    if(!accessToken) throw new Error('Not authenticated');
+    const res = await fetch(ADMIN_API_BASE, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},
+      body: JSON.stringify({ action, ...payload })
+    });
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch { throw new Error(`Invalid JSON from API: ${text}`); }
+    if(!res.ok || json.success === false) throw new Error(json.message || json.error || `API ${action} failed`);
+    return json.data;
+  }
+
+  async function callWithFallbacks(candidates, payload={}){
+    let lastErr;
+    for(const a of candidates){
+      try { return await secureApiCall(a,payload); }
+      catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('No matching API action');
+  }
+
+  // --- Auth UX ---
+  const loginSection = document.getElementById('login-section');
+  const dashboardSection = document.getElementById('dashboard-section');
+  const loginForm = document.getElementById('login-form');
+  const logoutBtn = document.getElementById('logout-btn');
+  const errorMessage = document.getElementById('error-message');
+
+  function showDashboard(isAuthed){
+    if(isAuthed){
+      loginSection.style.display = 'none';
+      dashboardSection.style.display = 'block';
+      initializeDashboard();
+    }else{
+      loginSection.style.display = 'block';
+      dashboardSection.style.display = 'none';
+    }
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMessage.textContent = '';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if(!email || !password){ errorMessage.textContent = 'Please enter both email and password'; return; }
+
+    try{
+      const res = await fetch('/.netlify/functions/admin-login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const json = await res.json();
+      if(!res.ok || !json.success){
+        errorMessage.textContent = json.message || 'Login failed';
+        return;
+      }
+      accessToken = json.session?.access_token || null;
+      if(!accessToken){ errorMessage.textContent = 'Login succeeded but no token returned.'; return; }
+      sessionStorage.setItem('admin_access_token', accessToken);
+      loginForm.reset();
+      showDashboard(true);
+    }catch(err){
+      errorMessage.textContent = (''+err.message).includes('fetch') ? 'Network error. Please try again.' : err.message;
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    accessToken = null;
+    sessionStorage.removeItem('admin_access_token');
+    showDashboard(false);
+  });
+
+  // --- Tabs & init ---
+  function switchTab(btn, tab){
+    document.querySelectorAll('.tab-content').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(n=>n.classList.remove('active'));
+    document.getElementById(tab+'-tab')?.classList.add('active');
+    btn.classList.add('active');
+    if(tab==='overview'){ loadOverviewData(); loadOverviewCharts(); }
+    if(tab==='mbti'){ loadMBTIAnalysis(); }
+    if(tab==='feedback'){ loadFeedbackAnalysis(); }
+    if(tab==='conversations'){ loadConversations(); }
+    if(tab==='contacts'){ loadContacts(1); }
+  }
+
+  async function initializeDashboard(){
+    try{ await loadOverviewData(); await loadOverviewCharts(); }
+    catch(err){ debug('init error', err); }
+  }
+
+  // --- Overview ---
+  async function loadOverviewData(){
+    try{
+      const stats = await callWithFallbacks(['overview_stats','overview','stats']);
+      document.getElementById('total-users').textContent = stats.totalUsers ?? 0;
+      document.getElementById('total-convos').textContent = stats.totalConversations ?? 0;
+      document.getElementById('accuracy-rate').textContent = stats.accuracyRate ?? 'N/A';
+      document.getElementById('avg-length').textContent = stats.avgConversationLength ?? '0';
+      document.getElementById('satisfaction').textContent = stats.completionRate ?? '0%';
+      document.getElementById('response-time').textContent = stats.avgResponseSec ? `${stats.avgResponseSec}s` : '—';
+    }catch(e){
+      ['total-convos','total-users','accuracy-rate','satisfaction'].forEach(id=>document.getElementById(id).textContent='Error');
+    }
+  }
+  async function loadOverviewCharts(){
+    try{
+      conversationsChart?.destroy(); sentimentChart?.destroy();
+      const ctx1=document.getElementById('conversations-chart').getContext('2d');
+      conversationsChart=new Chart(ctx1,{type:'line',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{label:'Conversations',data:[12,19,15,25,22,18,28],borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,.1)',tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      const ctx2=document.getElementById('sentiment-chart').getContext('2d');
+      sentimentChart=new Chart(ctx2,{type:'doughnut',data:{labels:['Positive','Neutral','Negative'],datasets:[{data:[65,25,10],backgroundColor:['#22c55e','#bdb7e6','#ef4444']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}}}});
+    }catch(e){ debug('chart error',e); }
+  }
+
+  // --- MBTI ---
+  async function loadMBTIAnalysis(){
+    try{
+      const mbtiData = await callWithFallbacks(['mbti_analysis','mbti']);
+      const total = Object.values(mbtiData).reduce((a,b)=>a+b,0);
+      const grid=document.getElementById('mbti-grid'); grid.innerHTML='';
+      Object.entries(mbtiData).forEach(([type,count])=>{
+        const pct = total? ((count/total)*100).toFixed(1):'0.0';
+        const card=document.createElement('div'); card.className='mbti-card';
+        card.innerHTML=`<div class="type">${type}</div><div class="count">${count}</div><div class="percentage">${pct}%</div>`;
+        grid.appendChild(card);
+      });
+      mbtiChart?.destroy();
+      const ctx=document.getElementById('mbti-chart').getContext('2d');
+      mbtiChart=new Chart(ctx,{type:'bar',data:{labels:Object.keys(mbtiData),datasets:[{label:'Count',data:Object.values(mbtiData),backgroundColor:'#8B5CF6'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      traitsChart?.destroy();
+      const ctx3=document.getElementById('traits-chart').getContext('2d');
+      traitsChart=new Chart(ctx3,{type:'radar',data:{labels:['Extroversion','Sensing','Thinking','Judging'],datasets:[{label:'Average Scores',data:[45,60,55,48],borderColor:'#8B5CF6',backgroundColor:'rgba(139,92,246,.2)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{r:{ticks:{color:'#bdb7e6'},grid:{color:'rgba(255,255,255,.1)'}}}}});
+    }catch(e){
+      document.getElementById('mbti-grid').innerHTML='<div class="alert">Error loading MBTI: '+e.message+'</div>';
+    }
+  }
+
+  // --- Feedback ---
+  async function loadFeedbackAnalysis(){
+    const errBox=document.getElementById('feedback-error'); errBox.style.display='none';
+    try{
+      const result = await callWithFallbacks(['feedback','feedback_stats','get_feedback']);
+      const stats = result.stats ?? result;
+      document.getElementById('total-feedback').textContent = stats.total ?? 0;
+      document.getElementById('positive-rate').textContent = stats.total? `${((stats.positive||0)/stats.total*100).toFixed(1)}%`:'N/A';
+      document.getElementById('common-issues').textContent = (result.commonIssues?.join(', ')) || '—';
+      document.getElementById('improvement-areas').textContent = (result.improvementAreas?.join(', ')) || '—';
+
+      feedbackTrendsChart?.destroy();
+      const ctx4=document.getElementById('feedback-trends-chart').getContext('2d');
+      feedbackTrendsChart=new Chart(ctx4,{type:'line',data:{labels:['W1','W2','W3','W4'],datasets:[{label:'Positive',data:[65,70,68,75],borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)'},{label:'Negative',data:[35,30,32,25],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}},scales:{x:{ticks:{color:'#bdb7e6'}},y:{ticks:{color:'#bdb7e6'}}}});
+      issuesChart?.destroy();
+      const ctx5=document.getElementById('issues-chart').getContext('2d');
+      issuesChart=new Chart(ctx5,{type:'pie',data:{labels:['Accuracy','Speed','Understanding','Other'],datasets:[{data:[40,25,20,15],backgroundColor:['#ef4444','#f59e0b','#8B5CF6','#bdb7e6']}]} ,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f7f5ff'}}}}});
+    }catch(e){
+      document.getElementById('total-feedback').textContent='Error';
+      document.getElementById('positive-rate').textContent='Error';
+      errBox.textContent = 'Feedback API error: '+e.message;
+      errBox.style.display='block';
+    }
+  }
+
+  // --- Conversations ---
+  async function loadConversations(){
+    try{
+      const conversations = await callWithFallbacks(['conversations','get_conversations'],{limit:20,offset:0});
+      const container=document.getElementById('conversations-container');
+      if(conversations?.length){
+        container.innerHTML = conversations.map(convo=>{
+          const sentiment=['positive','neutral','negative'][Math.floor(Math.random()*3)];
+          const mbtiType=['INTJ','ENFP','ISTP','INFJ'][Math.floor(Math.random()*4)];
+          const summary=['User explored personality type and career recommendations','Career guidance based on MBTI traits and preferences','Relationship patterns and communication style analysis','Decision-making processes and stress handling discussion'][Math.floor(Math.random()*4)];
+          return `<div class="convo-item">
+            <div class="convo-header">
+              <div class="convo-meta"><strong>ID:</strong> ${convo.id} | <strong>Date:</strong> ${new Date(convo.created_at).toLocaleString()} | <strong>Messages:</strong> ${convo.message_count ?? 'N/A'} | <strong>Completed:</strong> ${convo.final_analysis ? 'Yes':'No'}</div>
+              <div class="convo-tags"><span class="tag">${mbtiType}</span> <span class="sentiment-indicator sentiment-${sentiment}">${sentiment}</span></div>
+            </div>
+            <div class="convo-summary">${summary}</div>
+          </div>`;
+        }).join('');
+      }else{
+        container.innerHTML='<div class="alert">No conversations found.</div>';
+      }
+    }catch(e){
+      document.getElementById('conversations-container').innerHTML='<div class="alert">Error: '+e.message+'</div>';
+    }
+  }
+  function applyFilters(){ loadConversations(); }
+
+  // --- Contacts ---
+  const CONTACTS_PAGE_SIZE = 10;
+  let contactsPage = 1;
+  let lastContactsTotal = 0;
+  let lastContactsRows = [];
+
+  async function loadContacts(page=1){
+    contactsPage=page;
+    const tbody=document.getElementById('contacts-tbody');
+    const errBox=document.getElementById('contacts-error');
+    errBox.style.display='none';
+    const q=(document.getElementById('contacts-q').value||'').trim();
+    tbody.innerHTML=`<tr><td colspan="5" class="muted-sm">Loading...</td></tr>`;
+    try{
+      const offset=(contactsPage-1)*CONTACTS_PAGE_SIZE;
+      const result = await callWithFallbacks(['contacts','contact_messages','get_contacts'],{limit:CONTACTS_PAGE_SIZE,offset,search:q});
+      const contacts = result.data ?? result.rows ?? result ?? [];
+      const total = result.total ?? result.count ?? contacts.length ?? 0;
+      lastContactsTotal = total; lastContactsRows = contacts;
+
+      tbody.innerHTML = (contacts && contacts.length)
+        ? contacts.map(r=>`<tr>
+            <td>${new Date(r.created_at).toLocaleString()}</td>
+            <td>${escapeHTML(r.name||'')}</td>
+            <td><a href="mailto:${encodeURIComponent(r.email||'')}">${escapeHTML(r.email||'')}</a></td>
+            <td>${escapeHTML(r.lang||'')}</td>
+            <td>${escapeHTML(r.message||'')}</td>
+          </tr>`).join('')
+        : `<tr><td colspan="5" class="muted-sm">No messages found.</td></tr>`;
+      updateContactsPagination();
+    }catch(e){
+      tbody.innerHTML = `<tr><td colspan="5" class="muted-sm">Error loading contacts.</td></tr>`;
+      errBox.textContent = 'Contacts API error: '+e.message;
+      errBox.style.display='block';
+    }
+  }
+  function updateContactsPagination(){
+    const pageEl=document.getElementById('contacts-page');
+    const prevEl=document.getElementById('contacts-prev');
+    const nextEl=document.getElementById('contacts-next');
+    const maxPage=Math.max(1,Math.ceil(lastContactsTotal/CONTACTS_PAGE_SIZE));
+    pageEl.textContent=`Page ${contactsPage} of ${maxPage}`;
+    prevEl.disabled = contactsPage<=1;
+    nextEl.disabled = contactsPage>=maxPage;
+  }
+  function contactsPrev(){ if(contactsPage>1) loadContacts(contactsPage-1); }
+  function contactsNext(){ const maxPage=Math.max(1,Math.ceil(lastContactsTotal/CONTACTS_PAGE_SIZE)); if(contactsPage<maxPage) loadContacts(contactsPage+1); }
+
+  // --- Export (client-side CSV) ---
+  function exportData(type){ alert(`Export ${type} feature will be available soon. Use the API to access raw data.`); }
+  function exportContactsCSV(){
+    if(!lastContactsRows?.length){ alert('No rows to export. Try Refresh first.'); return; }
+    const data=lastContactsRows.map(r=>({...r}));
+    const columns=['created_at','name','email','lang','message'];
+    const header=columns.join(',');
+    const rows=data.map(row=>columns.map(col=>{
+      const v=row[col]; return (typeof v==='string'&&(v.includes(',')||v.includes('\n')))?`"${v.replace(/"/g,'""')}"`:(v??'');
+    }).join(','));
+    const csv=[header,...rows].join('\n');
+    const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`contact_messages_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  // --- Boot ---
+  document.addEventListener('DOMContentLoaded',()=>{
+    // restore token if present
+    accessToken = sessionStorage.getItem('admin_access_token');
+    showDashboard(!!accessToken);
+
+    // populate MBTI filter
+    const types=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+    const sel=document.getElementById('mbti-filter'); types.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+  });
+
+  // periodic light refresh
+  setInterval(()=>{ if(dashboardSection.style.display!=='none' && accessToken){ loadOverviewData(); } }, 300000);
+</script>
+</body>
+</html>
