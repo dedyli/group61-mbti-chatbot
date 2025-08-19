@@ -6,7 +6,6 @@
   <title>System Access</title>
   <meta name="robots" content="noindex, nofollow">
   
-  <!-- Supabase Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -103,7 +102,6 @@
   </style>
 </head>
 <body>
-  <!-- Security Notice -->
   <div class="security-notice" id="security-notice" style="display:none;">
     🔒 Secure Admin Access - Authorized Personnel Only
   </div>
@@ -146,6 +144,7 @@
       <button class="nav-tab" onclick="switchTab(this,'conversations')">Conversations</button>
       <button class="nav-tab" onclick="switchTab(this,'feedback')">Feedback</button>
       <button class="nav-tab" onclick="switchTab(this,'contacts')">Contacts</button>
+      <button class="nav-tab" onclick="switchTab(this,'mbti-analysis')">MBTI Analysis</button>
     </nav>
 
     <main>
@@ -164,7 +163,6 @@
         </div>
       </div>
 
-      <!-- Conversations Tab -->
       <div id="conversations-tab" class="tab-content">
         <div class="table-controls">
           <div class="table-controls-left">
@@ -204,8 +202,7 @@
               Showing 0 to 0 of 0 entries
             </div>
             <div class="pagination-controls" id="conversations-pagination-controls">
-              <!-- Pagination buttons will be generated here -->
-            </div>
+              </div>
             <div class="pagination-jump">
               <span>Go to page:</span>
               <input type="number" id="conversations-page-jump" min="1" onchange="jumpToConversationsPage()">
@@ -214,7 +211,6 @@
         </div>
       </div>
 
-      <!-- Feedback Tab -->
       <div id="feedback-tab" class="tab-content">
         <div class="table-controls">
           <div class="table-controls-left">
@@ -253,8 +249,7 @@
               Showing 0 to 0 of 0 entries
             </div>
             <div class="pagination-controls" id="feedback-pagination-controls">
-              <!-- Pagination buttons will be generated here -->
-            </div>
+              </div>
             <div class="pagination-jump">
               <span>Go to page:</span>
               <input type="number" id="feedback-page-jump" min="1" onchange="jumpToFeedbackPage()">
@@ -263,7 +258,6 @@
         </div>
       </div>
 
-      <!-- Contacts Tab -->
       <div id="contacts-tab" class="tab-content">
         <div class="table-controls">
           <div class="table-controls-left">
@@ -303,12 +297,23 @@
               Showing 0 to 0 of 0 entries
             </div>
             <div class="pagination-controls" id="contacts-pagination-controls">
-              <!-- Pagination buttons will be generated here -->
-            </div>
+              </div>
             <div class="pagination-jump">
               <span>Go to page:</span>
               <input type="number" id="contacts-page-jump" min="1" onchange="jumpToContactsPage()">
             </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="mbti-analysis-tab" class="tab-content">
+        <h2>MBTI Type Distribution</h2>
+        <p class="alert">This chart shows the distribution of MBTI types from all completed conversations.</p>
+        <div id="mbti-loading" class="loading">Loading analysis...</div>
+        <div id="mbti-error" class="error" style="display:none"></div>
+        <div class="charts-grid">
+          <div class="chart-card" style="grid-column: 1 / -1;">
+            <canvas id="mbti-types-chart"></canvas>
           </div>
         </div>
       </div>
@@ -333,7 +338,7 @@ const SECURITY_CONFIG = {
   // Initialize variables
   let supabase;
   let currentUser = null;
-  let conversationsChart, feedbackChart;
+  let conversationsChart, feedbackChart, mbtiTypesChart;
 
   // Pagination state
   const paginationState = {
@@ -531,6 +536,7 @@ function validateDomain() {
     if (tab === 'conversations') loadConversations(1);
     if (tab === 'feedback') loadFeedback(1);
     if (tab === 'contacts') loadContacts(1);
+    if (tab === 'mbti-analysis') loadMbtiAnalysis();
   }
 
   // Pagination Helper Functions
@@ -664,6 +670,105 @@ function validateDomain() {
     const maxPage = Math.ceil(paginationState.contacts.totalCount / paginationState.contacts.pageSize);
     if (page >= 1 && page <= maxPage) {
       loadContacts(page);
+    }
+  }
+
+  async function loadMbtiAnalysis() {
+    const loading = document.getElementById('mbti-loading');
+    const errorEl = document.getElementById('mbti-error');
+    const chartCanvas = document.getElementById('mbti-types-chart');
+
+    loading.style.display = 'block';
+    errorEl.style.display = 'none';
+    chartCanvas.style.display = 'none';
+
+    try {
+      // 1. Fetch all conversations where the final analysis is complete
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('conversation_history')
+        .eq('final_analysis', true);
+
+      if (error) throw error;
+
+      // 2. Process the data to count each MBTI type
+      const mbtiCounts = {};
+      data.forEach(conv => {
+        try {
+          if (conv.conversation_history && conv.conversation_history.length > 0) {
+            // The AI response is the last message
+            const lastMessage = conv.conversation_history[conv.conversation_history.length - 1];
+            if (lastMessage.role === 'assistant') {
+              const aiResponse = JSON.parse(lastMessage.content);
+              // Check if it's a valid final analysis with a type
+              if (aiResponse.ready_for_analysis === true && aiResponse.type) {
+                const mbtiType = aiResponse.type.toUpperCase();
+                mbtiCounts[mbtiType] = (mbtiCounts[mbtiType] || 0) + 1;
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore conversations with malformed JSON
+          console.warn('Could not parse AI response for a conversation:', e);
+        }
+      });
+
+      // 3. Prepare data for Chart.js
+      const sortedTypes = Object.entries(mbtiCounts).sort(([,a],[,b]) => b-a);
+      const labels = sortedTypes.map(([type]) => type);
+      const counts = sortedTypes.map(([,count]) => count);
+      
+      loading.style.display = 'none';
+      chartCanvas.style.display = 'block';
+
+      // 4. Render the chart
+      if (mbtiTypesChart) {
+        mbtiTypesChart.destroy();
+      }
+
+      const ctx = chartCanvas.getContext('2d');
+      mbtiTypesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'MBTI Type Count',
+            data: counts,
+            backgroundColor: '#8B5CF6',
+            borderColor: '#A78BFA',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Frequency of Each MBTI Type',
+              color: '#f7f5ff',
+              font: { size: 16 }
+            }
+          },
+          scales: {
+            x: { 
+              ticks: { color: '#bdb7e6' },
+              grid: { color: 'rgba(189, 183, 230, 0.1)' }
+            },
+            y: { 
+              ticks: { color: '#bdb7e6' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+    } catch (err) {
+      loading.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Error loading MBTI analysis: ' + err.message;
     }
   }
 
