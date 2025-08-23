@@ -3,751 +3,406 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind-Mapper AI – Conversational MBTI Personality Insights</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>Mind-Mapper AI - Enhanced Navigation UX</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --bg:#0b0a13; --fg:#f7f5ff; --muted:#bdb7e6; --accent:#8B5CF6; --accent-2:#F0A6FF; --gold:#EED972; --glass:rgba(255,255,255,.08); --glass-stroke:rgba(255,255,255,.12); }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
-
-    /* Multilingual helpers */
-    [data-lang]{display:none}
-    body.lang-en [data-lang="en"], body.lang-en .block-en{display:initial}
-    body.lang-vi [data-lang="vi"], body.lang-vi .block-vi{display:initial}
-    body.lang-zh [data-lang="zh"], body.lang-zh .block-zh{display:initial}
-
-    .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
-      radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
-      radial-gradient(50vw 50vw at 110% 10%, rgba(240,166,255,.25), transparent 60%),
-      radial-gradient(40vw 40vw at 50% 110%, rgba(238,217,114,.18), transparent 60%),
-      radial-gradient(25vw 25vw at 20% 70%, rgba(139,92,246,.18), transparent 70%),
-      var(--bg);
-      filter:saturate(120%) blur(10px); animation:auroraShift 24s ease-in-out infinite alternate; }
-    @keyframes auroraShift{to{transform:translateY(-2%) scale(1.02)}}
-    .sparkles{position:fixed; inset:0; z-index:-1; pointer-events:none}
-    .sparkles i{position:absolute; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.85); filter:blur(.3px); opacity:.7; animation:float 16s linear infinite, twinkle 2.5s ease-in-out infinite alternate}
-    @keyframes float{to{transform:translateY(-120vh)}}
-    @keyframes twinkle { 0% { opacity: .3; filter: blur(.3px) brightness(0.9); } 100% { opacity: 1; filter: blur(.3px) brightness(1.1); } }
-
-    header{ position:sticky; top:16px; z-index:50; display:flex; gap:16px; align-items:center; justify-content:space-between; margin:16px auto 0; max-width:1200px; padding:12px 16px; border-radius:999px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06)); -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-stroke); box-shadow:0 8px 28px rgba(0,0,0,.25); }
-    .brand{display:flex; align-items:center; gap:12px}
-    .brand img{width:120px; height:40px; object-fit:contain; border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,.35)}
-    .brand h1{margin:0; font-family:'Playfair Display',serif; font-weight:800; font-size:20px; letter-spacing:.3px}
-    nav ul{margin:0; padding:0; list-style:none; display:flex; gap:8px; align-items:center}
-    nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:999px; position:relative; overflow:hidden; }
-    nav a:after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:0; transition:.35s}
-    nav a:hover:after, nav a.active:after{opacity:.25}
-
-    /* Language pill - higher contrast */
-    .lang{display:flex; align-items:center; gap:8px}
-    .pill{border:1px solid #6b61b8; background:rgba(14,12,30,.85); padding:8px 10px; border-radius:999px; display:flex; align-items:center; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.45)}
-    .pill select{background:rgba(29,25,58,.95); border:1px solid #8B5CF6; color:#f3f0ff; font-weight:700; padding:8px 10px; border-radius:999px; outline:none; appearance:none}
-    .pill select option{background:#1f1a3f; color:#f3f0ff;}
-
-    .container{max-width:1200px; margin:0 auto; padding:64px 16px}
-
-    .hero{display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:48px; padding-top:48px}
-    .title{ font-family:'Playfair Display',serif; font-weight:800; font-size:clamp(36px,6vw,64px); line-height:1.04; letter-spacing:-.3px; margin:0 0 16px; position:relative; background:linear-gradient(180deg,#fff, #d7d0ff 60%, #b9b0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 8px 28px rgba(139,92,246,.15) }
-    .subtitle{color:var(--muted); font-weight:600; font-size:18px; margin-bottom:20px}
-    .lead{color:#dbd7ff; opacity:.9; max-width:56ch; line-height:1.8; margin-bottom:28px}
-    .cta{ display:inline-flex; gap:10px; align-items:center; padding:14px 18px; border-radius:14px; font-weight:700; text-decoration:none; color:#0b0a13; background:linear-gradient(90deg, var(--gold), #FFEBA4); box-shadow:0 10px 30px rgba(238,217,114,.35); transition:transform .2s ease, box-shadow .2s ease }
-    .cta:hover{transform:translateY(-2px); box-shadow:0 16px 36px rgba(238,217,114,.45)}
-
-    .illustrationWrap{position:relative}
-    .card3d{ position:relative; border-radius:24px; overflow:hidden; border:1px solid var(--glass-stroke); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); box-shadow:0 30px 80px rgba(0,0,0,.35); transform:perspective(1000px) rotateX(0) rotateY(0); transition:transform .2s ease }
-    .hero-img{display:block; width:100%; height:auto; aspect-ratio:4/3; object-fit:cover}
-    .revealMask{ position:absolute; inset:0; background:conic-gradient(from 45deg at 0% 0%, transparent 0 10%, black 10% 20%, transparent 20% 30%, black 30% 40%, transparent 40% 50%, black 50% 60%, transparent 60% 70%, black 70% 80%, transparent 80% 90%, black 90% 100%); transform:translate(-120%, -120%) rotate(0.0001deg); filter:blur(1.2px) contrast(120%); animation:reveal 2.8s cubic-bezier(.2,.8,.2,1) .3s forwards }
-    @keyframes reveal{to{transform:translate(0,0)}}
-    .badge{position:absolute; right:16px; top:16px; padding:10px 14px; border-radius:12px; font-weight:700; color:#0b0a13; background:linear-gradient(90deg,#fff,#f7f5ff); box-shadow:0 10px 30px rgba(255,255,255,.25)}
-
-    .section{padding:72px 0}
-    .section h2{font-family:'Playfair Display',serif; font-size:clamp(28px,3.2vw,40px); margin:0 0 24px}
-    .muted{color:var(--muted)}
-
-    .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
-    .step{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:20px; padding:22px; position:relative; overflow:hidden; transition:transform .25s ease, box-shadow .25s ease }
-    .step:hover{transform:translateY(-6px); box-shadow:0 24px 60px rgba(0,0,0,.35)}
-    .step .n{width:38px; height:38px; display:grid; place-items:center; border-radius:999px; font-weight:800; color:#0b0a13; background:linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 8px 22px rgba(139,92,246,.45)}
-    .step h3{margin:12px 0 8px; font-weight:800}
-    .step p{margin:0; color:#e9e7ff; opacity:.9}
-
-    .faq{max-width:920px}
-    details{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); border:1px solid var(--glass-stroke); border-radius:16px; padding:18px 20px; margin:10px 0}
-    summary{cursor:pointer; font-weight:700}
-    details[open]{box-shadow:0 16px 40px rgba(0,0,0,.35)}
-
-    form{max-width:760px}
-    input,textarea,select,button{font-family:inherit}
-    .field{display:grid; gap:8px}
-    .field input,.field textarea{ background:rgba(255,255,255,.04); border:1px solid var(--glass-stroke); color:var(--fg); padding:14px 16px; border-radius:12px }
-    .btn{ border:none; cursor:pointer; padding:14px 18px; border-radius:14px; font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; box-shadow:0 12px 34px rgba(139,92,246,.35) }
-
-    /* Updated mascot chat button styles */
-    .chat-launch{ 
-      position:fixed; 
-      right:18px; 
-      bottom:18px; 
-      z-index:10000; 
-      width:240px; 
-      height:240px; 
-      border:none; 
-      background:transparent; 
-      cursor:pointer; 
-      padding:0;
-      animation:mascotFloat 3s ease-in-out infinite, mascotGlow 2s ease-in-out infinite alternate;
+    :root{ 
+      --bg:#0b0a13; --fg:#f7f5ff; --muted:#bdb7e6; 
+      --accent:#8B5CF6; --accent-2:#F0A6FF; --gold:#EED972; 
+      --conflict:#FF6B6B; --harmony:#4ECDC4; 
+      --glass:rgba(255,255,255,.08); --glass-stroke:rgba(255,255,255,.12); 
     }
     
-    .chat-launch img {
-      width:100%; 
-      height:100%; 
-      object-fit:contain; 
-      border-radius:50%; 
-      filter:drop-shadow(0 0 20px rgba(139,92,246,.6)) drop-shadow(0 0 40px rgba(139,92,246,.4)) drop-shadow(0 0 60px rgba(139,92,246,.2));
-      transition:transform .3s ease, filter .3s ease;
-    }
-    
-    .chat-launch:hover img {
-      transform:scale(1.1) rotate(5deg);
-      filter:drop-shadow(0 0 25px rgba(139,92,246,.8)) drop-shadow(0 0 50px rgba(139,92,246,.6)) drop-shadow(0 0 80px rgba(139,92,246,.4));
-    }
-    
-    @keyframes mascotFloat {
-      0%, 100% { transform:translateY(0px); }
-      50% { transform:translateY(-15px); }
-    }
-    
-    @keyframes mascotGlow {
-      0% { filter:drop-shadow(0 0 20px rgba(139,92,246,.6)) drop-shadow(0 0 40px rgba(139,92,246,.4)); }
-      100% { filter:drop-shadow(0 0 30px rgba(139,92,246,.8)) drop-shadow(0 0 60px rgba(139,92,246,.6)); }
-    }
-    
-    /* --- UPDATED CSS FOR CHAT PANEL (pro header) --- */
-    .chat-panel{ 
-        position:fixed; 
-        right:18px; 
-        bottom:270px; 
-        width:min(420px, calc(100vw - 32px)); 
-        height:min(68vh, 720px); 
-        border-radius:24px; 
-        overflow:hidden; 
-        display:none; 
-        flex-direction:column;
-        z-index:9999; 
-        background:linear-gradient(178deg, rgba(11,10,19,.85), rgba(16,15,22,.85)); 
-        -webkit-backdrop-filter:blur(20px) saturate(140%); 
-        backdrop-filter:blur(20px) saturate(140%); 
-        border:1px solid var(--glass-stroke); 
-        box-shadow:0 30px 80px rgba(0,0,0,.55); 
-    }
-    .chat-panel.open { display:flex; }
-    .chat-head{
-        padding:12px 16px; 
-        background:linear-gradient(90deg, #241b5f, #3c2c9f 45%, #6d4df7);
-        border-bottom:1px solid rgba(255,255,255,.12);
-        flex-shrink:0;
-    }
-    .chat-head h3{
-        margin:0; 
-        font-family:'Playfair Display',serif; 
-        letter-spacing:.3px;
-        font-weight:800;
-    }
-    .chat-body{
-        padding:14px; 
-        flex-grow:1;
-        overflow:auto; 
-        display:flex; 
-        flex-direction:column; 
-        gap:12px
+    * { box-sizing: border-box; }
+    body { 
+      margin: 0; color: var(--fg); 
+      background: linear-gradient(135deg, var(--bg) 0%, #1a1525 100%);
+      font-family: 'Poppins', sans-serif; 
+      min-height: 100vh;
     }
 
-    .msg{display:flex; gap:10px; align-items:flex-start}
-    .msg .bubble{max-width:85%; padding:12px 14px; border-radius:14px; line-height:1.6}
-    .msg.user{justify-content:flex-end}
-    .msg.user .bubble{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#0b0a13; border-top-right-radius:4px}
-    .msg.ai .bubble{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); border-top-left-radius:4px}
-    
-    .chat-foot{
-        padding:12px; 
-        border-top:1px solid var(--glass-stroke); 
-        display:grid; 
-        grid-template-columns:1fr; 
-        gap:8px;
-        flex-shrink:0;
-        background:rgba(255,255,255,.02);
+    /* Enhanced Header with Clear Service Sections */
+    header { 
+      position: sticky; top: 16px; z-index: 50; 
+      display: flex; gap: 16px; align-items: center; justify-content: space-between; 
+      margin: 16px auto 0; max-width: 1200px; 
+      padding: 12px 20px; border-radius: 20px; 
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08)); 
+      backdrop-filter: blur(20px) saturate(140%); 
+      border: 1px solid var(--glass-stroke); 
+      box-shadow: 0 8px 32px rgba(0,0,0,.3); 
     }
-    .chat-foot input{background:rgba(255,255,255,.06); border:1px solid var(--glass-stroke); color:var(--fg); padding:12px 14px; border-radius:12px; width:100%; outline:none}
-    .chat-foot input:focus{border-color:rgba(139,92,246,.6); box-shadow:0 0 0 3px rgba(139,92,246,.25)}
-    .notice{font-size:12px; color:#cfcaff; opacity:.8; padding:8px 12px;}
     
-    .feedback-buttons { margin-top: 10px; display: flex; gap: 8px; }
-    .feedback-buttons button { background: rgba(255,255,255,.1); border: 1px solid var(--glass-stroke); color: var(--fg); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: background .2s; font-size: 12px; }
-    .feedback-buttons button:hover { background: rgba(255,255,255,.2); }
-    .feedback-buttons button.selected { background: var(--accent); color: #0b0a13; border-color: transparent; }
-    .feedback-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { 
+      margin: 0; font-family: 'Playfair Display', serif; 
+      font-weight: 800; font-size: 20px; 
+    }
+    
+    nav ul { 
+      margin: 0; padding: 0; list-style: none; 
+      display: flex; gap: 8px; align-items: center; 
+    }
+    
+    nav a { 
+      color: var(--fg); text-decoration: none; 
+      font-weight: 600; font-size: 14px; 
+      padding: 12px 16px; border-radius: 12px; 
+      position: relative; transition: all .3s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    
+    /* Service-specific styling */
+    nav a.personality-service {
+      background: rgba(139,92,246,.1);
+      border: 1px solid rgba(139,92,246,.2);
+    }
+    nav a.personality-service:hover {
+      background: rgba(139,92,246,.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139,92,246,.3);
+    }
+    
+    nav a.conflict-service {
+      background: rgba(255,107,107,.1);
+      border: 1px solid rgba(255,107,107,.2);
+    }
+    nav a.conflict-service:hover {
+      background: rgba(255,107,107,.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255,107,107,.3);
+    }
+    
+    nav a.active {
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(139,92,246,.4);
+    }
 
-    @media (max-width:960px){ .hero{grid-template-columns:1fr; padding-top:16px} header{border-radius:20px} }
+    /* Main Content Area */
+    .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+    
+    /* Service Landing Sections */
+    .service-section {
+      display: none;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .service-section.active { display: block; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Hero sections for each service */
+    .service-hero {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    
+    .service-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(32px, 5vw, 48px);
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 0%, #d7d0ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .conflict-title {
+      background: linear-gradient(135deg, #fff 0%, #ffcccb 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .service-description {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 30px;
+      line-height: 1.7;
+    }
+    
+    /* CTA Buttons */
+    .service-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 24px;
+      border-radius: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all .3s ease;
+      font-size: 16px;
+    }
+    
+    .personality-cta {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #0b0a13;
+      box-shadow: 0 12px 30px rgba(139,92,246,.4);
+    }
+    .personality-cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px rgba(139,92,246,.5);
+    }
+    
+    .conflict-cta {
+      background: linear-gradient(90deg, var(--conflict), #ff8a8a);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(255,107,107,.4);
+    }
+    .conflict-cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px rgba(255,107,107,.5);
+    }
+    
+    /* Feature cards */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 50px;
+    }
+    
+    .feature-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid var(--glass-stroke);
+      border-radius: 20px;
+      padding: 24px;
+      transition: all .3s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 50px rgba(0,0,0,.3);
+    }
+    
+    .feature-card h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .personality-card h3 { color: var(--accent-2); }
+    .conflict-card h3 { color: var(--conflict); }
+    
+    .feature-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    
+    /* When to use sections */
+    .when-to-use {
+      background: rgba(255,255,255,.05);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 40px 0;
+      border: 1px solid var(--glass-stroke);
+    }
+    
+    .when-to-use h3 {
+      margin: 0 0 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .use-cases {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .use-case {
+      background: rgba(255,255,255,.03);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+      }
+      
+      nav ul {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      
+      nav a {
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
-<body class="lang-en">
-  <div class="aurora"></div>
-  <div class="sparkles" id="sparkles"></div>
-
+<body>
   <header>
     <div class="brand">
-      <img src="Tsinghua_University_logo_and_wordmark_in_Chinese_and_English_characters.svg.png" alt="Tsinghua" />
       <h1>Mind-Mapper AI</h1>
     </div>
     <nav>
       <ul>
-        <li><a class="active" href="#home">
-          <span data-lang="en">Home</span>
-          <span data-lang="vi">Trang chủ</span>
-          <span data-lang="zh">首页</span>
+        <li><a href="#personality" class="nav-link personality-service active" data-section="personality">
+          🧠 <span>Personality Analysis</span>
         </a></li>
-        <li><a href="#how">
-          <span data-lang="en">How it works</span>
-          <span data-lang="vi">Cách hoạt động</span>
-          <span data-lang="zh">使用方式</span>
+        <li><a href="#conflict" class="nav-link conflict-service" data-section="conflict">
+          🤝 <span>Conflict Resolution</span>
         </a></li>
-        <li><a href="#about">
-          <span data-lang="en">About Group 61</span>
-          <span data-lang="vi">Về Nhóm 61</span>
-          <span data-lang="zh">关于第61组</span>
+        <li><a href="#about" class="nav-link">
+          ℹ️ <span>About</span>
         </a></li>
-        <li><a href="#faq"><span>FAQ</span></a></li>
-        <li><a href="#contact">
-          <span data-lang="en">Contact</span>
-          <span data-lang="vi">Liên hệ</span>
-          <span data-lang="zh">联系</span>
+        <li><a href="#faq" class="nav-link">
+          ❓ <span>FAQ</span>
         </a></li>
       </ul>
     </nav>
-    <div class="lang pill">
-      <span>🌎</span>
-      <select id="language" aria-label="Language selector">
-        <option value="en" selected>English</option>
-        <option value="vi">Tiếng Việt</option>
-        <option value="zh">中文</option>
-      </select>
-    </div>
   </header>
 
-  <main class="container" id="home">
-    <section class="hero">
-      <div>
-        <h2 class="title">
-          <span data-lang="en">Conversational MBTI Personality Insights</span>
-          <span data-lang="vi">Trò chuyện MBTI – tự nhiên, dễ hiểu</span>
-          <span data-lang="zh">对话式 MBTI 性格洞察</span>
-        </h2>
-        <p class="subtitle">
-          <span data-lang="en">A warm, human-like chat that reveals strengths, tendencies, and growth tips.</span>
-          <span data-lang="vi">Cuộc trò chuyện gần gũi giúp bạn hiểu rõ điểm mạnh, xu hướng và cách phát triển.</span>
-          <span data-lang="zh">以轻松自然的对话，了解你的优势、倾向与成长建议。</span>
+  <div class="container">
+    <!-- Personality Analysis Section -->
+    <section id="personality-section" class="service-section active">
+      <div class="service-hero">
+        <h1 class="service-title">Discover Your Personality</h1>
+        <p class="service-description">
+          Engage in a natural, conversational analysis that reveals your MBTI personality type, 
+          strengths, and personalized growth recommendations.
         </p>
-        <p class="lead">
-          <span data-lang="en">No rigid multiple-choice—just natural chat. Open the assistant below and start talking. After a brief exchange, you'll get a thoughtful MBTI-style profile, confidence level, and practical suggestions.</span>
-          <span data-lang="vi">Không cần trắc nghiệm cứng nhắc—chỉ cần trò chuyện tự nhiên. Mở trợ lý bên dưới và bắt đầu. Sau vài tin nhắn, bạn sẽ nhận được hồ sơ kiểu MBTI, mức độ tự tin và gợi ý hữu ích.</span>
-          <span data-lang="zh">无需死板的选择题，只需自然聊天。开启下方助手并开始交流；很快你就会收到 MBTI 风格的简介、可信度以及实用建议。</span>
-        </p>
-        <a class="cta" href="#how">
-          <span data-lang="en">Begin your journey</span>
-          <span data-lang="vi">Bắt đầu trải nghiệm</span>
-          <span data-lang="zh">开始体验</span> →
+        <a href="#start-personality" class="service-cta personality-cta">
+          Start Personality Analysis →
         </a>
       </div>
-      <div class="illustrationWrap">
-        <div class="card3d" id="card3d">
-          <img class="hero-img" src="hero_image.png" alt="Professionals of diverse backgrounds"/>
+
+      <div class="when-to-use">
+        <h3>Perfect for when you want to:</h3>
+        <div class="use-cases">
+          <div class="use-case">
+            <strong>🔍 Self-Discovery</strong><br>
+            Learn about your natural preferences and tendencies
+          </div>
+          <div class="use-case">
+            <strong>🚀 Career Growth</strong><br>
+            Understand your work style and ideal environments
+          </div>
+          <div class="use-case">
+            <strong>🤝 Relationships</strong><br>
+            Improve how you connect with others
+          </div>
+          <div class="use-case">
+            <strong>🎯 Personal Development</strong><br>
+            Get actionable tips for growth
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card personality-card">
+          <h3>🗣️ Natural Conversation</h3>
+          <p>No rigid questionnaires—just chat naturally about your preferences, work style, and decision-making.</p>
+        </div>
+        <div class="feature-card personality-card">
+          <h3>🎯 Accurate Analysis</h3>
+          <p>Our AI analyzes patterns in your responses to determine your MBTI type with high confidence.</p>
+        </div>
+        <div class="feature-card personality-card">
+          <h3>💡 Personalized Insights</h3>
+          <p>Get specific strengths, growth areas, and practical tips tailored to your unique personality.</p>
         </div>
       </div>
     </section>
 
-    <section class="section" id="how">
-      <h2>
-        <span data-lang="en">How it works</span>
-        <span data-lang="vi">Cách hoạt động</span>
-        <span data-lang="zh">如何运作</span>
-      </h2>
-      <p class="muted">
-        <span data-lang="en">Simple, elegant, respectful of your time.</span>
-        <span data-lang="vi">Đơn giản, tinh gọn và tiết kiệm thời gian.</span>
-        <span data-lang="zh">简单优雅，不浪费你的时间。</span>
-      </p>
-      <div class="steps">
-        <div class="step">
-          <span class="n">1</span>
-          <h3>
-            <span data-lang="en">Start a natural chat</span>
-            <span data-lang="vi">Bắt đầu trò chuyện tự nhiên</span>
-            <span data-lang="zh">开始自然对话</span>
-          </h3>
-          <p>
-            <span data-lang="en">Say hello and share how you work, socialize, and make decisions.</span>
-            <span data-lang="vi">Hãy chào và chia sẻ cách bạn làm việc, giao tiếp và ra quyết định.</span>
-            <span data-lang="zh">先打个招呼，说说你的工作方式、人际互动与决策习惯。</span>
-          </p>
+    <!-- Conflict Resolution Section -->
+    <section id="conflict-section" class="service-section">
+      <div class="service-hero">
+        <h1 class="service-title conflict-title">Resolve Conflicts</h1>
+        <p class="service-description">
+          Get personalized strategies to resolve interpersonal conflicts, team tensions, 
+          and communication breakdowns using personality insights.
+        </p>
+        <a href="#start-conflict" class="service-cta conflict-cta">
+          Get Conflict Help →
+        </a>
+      </div>
+
+      <div class="when-to-use">
+        <h3>Get help with:</h3>
+        <div class="use-cases">
+          <div class="use-case">
+            <strong>💬 Communication Issues</strong><br>
+            Misunderstandings with colleagues or family
+          </div>
+          <div class="use-case">
+            <strong>⚖️ Decision Deadlocks</strong><br>
+            Can't agree on important choices
+          </div>
+          <div class="use-case">
+            <strong>👥 Team Tensions</strong><br>
+            Workplace conflicts affecting productivity
+          </div>
+          <div class="use-case">
+            <strong>💼 Work Style Clashes</strong><br>
+            Different approaches causing friction
+          </div>
         </div>
-        <div class="step">
-          <span class="n">2</span>
-          <h3>
-            <span data-lang="en">AI listens and learns</span>
-            <span data-lang="vi">AI lắng nghe và học hỏi</span>
-            <span data-lang="zh">AI 认真倾听并学习</span>
-          </h3>
-          <p>
-            <span data-lang="en">The assistant looks for patterns and refines insights over the chat.</span>
-            <span data-lang="vi">Trợ lý tìm các mẫu hành vi và hoàn thiện nhận định trong suốt cuộc trò chuyện.</span>
-            <span data-lang="zh">助手在对话中识别模式，不断完善结论。</span>
-          </p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card conflict-card">
+          <h3>🔍 Root Cause Analysis</h3>
+          <p>Understand why conflicts happen based on personality differences and communication styles.</p>
         </div>
-        <div class="step">
-          <span class="n">3</span>
-          <h3>
-            <span data-lang="en">Receive your profile</span>
-            <span data-lang="vi">Nhận hồ sơ của bạn</span>
-            <span data-lang="zh">获取你的画像</span>
-          </h3>
-          <p>
-            <span data-lang="en">Get an MBTI-style type with confidence, traits, and friendly tips.</span>
-            <span data-lang="vi">Nhận kiểu MBTI cùng mức tự tin, đặc trưng chính và gợi ý hữu ích.</span>
-            <span data-lang="zh">获得 MBTI 风格类型、可信度、关键特质和贴心建议。</span>
-          </p>
+        <div class="feature-card conflict-card">
+          <h3>🎯 Targeted Strategies</h3>
+          <p>Get specific resolution techniques tailored to the personality types involved.</p>
+        </div>
+        <div class="feature-card conflict-card">
+          <h3>💬 Communication Scripts</h3>
+          <p>Practice exact phrases and approaches that work for each personality type.</p>
         </div>
       </div>
     </section>
-
-    <section class="section" id="about">
-      <h2>
-        <span data-lang="en">About Group 61</span>
-        <span data-lang="vi">Về Nhóm 61</span>
-        <span data-lang="zh">关于第 61 组</span>
-      </h2>
-      <p class="muted">
-        <span data-lang="en">We are Group 61 from Tsinghua University's IEDE 2025 program. Mind-Mapper AI was born from our passion to use technology for self-awareness and growth.</span>
-        <span data-lang="vi">Chúng tôi là Nhóm 61 của chương trình IEDE 2025 (ĐH Thanh Hoa). Mind-Mapper AI ra đời từ mong muốn dùng công nghệ để giúp mọi người hiểu mình và phát triển.</span>
-        <span data-lang="zh">我们来自清华大学 IEDE 2025 项目的第 61 组。Mind-Mapper AI 源于我们希望用技术帮助每个人自我认知与成长的热情。</span>
-      </p>
-      <p class="muted" style="margin-top:10px">
-        <span data-lang="en">Our goal is to make personality analysis accessible, engaging, and modern for everyone.</span>
-        <span data-lang="vi">Mục tiêu của chúng tôi là đưa phân tích tính cách đến với mọi người—dễ tiếp cận, thú vị và hiện đại.</span>
-        <span data-lang="zh">我们的目标：让性格分析更易用、更有趣、更现代，服务于所有人。</span>
-      </p>
-    </section>
-
-    <section class="section faq" id="faq">
-      <h2>FAQ</h2>
-      <details>
-        <summary><span data-lang="en">What is the MBTI?</span><span data-lang="vi">MBTI là gì?</span><span data-lang="zh">什么是 MBTI？</span></summary>
-        <p><span data-lang="en">The Myers-Briggs Type Indicator describes preferences in how people perceive information and make decisions, grouping into 16 types.</span><span data-lang="vi">MBTI mô tả xu hướng trong cách con người tiếp nhận thông tin và ra quyết định, gồm 16 kiểu tính cách.</span><span data-lang="zh">MBTI（迈尔斯-布里格斯性格指标）描述人们在信息感知与决策方式上的偏好，共 16 种类型。</span></p>
-      </details>
-      <details>
-        <summary><span data-lang="en">Is this a clinical assessment?</span><span data-lang="vi">Đây có phải đánh giá lâm sàng?</span><span data-lang="zh">这是临床评估吗？</span></summary>
-        <p><span data-lang="en">No—it's a self-reflection tool powered by AI. Use it for guidance, not diagnosis.</span><span data-lang="vi">Không—đây là công cụ tự phản chiếu do AI hỗ trợ. Dùng để tham khảo, không phải chẩn đoán.</span><span data-lang="zh">不是。这是一个由 AI 驱动的自我反思工具，仅供参考，不用于诊断。</span></p>
-      </details>
-      <details>
-        <summary><span data-lang="en">Is my data private and secure?</span><span data-lang="vi">Dữ liệu của tôi có riêng tư và an toàn?</span><span data-lang="zh">我的数据是否安全？</span></summary>
-        <p><span data-lang="en">We securely save anonymized conversations to improve our AI's accuracy and insights. We do not store any personal identification information.</span><span data-lang="vi">Chúng tôi lưu trữ ẩn danh các cuộc trò chuyện một cách an toàn để cải thiện độ chính xác của AI. Không lưu bất kỳ thông tin định danh cá nhân nào.</span><span data-lang="zh">我们仅安全保存已匿名化的对话，用于提升准确度；不存储任何可识别个人的信息。</span></p>
-      </details>
-      <details>
-        <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span><span data-lang="zh">需要多久？</span></summary>
-        <p><span data-lang="en">Usually 5—10 minutes to get a first profile.</span><span data-lang="vi">Thường mất 5—10 phút để có bản phân tích đầu tiên.</span><span data-lang="zh">通常 5—10 分钟即可获得初步画像。</span></p>
-      </details>
-    </section>
-
-    <section class="section" id="contact">
-      <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
-      <form id="contactForm">
-        <div class="field">
-          <label><span data-lang="en">Name</span><span data-lang="vi">Tên</span><span data-lang="zh">姓名</span></label>
-          <input id="contact-name" required data-lang-en-placeholder="Your name" data-lang-vi-placeholder="Tên của bạn" data-lang-zh-placeholder="你的名字" />
-        </div>
-        <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Email</span><span data-lang="vi">Email</span><span data-lang="zh">邮箱</span></label>
-          <input id="contact-email" type="email" required data-lang-en-placeholder="you@example.com" data-lang-vi-placeholder="ban@example.com" data-lang-zh-placeholder="ni@example.com" />
-        </div>
-        <div class="field" style="margin-top:10px">
-          <label><span data-lang="en">Message</span><span data-lang="vi">Tin nhắn</span><span data-lang="zh">留言</span></label>
-          <textarea id="contact-message" rows="5" required data-lang-en-placeholder="How can we help?" data-lang-vi-placeholder="Chúng tôi có thể giúp gì?" data-lang-zh-placeholder="我们能如何帮助你？"></textarea>
-        </div>
-        <button class="btn" style="margin-top:12px">
-          <span data-lang="en">Send message</span>
-          <span data-lang="vi">Gửi tin nhắn</span>
-          <span data-lang="zh">发送</span>
-        </button>
-      </form>
-    </section>
-  </main>
-
-  <button class="chat-launch" id="chatOpen" title="Chat with Mind-Mapper AI">
-    <img src="mascot.png" alt="AI Mascot" />
-  </button>
-
-  <div class="chat-panel" id="chatPanel" aria-live="polite">
-    <div class="chat-head">
-      <h3><span data-lang="en">Mind-Mapper AI – Personality Analyst</span><span data-lang="vi">Mind-Mapper AI – Phân tích tính cách</span><span data-lang="zh">Mind-Mapper AI – 性格助手</span></h3>
-    </div>
-    <div class="chat-body" id="chatBody"></div>
-    <div class="chat-foot" id="chatFoot">
-      <div id="chatInputArea" style="display:grid; grid-template-columns: 1fr auto; gap: 8px;">
-        <input id="chatInput" placeholder="Type your message…" />
-        <button class="btn" id="sendBtn">
-          <span data-lang="en">Send</span>
-          <span data-lang="vi">Gửi</span>
-          <span data-lang="zh">发送</span>
-        </button>
-      </div>
-      <button class="btn" id="resetBtn" style="display:none; width:100%;">
-        <span data-lang="en">Start New Analysis</span>
-        <span data-lang="vi">Bắt đầu phân tích mới</span>
-        <span data-lang="zh">开始新的分析</span>
-      </button>
-    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
-    // --- 1. Supabase Project Configuration ---
-    const supa_url = 'https://okbqkkftdxazdfkiovjj.supabase.co';
-    const supa_anon_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rYnFra2Z0ZHhhemRma2lvdmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNDUxOTEsImV4cCI6MjA3MDcyMTE5MX0.SvYI1lxJP-dzEK5j1xGNdJu-pNtWEzVm7S2wnQBMY9c';
-    const supabaseClient = supabase.createClient(supa_url, supa_anon_key);
-
-    // Globals
-    let conversationHistory = [];
-    let chatBody, chatInputArea, resetBtn, input, sendBtn;
-    let latestProgress = null;
-
-    // --- 2. Page Functions (Sparkles, Tilt, Language) ---
-    function initializeSparkles() { 
-      const host = document.getElementById('sparkles'); 
-      if (!host || host.children.length) return;
-      for(let i=0;i<120;i++){ 
-        const s=document.createElement('i'); 
-        s.style.left=Math.random()*100+'vw';
-        s.style.top='100vh';
-        s.style.animationDuration=(10+Math.random()*16)+'s'; 
-        host.appendChild(s);
-      } 
-    }
-
-    function initializeTilt() { 
-      const card = document.getElementById('card3d'); 
-      if (!card) return;
-      let b = card.getBoundingClientRect(); 
-      window.addEventListener('resize', () => b = card.getBoundingClientRect()); 
-      card.addEventListener('mousemove', e => { 
-        const x=(e.clientX-b.left)/b.width-0.5; 
-        const y=(e.clientY-b.top)/b.height-0.5; 
-        card.style.transform=`perspective(1000px) rotateX(${-y*6}deg) rotateY(${x*8}deg)`; 
-      }); 
-      card.addEventListener('mouseleave', () => { card.style.transform='perspective(1000px) rotateX(0) rotateY(0)';}); 
-    }
-
-    function initializeLanguage() {
-      const sel = document.getElementById('language');
-      if (!sel) return;
-
-      function applyPlaceholders() { 
-        const lang = document.body.classList.contains('lang-vi') ? 'vi' :
-                     document.body.classList.contains('lang-zh') ? 'zh' : 'en';
-        document.querySelectorAll('[data-lang-en-placeholder]').forEach(el => { 
-          const txt = el.getAttribute(`data-lang-${lang}-placeholder`); 
-          if(txt) el.placeholder = txt; 
-        }); 
-      }
+    // Navigation switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const navLinks = document.querySelectorAll('.nav-link[data-section]');
+      const sections = document.querySelectorAll('.service-section');
       
-      function setLang(lang) { 
-        document.body.classList.remove('lang-en','lang-vi','lang-zh'); 
-        document.body.classList.add('lang-' + lang); 
-        localStorage.setItem('preferredLanguage', lang); 
-        applyPlaceholders();
-        if (chatBody) displayInitialMessage();
-      }
-      
-      const saved = localStorage.getItem('preferredLanguage') || 'en'; 
-      sel.value = saved; 
-      setLang(saved); 
-      sel.addEventListener('change', e => setLang(e.target.value));
-    }
-
-    // --- 3. Chat Panel ---
-    function initializeChatPanel() {
-      const panel = document.getElementById('chatPanel');
-      const chatOpen = document.getElementById('chatOpen');
-      if (!panel || !chatOpen) return;
-      chatOpen.onclick = () => { 
-        panel.classList.toggle('open'); 
-        if (panel.classList.contains('open')) {
-          if (latestProgress && latestProgress.current_step < latestProgress.total_steps) {
-            updateProgressBar(latestProgress);
-          }
-          if(input) input.focus(); 
-        }
-      };
-    }
-    
-    // --- CHANGE #5: NEW FUNCTION TO HANDLE CONTACT FORM SUBMISSION ---
-    async function handleContactSubmit(event) {
-        event.preventDefault(); // Prevent the form from reloading the page
-        const form = event.target;
-        const submitButton = form.querySelector('button');
-        
-        // Get form data
-        const formData = {
-            name: document.getElementById('contact-name').value,
-            email: document.getElementById('contact-email').value,
-            message: document.getElementById('contact-message').value,
-            lang: localStorage.getItem('preferredLanguage') || 'en', // Get current language
-            user_agent: navigator.userAgent // Get browser info
-        };
-
-        // Disable button to prevent multiple submissions
-        submitButton.disabled = true;
-        submitButton.textContent = 'Sending...';
-
-        try {
-            // Insert data into the 'contact_messages' table in Supabase
-            const { data, error } = await supabaseClient
-                .from('contact_messages')
-                .insert([formData]);
-
-            if (error) {
-                // If there's an error, throw it to be caught by the catch block
-                throw error;
-            }
-
-            // Show success message based on current language
-            alert(document.body.classList.contains('lang-vi') ? 'Cảm ơn! Chúng tôi đã nhận được tin nhắn của bạn.' :
-                  document.body.classList.contains('lang-zh') ? '谢谢！我们已收到你的留言。' :
-                  'Thanks! We have received your message.');
-            
-            form.reset(); // Clear the form fields
-
-        } catch (error) {
-            console.error('Error submitting contact form:', error.message);
-            alert('Sorry, there was an error sending your message. Please try again.');
-        
-        } finally {
-            // Re-enable the button
-            submitButton.disabled = false;
-            // Restore button text using a small trick to get the current language span
-            const lang = document.body.className.split(' ').find(c => c.startsWith('lang-')).split('-')[1] || 'en';
-            submitButton.innerHTML = form.querySelector(`[data-lang="${lang}"]`).outerHTML;
-        }
-    }
-
-
-    // --- 4. Chat Functions ---
-    function displayInitialMessage() {
-      if (!chatBody) return;
-      const isVI = document.body.classList.contains('lang-vi');
-      const isZH = document.body.classList.contains('lang-zh');
-      chatBody.innerHTML = ''; 
-      const initialMsg = document.createElement('div');
-      initialMsg.className = 'msg ai';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      let welcomeText;
-      if (isVI) {
-        welcomeText = `Chào bạn! Cùng trò chuyện một chút về tính cách nhé. Bạn cứ thoải mái chia sẻ cách làm việc, giao tiếp hay ra quyết định. Mình sẽ lắng nghe và giúp bạn hiểu mình hơn. 😊`;
-      } else if (isZH) {
-        welcomeText = `你好！我们来轻松聊聊你的性格吧。可以随意说说你的工作方式、人际相处或者决策习惯。我会认真倾听并给出有用的反馈。😊`;
-      } else {
-        welcomeText = `Hey there! Let's chat a bit about your personality. Tell me how you like to work, socialize, or make decisions. I'm here to listen and help you learn more about yourself. 😊`;
-      }
-      bubble.innerHTML = `<span>${welcomeText}</span>`;
-      initialMsg.appendChild(bubble);
-      chatBody.appendChild(initialMsg);
-      conversationHistory = [{ role: 'assistant', content: welcomeText }];
-    }
-
-    function resetChat() {
-      displayInitialMessage();
-      if (chatInputArea) chatInputArea.style.display = 'grid';
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (input) input.focus();
-      latestProgress = null;
-      const pc = document.getElementById('progress-container');
-      if (pc) pc.remove();
-    }
-
-    function appendMessage(role, text, conversationId = null, showFeedback = false) { 
-      if (!chatBody) return;
-      const wrap = document.createElement('div'); 
-      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      let processedText = text
-        .replace(/</g,'&lt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n/g,'<br>');
-      bubble.innerHTML = processedText;
-      if (role === 'ai' && conversationId && showFeedback) {
-        const fb = document.createElement('div');
-        fb.className = 'feedback-buttons';
-        fb.innerHTML = `
-          <button data-convo-id="${conversationId}" data-rating="true">👍 Accurate</button>
-          <button data-convo-id="${conversationId}" data-rating="false">👎 Not Quite</button>`;
-        bubble.appendChild(fb);
-      }
-      wrap.appendChild(bubble);
-      chatBody.appendChild(wrap); 
-      chatBody.scrollTop = chatBody.scrollHeight; 
-    }
-
-    async function handleFeedback(conversationId, isAccurate) {
-      try {
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = true);
-        const res = await fetch('/.netlify/functions/save-feedback', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ conversation_id:Number(conversationId), is_accurate:Boolean(isAccurate) })
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          const targetSection = this.dataset.section;
+          
+          // Update active nav link
+          navLinks.forEach(nl => nl.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Update visible section
+          sections.forEach(section => section.classList.remove('active'));
+          document.getElementById(targetSection + '-section').classList.add('active');
+          
+          // Update URL without page reload
+          history.pushState(null, '', '#' + targetSection);
         });
-        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
-        buttons.forEach(btn => {
-          if (btn.getAttribute('data-rating') === String(isAccurate)) {
-            btn.textContent = isAccurate ? '✅ Thanks!' : '📝 Noted';
-            btn.classList.add('selected');
-          }
-        });
-      } catch (error) {
-        console.error('Error saving feedback:', error);
-        alert('Could not save feedback: ' + (error.message || String(error)));
-        const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
-        buttons.forEach(b => b.disabled = false);
-      }
-    }
-
-    function initializeFeedbackHandler() {
-      if (!chatBody) return;
-      chatBody.addEventListener('click', (e) => {
-        const t = e.target;
-        if (t.tagName === 'BUTTON' && t.hasAttribute('data-convo-id')) {
-          const id = t.getAttribute('data-convo-id');
-          const ok = t.getAttribute('data-rating') === 'true';
-          handleFeedback(id, ok);
-        }
       });
-    }
-
-    function showTyping() {
-      if (!chatBody) return;
-      const wrap = document.createElement('div');
-      wrap.className = 'msg ai typing';
-      wrap.id = 'typing-indicator';
-      wrap.innerHTML = `<div class="bubble">Typing...</div>`;
-      chatBody.appendChild(wrap);
-      chatBody.scrollTop = chatBody.scrollHeight;
-    }
-    function hideTyping(){ const t=document.getElementById('typing-indicator'); if(t) t.remove(); }
-
-    function updateProgressBar(progress) {
-      if (progress && progress.current_step >= progress.total_steps) {
-        const ex = document.getElementById('progress-container'); if (ex) ex.remove();
-        latestProgress = null; return;
-      }
-      let pc = document.getElementById('progress-container');
-      if (!pc) {
-        pc = document.createElement('div');
-        pc.id = 'progress-container';
-        pc.style.cssText = `
-          padding: 8px 14px;border-bottom:1px solid var(--glass-stroke);
-          background: rgba(255,255,255,.03); text-align:center; font-size:12px;
-          color: var(--muted); font-weight:500; flex-shrink:0;`;
-        const head = document.querySelector('.chat-head');
-        if (head && head.parentNode) head.parentNode.insertBefore(pc, head.nextSibling);
-      }
-      if (progress) {
-        const count = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        pc.innerHTML = `Analysis Progress: Dimensions Explored ${count}/4`;
-      }
-    }
-
-    async function handleSend() { 
-      if (!input || !chatBody) return;
-      const text = input.value.trim(); 
-      if (!text) return; 
-      input.value=''; 
-      appendMessage('user', text);
-      conversationHistory.push({ role:'user', content:text });
-      showTyping();
-      try {
-        const messages = conversationHistory.slice(-10);
-        const res = await fetch('/.netlify/functions/process-chat', {
-          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ messages })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ` + await res.text());
-        const data = await res.json();
-        hideTyping();
-        if (data.reply) {
-          try {
-            const mbtiResult = JSON.parse(data.reply);
-            conversationHistory.push({ role:'assistant', content:data.reply });
-            if (mbtiResult.progress) { latestProgress = mbtiResult.progress; updateProgressBar(latestProgress); }
-            let responseText = '';
-            let isActualResult = false;
-            if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
-              isActualResult = true;
-              responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
-              responseText += `📊 Confidence: ${Math.round(mbtiResult.confidence * 100)}%\n\n`;
-              if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
-              if (mbtiResult.reasoning) responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
-              if (mbtiResult.strengths?.length) {
-                responseText += `✨ **Your Strengths:**\n`; mbtiResult.strengths.forEach(s => responseText += `• ${s}\n`); responseText += '\n';
-              }
-              if (mbtiResult.growth_tips?.length) {
-                responseText += `🌱 **Growth Tips:**\n`; mbtiResult.growth_tips.forEach(t => responseText += `• ${t}\n`); responseText += '\n';
-              }
-              if (chatInputArea) chatInputArea.style.display='none';
-              if (resetBtn) resetBtn.style.display='block';
-            } else {
-              responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
-            }
-            appendMessage('ai', responseText, data.conversation_id, isActualResult);
-          } catch (e) {
-            console.error('JSON parse error:', e); console.log('Raw AI response:', data.reply);
-            appendMessage('ai', data.reply); conversationHistory.push({ role:'assistant', content:data.reply });
-          }
-        } else if (data.error) {
-          appendMessage('ai', `Sorry, there was an error: ${data.error}`);
-        } else {
-          appendMessage('ai', 'Sorry, I received an unexpected response format.');
+      
+      // Handle direct URL access
+      const hash = window.location.hash.slice(1);
+      if (hash && (hash === 'personality' || hash === 'conflict')) {
+        const targetLink = document.querySelector(`[data-section="${hash}"]`);
+        if (targetLink) {
+          targetLink.click();
         }
-      } catch (err) { hideTyping(); appendMessage('ai', `Sorry, I encountered an error: ${err.message}.`); }
-    }
-
-    function initializeChatControls() {
-      chatBody = document.getElementById('chatBody');
-      chatInputArea = document.getElementById('chatInputArea');
-      resetBtn = document.getElementById('resetBtn');
-      input = document.getElementById('chatInput');
-      sendBtn = document.getElementById('sendBtn');
-      if (!chatBody || !input || !sendBtn || !resetBtn) return;
-      sendBtn.addEventListener('click', handleSend);
-      resetBtn.addEventListener('click', resetChat);
-      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }});
-      initializeFeedbackHandler();
-      displayInitialMessage();
-    }
-
-    // --- 5. Initialize ---
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeSparkles();
-      initializeTilt();
-      initializeLanguage();
-      initializeChatPanel();
-      initializeChatControls();
-
-      // --- CHANGE #6: Add event listener for the new contact form handler ---
-      const contactForm = document.getElementById('contactForm');
-      if (contactForm) {
-          contactForm.addEventListener('submit', handleContactSubmit);
       }
     });
   </script>
