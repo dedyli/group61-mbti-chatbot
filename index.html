@@ -912,11 +912,41 @@
       bubble.className = 'bubble';
       let welcomeText;
       if (isVI) {
-        welcomeText = `Xin chào! Tôi là chuyên gia giải quyết xung đột. Hãy mô tả tình huống bạn đang gặp phải - ai là những người liên quan và điều gì đang gây ra căng thẳng? Tôi sẽ giúp bạn tìm ra giải pháp phù hợp. 🤝`;
+        welcomeText = `Xin chào! Tôi là chuyên gia giải quyết xung đột của bạn. 🤝
+
+Hãy mô tả tình huống bạn đang gặp phải - ai là những người liên quan và điều gì đang gây ra căng thẳng? 
+
+Tôi sẽ giúp bạn:
+• Hiểu rõ nguyên nhân gốc rễ
+• Đưa ra các chiến lược phù hợp  
+• Cung cấp những câu nói cụ thể bạn có thể dùng
+• Tìm ra giải pháp có lợi cho tất cả mọi người
+
+Cứ thoải mái chia sẻ nhé!`;
       } else if (isZH) {
-        welcomeText = `你好！我是冲突解决专家。请描述一下你遇到的情况——涉及哪些人，什么原因导致了紧张关系？我会帮你找到合适的解决方案。🤝`;
+        welcomeText = `你好！我是你的冲突解决专家。🤝
+
+请描述一下你遇到的情况——涉及哪些人，什么原因导致了紧张关系？
+
+我会帮你：
+• 理解根本原因
+• 提供针对性策略
+• 给出具体的表达建议
+• 找到对所有人都有利的解决方案
+
+请随意分享你的情况！`;
       } else {
-        welcomeText = `Hello! I'm your conflict resolution specialist. Please describe the situation you're dealing with - who's involved and what's causing the tension? I'll help you find the right approach to resolve it. 🤝`;
+        welcomeText = `Hello! I'm your conflict resolution specialist. 🤝
+
+Please describe the situation you're dealing with - who's involved and what's causing the tension?
+
+I'll help you:
+• Understand the root causes
+• Develop targeted strategies  
+• Get specific phrases you can use
+• Find solutions that work for everyone
+
+Feel free to share what's going on!`;
       }
       bubble.innerHTML = `<span>${welcomeText}</span>`;
       initialMsg.appendChild(bubble);
@@ -1031,6 +1061,7 @@
       });
     }
 
+    // --- 8. Personality Chat Handler ---
     async function handlePersonalitySend() {
       const input = document.getElementById('personalityChatInput');
       if (!input) return;
@@ -1043,19 +1074,24 @@
       
       try {
         const messages = personalityHistory.slice(-10);
-        const res = await fetch('/.netlify/functions/process-chat', {
+        
+        console.log('🔍 SENDING PERSONALITY REQUEST');
+        
+        // Call the dedicated personality function
+        const res = await fetch('/.netlify/functions/personality-chat', {
           method:'POST', 
           headers:{'Content-Type':'application/json'}, 
           body:JSON.stringify({ 
-            messages, 
-            service_type: 'personality',
+            messages,
             language: localStorage.getItem('preferredLanguage') || 'en'
           })
         });
+        
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `HTTP ${res.status}: Request failed`);
         }
+        
         const data = await res.json();
         hideTyping('personality');
         
@@ -1063,10 +1099,15 @@
           try {
             const mbtiResult = JSON.parse(data.reply);
             personalityHistory.push({ role:'assistant', content:data.reply });
-            if (mbtiResult.progress) { latestPersonalityProgress = mbtiResult.progress; updatePersonalityProgressBar(latestPersonalityProgress); }
+            
+            if (mbtiResult.progress) { 
+              latestPersonalityProgress = mbtiResult.progress; 
+              updatePersonalityProgressBar(latestPersonalityProgress); 
+            }
             
             let responseText = '';
             let isActualResult = false;
+            
             if (mbtiResult.ready_for_analysis === true && mbtiResult.type && mbtiResult.type !== 'Unknown') {
               isActualResult = true;
               responseText = `🎯 **Your MBTI Type: ${mbtiResult.type}**\n`;
@@ -1074,37 +1115,113 @@
               if (mbtiResult.one_liner) responseText += `💭 *${mbtiResult.one_liner}*\n\n`;
               if (mbtiResult.reasoning) responseText += `**My Analysis:**\n${mbtiResult.reasoning}\n\n`;
               if (mbtiResult.strengths?.length) {
-                responseText += `✨ **Your Strengths:**\n`; mbtiResult.strengths.forEach(s => responseText += `• ${s}\n`); responseText += '\n';
+                responseText += `✨ **Your Strengths:**\n`; 
+                mbtiResult.strengths.forEach(s => responseText += `• ${s}\n`); 
+                responseText += '\n';
               }
               if (mbtiResult.growth_tips?.length) {
-                responseText += `🌱 **Growth Tips:**\n`; mbtiResult.growth_tips.forEach(t => responseText += `• ${t}\n`); responseText += '\n';
+                responseText += `🌱 **Growth Tips:**\n`; 
+                mbtiResult.growth_tips.forEach(t => responseText += `• ${t}\n`); 
               }
               document.getElementById('personalityInputArea').style.display='none';
               document.getElementById('personalityResetBtn').style.display='block';
             } else {
               responseText = mbtiResult.one_liner || 'I need a bit more information. Can you tell me more?';
             }
+            
             appendMessage('personality', 'ai', responseText, data.conversation_id, isActualResult);
+            
           } catch (e) {
-            console.error('JSON parse error:', e); console.log('Raw AI response:', data.reply);
-            appendMessage('personality', 'ai', data.reply); personalityHistory.push({ role:'assistant', content:data.reply });
+            console.error('JSON parse error:', e);
+            appendMessage('personality', 'ai', data.reply);
+            personalityHistory.push({ role:'assistant', content:data.reply });
           }
-        } else if (data.error) {
-          appendMessage('personality', 'ai', `Sorry, there was an error: ${data.error}`);
         } else {
           appendMessage('personality', 'ai', 'Sorry, I received an unexpected response format.');
         }
       } catch (err) { 
         hideTyping('personality'); 
-        // Handle specific error types
-        if (err.message.includes('Too many requests')) {
-          appendMessage('personality', 'ai', 'I\'m receiving a lot of requests right now. Please wait a minute and try again.');
-        } else if (err.message.includes('Origin not allowed')) {
-          appendMessage('personality', 'ai', 'There seems to be a security issue. Please refresh the page and try again.');
-        } else {
-          appendMessage('personality', 'ai', `Sorry, I encountered an error: ${err.message}. Please try again.`); 
-        }
+        handleChatError('personality', err);
       }
+    }
+
+    // --- 9. Conflict Chat Handler ---
+    function formatConflictResponse(conflictData) {
+      let formatted = '';
+      
+      // Handle error responses
+      if (conflictData.status === 'error') {
+        return conflictData.main_response || 'I encountered an error. Please try again.';
+      }
+      
+      // Main response (always present)
+      if (conflictData.main_response) {
+        formatted += conflictData.main_response;
+      }
+      
+      // Add conflict analysis if present
+      if (conflictData.conflict_analysis) {
+        formatted += '\n\n**💡 What I see happening:**\n';
+        formatted += conflictData.conflict_analysis;
+      }
+      
+      // Add insights if present
+      if (conflictData.insights && conflictData.insights.length > 0) {
+        formatted += '\n\n**🔍 Key Insights:**\n';
+        conflictData.insights.forEach(insight => {
+          formatted += `• ${insight}\n`;
+        });
+      }
+      
+      // Add resolution strategies if present
+      if (conflictData.resolution_strategies && conflictData.resolution_strategies.length > 0) {
+        formatted += '\n\n**🛠️ Resolution Strategies:**\n';
+        conflictData.resolution_strategies.forEach((strategy, index) => {
+          formatted += `\n**${index + 1}. ${strategy.strategy}**\n`;
+          formatted += `${strategy.description}\n`;
+          
+          if (strategy.example_phrases && strategy.example_phrases.length > 0) {
+            formatted += `\n*Try saying:*\n`;
+            strategy.example_phrases.forEach(phrase => {
+              formatted += `💬 "${phrase}"\n`;
+            });
+          }
+        });
+      }
+      
+      // Add action steps if present
+      if (conflictData.action_steps && conflictData.action_steps.length > 0) {
+        formatted += '\n\n**📋 Your Next Steps:**\n';
+        conflictData.action_steps.forEach((step, index) => {
+          formatted += `${index + 1}. ${step}\n`;
+        });
+      }
+      
+      // Add prevention tips if present
+      if (conflictData.prevention_tips && conflictData.prevention_tips.length > 0) {
+        formatted += '\n\n**🛡️ Future Prevention:**\n';
+        conflictData.prevention_tips.forEach(tip => {
+          formatted += `• ${tip}\n`;
+        });
+      }
+      
+      // Add key questions if present
+      if (conflictData.key_questions && conflictData.key_questions.length > 0) {
+        formatted += '\n\n**❓ To help me understand better:**\n';
+        conflictData.key_questions.forEach(question => {
+          formatted += `• ${question}\n`;
+        });
+      }
+      
+      // Add next steps if present (different from action_steps)
+      if (conflictData.next_steps && conflictData.next_steps.length > 0) {
+        formatted += '\n\n**🎯 What I'll help you with next:**\n';
+        conflictData.next_steps.forEach(step => {
+          formatted += `• ${step}\n`;
+        });
+      }
+      
+      return formatted.trim();
     }
 
     async function handleConflictSend() {
@@ -1119,40 +1236,63 @@
       
       try {
         const messages = conflictHistory.slice(-10);
-        const res = await fetch('/.netlify/functions/process-chat', {
+        
+        console.log('🔍 SENDING CONFLICT REQUEST');
+        
+        // Call the dedicated conflict function
+        const res = await fetch('/.netlify/functions/conflict-chat', {
           method:'POST', 
           headers:{'Content-Type':'application/json'}, 
           body:JSON.stringify({ 
-            messages, 
-            service_type: 'conflict',
+            messages,
             language: localStorage.getItem('preferredLanguage') || 'en'
           })
         });
+        
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `HTTP ${res.status}: Request failed`);
         }
+        
         const data = await res.json();
+        
+        console.log('🔍 RECEIVED CONFLICT RESPONSE:', data);
+        
         hideTyping('conflict');
         
         if (data.reply) {
-          conflictHistory.push({ role:'assistant', content:data.reply });
-          appendMessage('conflict', 'ai', data.reply, data.conversation_id, false);
-        } else if (data.error) {
-          appendMessage('conflict', 'ai', `Sorry, there was an error: ${data.error}`);
+          try {
+            const conflictResult = JSON.parse(data.reply);
+            conflictHistory.push({ role:'assistant', content:data.reply });
+            
+            console.log('🔍 PARSED CONFLICT JSON:', conflictResult);
+            
+            // Format the conflict response for user-friendly display
+            const formattedResponse = formatConflictResponse(conflictResult);
+            appendMessage('conflict', 'ai', formattedResponse, data.conversation_id, false);
+            
+          } catch (parseError) {
+            console.error('❌ Failed to parse conflict JSON:', parseError);
+            conflictHistory.push({ role:'assistant', content:data.reply });
+            appendMessage('conflict', 'ai', data.reply, data.conversation_id, false);
+          }
         } else {
           appendMessage('conflict', 'ai', 'Sorry, I received an unexpected response format.');
         }
       } catch (err) { 
         hideTyping('conflict'); 
-        // Handle specific error types
-        if (err.message.includes('Too many requests')) {
-          appendMessage('conflict', 'ai', 'I\'m receiving a lot of requests right now. Please wait a minute and try again.');
-        } else if (err.message.includes('Origin not allowed')) {
-          appendMessage('conflict', 'ai', 'There seems to be a security issue. Please refresh the page and try again.');
-        } else {
-          appendMessage('conflict', 'ai', `Sorry, I encountered an error: ${err.message}. Please try again.`); 
-        }
+        handleChatError('conflict', err);
+      }
+    }
+
+    // --- 10. Shared Error Handler ---
+    function handleChatError(service, error) {
+      if (error.message.includes('Too many requests')) {
+        appendMessage(service, 'ai', 'I\'m receiving a lot of requests right now. Please wait a minute and try again.');
+      } else if (error.message.includes('Origin not allowed')) {
+        appendMessage(service, 'ai', 'There seems to be a security issue. Please refresh the page and try again.');
+      } else {
+        appendMessage(service, 'ai', `Sorry, I encountered an error: ${error.message}. Please try again.`); 
       }
     }
 
@@ -1205,7 +1345,7 @@
       displayConflictInitialMessage();
     }
 
-    // --- 8. Initialize Everything ---
+    // --- 11. Initialize Everything ---
     document.addEventListener('DOMContentLoaded', () => {
       initializeSparkles();
       initializeTilt();
