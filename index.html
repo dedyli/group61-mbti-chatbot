@@ -25,9 +25,22 @@
     body.lang-zh [data-lang="zh"], body.lang-zh .block-zh{display:initial}
 
     /* Service-specific display */
-    .service-section { display: none; animation: fadeIn 0.5s ease-in-out; }
-    .service-section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .service-section { 
+      display: none; 
+      animation: fadeIn 0.5s ease-in-out; 
+    }
+    .service-section.active { 
+      display: block !important; 
+    }
+    
+    /* Ensure sections exist */
+    #personality-section { background: transparent; }
+    #conflict-section { background: transparent; }
+    
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(20px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
 
     .aurora{position:fixed; inset:0; z-index:-2; pointer-events:none; background:
       radial-gradient(60vw 60vw at -10% -10%, rgba(139,92,246,.35), transparent 60%),
@@ -165,6 +178,23 @@
       filter:drop-shadow(0 0 20px rgba(139,92,246,.6)) drop-shadow(0 0 40px rgba(139,92,246,.4)) drop-shadow(0 0 60px rgba(139,92,246,.2));
       transition:transform .3s ease, filter .3s ease;
     }
+    /* Fallback styling if image doesn't load */
+    .chat-launch:not(:has(img)), .chat-launch img[src=""]{
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: white;
+      box-shadow: 0 20px 60px rgba(139,92,246,.4);
+    }
+    .chat-launch:not(:has(img))::before, .chat-launch img[src=""]:before{
+      content: "🧠";
+    }
+    .chat-launch.conflict:not(:has(img))::before, .chat-launch.conflict img[src=""]:before{
+      content: "🤝";
+    }
     .chat-launch:hover img {
       transform:scale(1.1) rotate(5deg);
       filter:drop-shadow(0 0 25px rgba(139,92,246,.8)) drop-shadow(0 0 50px rgba(139,92,246,.6)) drop-shadow(0 0 80px rgba(139,92,246,.4));
@@ -236,11 +266,11 @@
         <li><a href="#conflict" class="nav-link conflict-service" data-section="conflict">
           🤝 <span data-lang="en">Conflict Resolution</span><span data-lang="vi">Giải quyết xung đột</span><span data-lang="zh">冲突解决</span>
         </a></li>
-        <li><a href="#about" class="nav-link">
+        <li><a href="#about" class="nav-link" onclick="scrollToSection('about')">
           ℹ️ <span data-lang="en">About</span><span data-lang="vi">Về chúng tôi</span><span data-lang="zh">关于我们</span>
         </a></li>
-        <li><a href="#faq" class="nav-link">❓ <span>FAQ</span></a></li>
-        <li><a href="#contact" class="nav-link">
+        <li><a href="#faq" class="nav-link" onclick="scrollToSection('faq')">❓ <span>FAQ</span></a></li>
+        <li><a href="#contact" class="nav-link" onclick="scrollToSection('contact')">
           📧 <span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系</span>
         </a></li>
       </ul>
@@ -612,12 +642,12 @@
   </main>
 
   <!-- Chat Launch Buttons -->
-  <button class="chat-launch personality-chat" id="personalityChatOpen" title="Chat with Personality AI" style="display:none;">
-    <img src="mascot.png" alt="Personality AI Mascot" />
+  <button class="chat-launch personality-chat" id="personalityChatOpen" title="Chat with Personality AI">
+    <img src="mascot.png" alt="Personality AI Mascot" onerror="this.style.display='none'; this.parentNode.innerHTML='🧠';" />
   </button>
 
   <button class="chat-launch conflict conflict-chat" id="conflictChatOpen" title="Chat with Conflict Resolution AI" style="display:none;">
-    <img src="mascot.png" alt="Conflict Resolution AI Mascot" />
+    <img src="mascot.png" alt="Conflict Resolution AI Mascot" onerror="this.style.display='none'; this.parentNode.innerHTML='🤝';" />
   </button>
 
   <!-- Chat Panels -->
@@ -741,57 +771,91 @@
       const navLinks = document.querySelectorAll('.nav-link[data-section]');
       const sections = document.querySelectorAll('.service-section');
       
+      function switchToSection(targetSection) {
+        console.log(`🔄 Switching to section: ${targetSection}`);
+        
+        // Update active nav link
+        navLinks.forEach(nl => nl.classList.remove('active'));
+        const targetLink = document.querySelector(`[data-section="${targetSection}"]`);
+        if (targetLink) {
+          targetLink.classList.add('active');
+        }
+        
+        // Update visible section
+        sections.forEach(section => section.classList.remove('active'));
+        const targetSectionElement = document.getElementById(targetSection + '-section');
+        if (targetSectionElement) {
+          targetSectionElement.classList.add('active');
+        }
+        
+        // Update current service and show appropriate chat button
+        currentService = targetSection;
+        updateChatButtons();
+        
+        console.log(`✅ Section switched to: ${targetSection}, currentService: ${currentService}`);
+      }
+      
       navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
           
           const targetSection = this.dataset.section;
-          
-          // Update active nav link
-          navLinks.forEach(nl => nl.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Update visible section
-          sections.forEach(section => section.classList.remove('active'));
-          document.getElementById(targetSection + '-section').classList.add('active');
-          
-          // Update current service and show appropriate chat button
-          currentService = targetSection;
-          updateChatButtons();
+          switchToSection(targetSection);
           
           // Update URL without page reload
           history.pushState(null, '', '#' + targetSection);
         });
       });
       
-      // Handle direct URL access
+      // Handle direct URL access and initial load
       const hash = window.location.hash.slice(1);
       if (hash && (hash === 'personality' || hash === 'conflict')) {
-        const targetLink = document.querySelector(`[data-section="${hash}"]`);
-        if (targetLink) {
-          targetLink.click();
-        }
+        switchToSection(hash);
+      } else {
+        // Default to personality if no hash
+        switchToSection('personality');
       }
+      
+      // Handle browser back/forward buttons
+      window.addEventListener('popstate', () => {
+        const hash = window.location.hash.slice(1);
+        if (hash && (hash === 'personality' || hash === 'conflict')) {
+          switchToSection(hash);
+        } else {
+          switchToSection('personality');
+        }
+      });
     }
 
     function updateChatButtons() {
       const personalityBtn = document.getElementById('personalityChatOpen');
       const conflictBtn = document.getElementById('conflictChatOpen');
       
+      console.log(`🔄 Updating chat buttons for service: ${currentService}`);
+      
+      if (!personalityBtn || !conflictBtn) {
+        console.error('❌ Chat buttons not found in DOM');
+        return;
+      }
+      
       if (currentService === 'personality') {
         personalityBtn.style.display = 'block';
         conflictBtn.style.display = 'none';
+        console.log('✅ Showing personality button, hiding conflict button');
       } else if (currentService === 'conflict') {
         personalityBtn.style.display = 'none';
         conflictBtn.style.display = 'block';
+        console.log('✅ Showing conflict button, hiding personality button');
       } else {
         personalityBtn.style.display = 'none';
         conflictBtn.style.display = 'none';
+        console.log('⚠️ Hiding both chat buttons');
       }
     }
 
     // --- 4. Service Launch Functions ---
     function openPersonalityChat() {
+      console.log('🧠 Opening personality chat');
       currentService = 'personality';
       updateChatButtons();
       document.getElementById('personalityChatPanel').classList.add('open');
@@ -799,6 +863,7 @@
     }
 
     function openConflictChat() {
+      console.log('🤝 Opening conflict chat');
       currentService = 'conflict';
       updateChatButtons();
       document.getElementById('conflictChatPanel').classList.add('open');
@@ -1347,22 +1412,68 @@ Feel free to share what's going on!`;
 
     // --- 11. Initialize Everything ---
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Mind-Mapper AI initializing...');
+      
+      // Initialize in proper order
       initializeSparkles();
       initializeTilt();
       initializeLanguage();
+      
+      // Initialize navigation first
       initializeNavigation();
+      
+      // Initialize chat panels and controls
       initializeChatPanels();
       initializeChatControls();
+      
+      // Update chat buttons after everything is set up
       updateChatButtons();
-
+      
+      // Contact form
       const contactForm = document.getElementById('contactForm');
       if (contactForm) {
           contactForm.addEventListener('submit', handleContactSubmit);
       }
 
-      // Make functions globally available
+      // Make functions globally available for debugging
       window.openPersonalityChat = openPersonalityChat;
       window.openConflictChat = openConflictChat;
+      window.updateChatButtons = updateChatButtons;
+      window.scrollToSection = (sectionId) => {
+        console.log(`📜 Scrolling to section: ${sectionId}`);
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+      window.switchToConflict = () => {
+        console.log('🧪 Manual switch to conflict');
+        currentService = 'conflict';
+        updateChatButtons();
+        document.querySelector('[data-section="conflict"]').click();
+      };
+      window.switchToPersonality = () => {
+        console.log('🧪 Manual switch to personality');
+        currentService = 'personality';
+        updateChatButtons();
+        document.querySelector('[data-section="personality"]').click();
+      };
+      
+      console.log('✅ Mind-Mapper AI initialization complete');
+      console.log(`🔍 Current service: ${currentService}`);
+      console.log(`🔍 Chat buttons status:`, {
+        personality: document.getElementById('personalityChatOpen')?.style.display,
+        conflict: document.getElementById('conflictChatOpen')?.style.display
+      });
+      
+      // Debug: Test navigation after 2 seconds
+      setTimeout(() => {
+        console.log('🧪 Testing navigation elements...');
+        console.log('Nav links found:', document.querySelectorAll('.nav-link[data-section]').length);
+        console.log('Service sections found:', document.querySelectorAll('.service-section').length);
+        console.log('Active section:', document.querySelector('.service-section.active')?.id);
+        console.log('Active nav link:', document.querySelector('.nav-link.active')?.textContent);
+      }, 2000);
     });
   </script>
 </body>
