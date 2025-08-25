@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind-Mapper AI — Personality Insights & Conflict Resolution</title>
+  <title>Mind-Mapper AI – Personality Insights & Conflict Resolution</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
@@ -16,7 +16,7 @@
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    body{ margin:0; color:var(--fg); background:transparent; font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
+    body{ margin:0; color:var(--fg); background:var(--bg); font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; overflow-x:hidden; }
 
     /* Multilingual helpers */
     [data-lang]{display:none}
@@ -62,7 +62,7 @@
     .brand h1{margin:0; font-family:'Playfair Display',serif; font-weight:800; font-size:20px; letter-spacing:.3px}
     
     nav ul{margin:0; padding:0; list-style:none; display:flex; gap:8px; align-items:center}
-    nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:12px; position:relative; overflow:hidden; transition: all .3s ease; }
+    nav a{ color:var(--fg); text-decoration:none; font-weight:600; font-size:14px; letter-spacing:.3px; padding:10px 14px; border-radius:12px; position:relative; overflow:hidden; transition: all .3s ease; cursor: pointer; }
     nav a:after{content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:0; transition:.35s}
     nav a:hover:after{opacity:.25}
     nav a.active{font-weight:700; box-shadow:0 4px 20px rgba(139,92,246,.4);}
@@ -113,7 +113,7 @@
     .subtitle{color:var(--muted); font-weight:600; font-size:18px; margin-bottom:20px}
     .lead{color:#dbd7ff; opacity:.9; max-width:56ch; line-height:1.8; margin-bottom:28px}
     
-    .service-cta{ display:inline-flex; gap:10px; align-items:center; padding:14px 18px; border-radius:14px; font-weight:700; text-decoration:none; transition:transform .2s ease, box-shadow .2s ease; }
+    .service-cta{ display:inline-flex; gap:10px; align-items:center; padding:14px 18px; border-radius:14px; font-weight:700; text-decoration:none; transition:transform .2s ease, box-shadow .2s ease; cursor: pointer; }
     .personality-cta{ color:#0b0a13; background:linear-gradient(90deg, var(--gold), #FFEBA4); box-shadow:0 10px 30px rgba(238,217,114,.35); }
     .personality-cta:hover{transform:translateY(-2px); box-shadow:0 16px 36px rgba(238,217,114,.45)}
     .conflict-cta{ color:#fff; background:linear-gradient(90deg, var(--conflict), var(--conflict-2)); box-shadow:0 10px 30px rgba(255,107,107,.35); }
@@ -260,23 +260,23 @@
     </div>
     <nav>
       <ul>
-        <li><a href="#personality" class="nav-link personality-service active" data-section="personality">
+        <li><a class="nav-link personality-service active" data-section="personality">
           🧠 <span data-lang="en">Personality Analysis</span><span data-lang="vi">Phân tích tính cách</span><span data-lang="zh">性格分析</span>
         </a></li>
-        <li><a href="#conflict" class="nav-link conflict-service" data-section="conflict">
+        <li><a class="nav-link conflict-service" data-section="conflict">
           🤝 <span data-lang="en">Conflict Resolution</span><span data-lang="vi">Giải quyết xung đột</span><span data-lang="zh">冲突解决</span>
         </a></li>
-        <li><a href="#about" class="nav-link" onclick="scrollToSection('about')">
+        <li><a class="nav-link" data-section="about">
           ℹ️ <span data-lang="en">About</span><span data-lang="vi">Về chúng tôi</span><span data-lang="zh">关于我们</span>
         </a></li>
-        <li><a href="#faq" class="nav-link" onclick="scrollToSection('faq')">❓ <span>FAQ</span></a></li>
-        <li><a href="#contact" class="nav-link" onclick="scrollToSection('contact')">
+        <li><a class="nav-link" data-section="faq">❓ <span>FAQ</span></a></li>
+        <li><a class="nav-link" data-section="contact">
           📧 <span data-lang="en">Contact</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系</span>
         </a></li>
       </ul>
     </nav>
     <div class="lang pill">
-      <span>🌎</span>
+      <span>🌏</span>
       <select id="language" aria-label="Language selector">
         <option value="en" selected>English</option>
         <option value="vi">Tiếng Việt</option>
@@ -305,7 +305,7 @@
             <span data-lang="vi">Không cần trắc nghiệm cứng nhắc—chỉ cần trò chuyện tự nhiên. Mở trợ lý bên dưới và bắt đầu. Sau vài tin nhắn, bạn sẽ nhận được hồ sơ kiểu MBTI, mức độ tự tin và gợi ý hữu ích.</span>
             <span data-lang="zh">无需死板的选择题，只需自然聊天。开启下方助手并开始交流；很快你就会收到 MBTI 风格的简介、可信度以及实用建议。</span>
           </p>
-          <a class="service-cta personality-cta" href="#" onclick="openPersonalityChat()">
+          <a class="service-cta personality-cta" id="personality-cta-button">
             <span data-lang="en">Start Analysis</span>
             <span data-lang="vi">Bắt đầu phân tích</span>
             <span data-lang="zh">开始分析</span> →
@@ -448,7 +448,7 @@
             <span data-lang="vi">Dù là căng thẳng nơi làm việc, bất đồng gia đình hay xung đột nhóm, AI của chúng tôi giúp bạn hiểu nguyên nhân gốc rễ và cung cấp chiến lược giải quyết phù hợp dựa trên các kiểu tính cách liên quan.</span>
             <span data-lang="zh">无论是职场紧张、家庭分歧还是团队冲突，我们的 AI 帮你理解根本原因，并基于涉及的性格类型提供定制化解决方案。</span>
           </p>
-          <a class="service-cta conflict-cta" href="#" onclick="openConflictChat()">
+          <a class="service-cta conflict-cta" id="conflict-cta-button">
             <span data-lang="en">Get Help Now</span>
             <span data-lang="vi">Nhận trợ giúp ngay</span>
             <span data-lang="zh">立即获得帮助</span> →
@@ -573,7 +573,7 @@
     </section>
 
     <!-- About Section -->
-    <section class="section" id="about">
+    <section class="section" id="about" style="display:none;">
       <h2>
         <span data-lang="en">About Group 61</span>
         <span data-lang="vi">Về Nhóm 61</span>
@@ -592,7 +592,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="section faq" id="faq">
+    <section class="section faq" id="faq" style="display:none;">
       <h2>FAQ</h2>
       <details>
         <summary><span data-lang="en">What is the MBTI?</span><span data-lang="vi">MBTI là gì?</span><span data-lang="zh">什么是 MBTI？</span></summary>
@@ -612,12 +612,12 @@
       </details>
       <details>
         <summary><span data-lang="en">How long does it take?</span><span data-lang="vi">Mất bao lâu?</span><span data-lang="zh">需要多久？</span></summary>
-        <p><span data-lang="en">Personality analysis usually takes 5–10 minutes to get a first profile. Conflict resolution varies depending on complexity but typically provides initial guidance within a few exchanges.</span><span data-lang="vi">Phân tích tính cách thường mất 5–10 phút để có bản phân tích đầu tiên. Giải quyết xung đột thay đổi tùy thuộc vào độ phức tạp nhưng thường cung cấp hướng dẫn ban đầu trong vài lần trao đổi.</span><span data-lang="zh">性格分析通常 5–10 分钟即可获得初步画像。冲突解决因复杂程度而异，但通常在几次交流内就能提供初步指导。</span></p>
+        <p><span data-lang="en">Personality analysis usually takes 5—10 minutes to get a first profile. Conflict resolution varies depending on complexity but typically provides initial guidance within a few exchanges.</span><span data-lang="vi">Phân tích tính cách thường mất 5—10 phút để có bản phân tích đầu tiên. Giải quyết xung đột thay đổi tùy thuộc vào độ phức tạp nhưng thường cung cấp hướng dẫn ban đầu trong vài lần trao đổi.</span><span data-lang="zh">性格分析通常 5—10 分钟即可获得初步画像。冲突解决因复杂程度而异，但通常在几次交流内就能提供初步指导。</span></p>
       </details>
     </section>
 
     <!-- Contact Section -->
-    <section class="section" id="contact">
+    <section class="section" id="contact" style="display:none;">
       <h2><span data-lang="en">Get in touch</span><span data-lang="vi">Liên hệ</span><span data-lang="zh">联系我们</span></h2>
       <form id="contactForm">
         <div class="field">
@@ -769,7 +769,13 @@
     // --- 3. Navigation ---
     function initializeNavigation() {
       const navLinks = document.querySelectorAll('.nav-link[data-section]');
-      const sections = document.querySelectorAll('.service-section');
+      const sections = {
+        'personality': document.getElementById('personality-section'),
+        'conflict': document.getElementById('conflict-section'),
+        'about': document.getElementById('about'),
+        'faq': document.getElementById('faq'),
+        'contact': document.getElementById('contact')
+      };
       
       function switchToSection(targetSection) {
         console.log(`🔄 Switching to section: ${targetSection}`);
@@ -781,50 +787,50 @@
           targetLink.classList.add('active');
         }
         
-        // Update visible section
-        sections.forEach(section => section.classList.remove('active'));
-        const targetSectionElement = document.getElementById(targetSection + '-section');
-        if (targetSectionElement) {
-          targetSectionElement.classList.add('active');
+        // Hide all sections first
+        Object.values(sections).forEach(section => {
+          if (section) {
+            if (section.classList.contains('service-section')) {
+              section.classList.remove('active');
+            } else {
+              section.style.display = 'none';
+            }
+          }
+        });
+        
+        // Show target section
+        const targetElement = sections[targetSection];
+        if (targetElement) {
+          if (targetElement.classList.contains('service-section')) {
+            targetElement.classList.add('active');
+          } else {
+            targetElement.style.display = 'block';
+          }
         }
         
-        // Update current service and show appropriate chat button
-        currentService = targetSection;
-        updateChatButtons();
+        // Update current service and chat buttons for service sections
+        if (targetSection === 'personality' || targetSection === 'conflict') {
+          currentService = targetSection;
+          updateChatButtons();
+        } else {
+          // Hide chat buttons for non-service sections
+          document.getElementById('personalityChatOpen').style.display = 'none';
+          document.getElementById('conflictChatOpen').style.display = 'none';
+        }
         
-        console.log(`✅ Section switched to: ${targetSection}, currentService: ${currentService}`);
+        console.log(`✅ Section switched to: ${targetSection}`);
       }
       
       navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
-          
           const targetSection = this.dataset.section;
           switchToSection(targetSection);
-          
-          // Update URL without page reload
-          history.pushState(null, '', '#' + targetSection);
         });
       });
       
-      // Handle direct URL access and initial load
-      const hash = window.location.hash.slice(1);
-      if (hash && (hash === 'personality' || hash === 'conflict')) {
-        switchToSection(hash);
-      } else {
-        // Default to personality if no hash
-        switchToSection('personality');
-      }
-      
-      // Handle browser back/forward buttons
-      window.addEventListener('popstate', () => {
-        const hash = window.location.hash.slice(1);
-        if (hash && (hash === 'personality' || hash === 'conflict')) {
-          switchToSection(hash);
-        } else {
-          switchToSection('personality');
-        }
-      });
+      // Initial setup
+      switchToSection('personality');
     }
 
     function updateChatButtons() {
@@ -833,40 +839,27 @@
       
       console.log(`🔄 Updating chat buttons for service: ${currentService}`);
       
-      if (!personalityBtn || !conflictBtn) {
-        console.error('❌ Chat buttons not found in DOM');
-        return;
-      }
-      
       if (currentService === 'personality') {
         personalityBtn.style.display = 'block';
         conflictBtn.style.display = 'none';
-        console.log('✅ Showing personality button, hiding conflict button');
       } else if (currentService === 'conflict') {
         personalityBtn.style.display = 'none';
         conflictBtn.style.display = 'block';
-        console.log('✅ Showing conflict button, hiding personality button');
-      } else {
-        personalityBtn.style.display = 'none';
-        conflictBtn.style.display = 'none';
-        console.log('⚠️ Hiding both chat buttons');
       }
     }
 
     // --- 4. Service Launch Functions ---
     function openPersonalityChat() {
       console.log('🧠 Opening personality chat');
-      currentService = 'personality';
-      updateChatButtons();
-      document.getElementById('personalityChatPanel').classList.add('open');
+      const panel = document.getElementById('personalityChatPanel');
+      panel.classList.add('open');
       document.getElementById('personalityChatInput').focus();
     }
 
     function openConflictChat() {
       console.log('🤝 Opening conflict chat');
-      currentService = 'conflict';
-      updateChatButtons();
-      document.getElementById('conflictChatPanel').classList.add('open');
+      const panel = document.getElementById('conflictChatPanel');
+      panel.classList.add('open');
       document.getElementById('conflictChatInput').focus();
     }
 
@@ -875,27 +868,42 @@
       // Personality chat
       const personalityOpen = document.getElementById('personalityChatOpen');
       const personalityPanel = document.getElementById('personalityChatPanel');
+      const personalityCTA = document.getElementById('personality-cta-button');
+      
       if (personalityOpen && personalityPanel) {
         personalityOpen.onclick = () => { 
           personalityPanel.classList.toggle('open');
           if (personalityPanel.classList.contains('open')) {
-            if (latestPersonalityProgress && latestPersonalityProgress.current_step < latestPersonalityProgress.total_steps) {
-              updatePersonalityProgressBar(latestPersonalityProgress);
-            }
             document.getElementById('personalityChatInput').focus();
           }
+        };
+      }
+      
+      if (personalityCTA) {
+        personalityCTA.onclick = (e) => {
+          e.preventDefault();
+          openPersonalityChat();
         };
       }
 
       // Conflict chat
       const conflictOpen = document.getElementById('conflictChatOpen');
       const conflictPanel = document.getElementById('conflictChatPanel');
+      const conflictCTA = document.getElementById('conflict-cta-button');
+      
       if (conflictOpen && conflictPanel) {
         conflictOpen.onclick = () => { 
           conflictPanel.classList.toggle('open');
           if (conflictPanel.classList.contains('open')) {
             document.getElementById('conflictChatInput').focus();
           }
+        };
+      }
+      
+      if (conflictCTA) {
+        conflictCTA.onclick = (e) => {
+          e.preventDefault();
+          openConflictChat();
         };
       }
     }
@@ -994,7 +1002,7 @@ Cứ thoải mái chia sẻ nhé!`;
 请描述一下你遇到的情况——涉及哪些人，什么原因导致了紧张关系？
 
 我会帮你：
-• 理解根本原因
+• 理解根本原因 
 • 提供针对性策略
 • 给出具体的表达建议
 • 找到对所有人都有利的解决方案
@@ -1061,28 +1069,6 @@ Feel free to share what's going on!`;
       if(t) t.remove(); 
     }
 
-    function updatePersonalityProgressBar(progress) {
-      if (progress && progress.current_step >= progress.total_steps) {
-        const ex = document.getElementById('personality-progress-container'); if (ex) ex.remove();
-        latestPersonalityProgress = null; return;
-      }
-      let pc = document.getElementById('personality-progress-container');
-      if (!pc) {
-        pc = document.createElement('div');
-        pc.id = 'personality-progress-container';
-        pc.style.cssText = `
-          padding: 8px 14px;border-bottom:1px solid var(--glass-stroke);
-          background: rgba(255,255,255,.03); text-align:center; font-size:12px;
-          color: var(--muted); font-weight:500; flex-shrink:0;`;
-        const head = document.querySelector('#personalityChatPanel .chat-head');
-        if (head && head.parentNode) head.parentNode.insertBefore(pc, head.nextSibling);
-      }
-      if (progress) {
-        const count = Object.values(progress.dimensions_explored || {}).filter(Boolean).length;
-        pc.innerHTML = `Analysis Progress: Dimensions Explored ${count}/4`;
-      }
-    }
-
     async function handleFeedback(conversationId, isAccurate) {
       try {
         const buttons = document.querySelectorAll(`button[data-convo-id="${conversationId}"]`);
@@ -1140,7 +1126,7 @@ Feel free to share what's going on!`;
       try {
         const messages = personalityHistory.slice(-10);
         
-        console.log('🔍 SENDING PERSONALITY REQUEST');
+        console.log('📝 SENDING PERSONALITY REQUEST');
         
         // Call the dedicated personality function
         const res = await fetch('/.netlify/functions/personality-chat', {
@@ -1164,11 +1150,6 @@ Feel free to share what's going on!`;
           try {
             const mbtiResult = JSON.parse(data.reply);
             personalityHistory.push({ role:'assistant', content:data.reply });
-            
-            if (mbtiResult.progress) { 
-              latestPersonalityProgress = mbtiResult.progress; 
-              updatePersonalityProgressBar(latestPersonalityProgress); 
-            }
             
             let responseText = '';
             let isActualResult = false;
@@ -1302,7 +1283,7 @@ Feel free to share what's going on!`;
       try {
         const messages = conflictHistory.slice(-10);
         
-        console.log('🔍 SENDING CONFLICT REQUEST');
+        console.log('📝 SENDING CONFLICT REQUEST');
         
         // Call the dedicated conflict function
         const res = await fetch('/.netlify/functions/conflict-chat', {
@@ -1321,7 +1302,7 @@ Feel free to share what's going on!`;
         
         const data = await res.json();
         
-        console.log('🔍 RECEIVED CONFLICT RESPONSE:', data);
+        console.log('📝 RECEIVED CONFLICT RESPONSE:', data);
         
         hideTyping('conflict');
         
@@ -1330,7 +1311,7 @@ Feel free to share what's going on!`;
             const conflictResult = JSON.parse(data.reply);
             conflictHistory.push({ role:'assistant', content:data.reply });
             
-            console.log('🔍 PARSED CONFLICT JSON:', conflictResult);
+            console.log('📝 PARSED CONFLICT JSON:', conflictResult);
             
             // Format the conflict response for user-friendly display
             const formattedResponse = formatConflictResponse(conflictResult);
@@ -1367,8 +1348,6 @@ Feel free to share what's going on!`;
       document.getElementById('personalityResetBtn').style.display = 'none';
       document.getElementById('personalityChatInput').focus();
       latestPersonalityProgress = null;
-      const pc = document.getElementById('personality-progress-container');
-      if (pc) pc.remove();
     }
 
     function resetConflictChat() {
@@ -1439,42 +1418,6 @@ Feel free to share what's going on!`;
       window.openPersonalityChat = openPersonalityChat;
       window.openConflictChat = openConflictChat;
       window.updateChatButtons = updateChatButtons;
-      window.scrollToSection = (sectionId) => {
-        console.log(`📜 Scrolling to section: ${sectionId}`);
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      };
-      window.switchToConflict = () => {
-        console.log('🧪 Manual switch to conflict');
-        currentService = 'conflict';
-        updateChatButtons();
-        document.querySelector('[data-section="conflict"]').click();
-      };
-      window.switchToPersonality = () => {
-        console.log('🧪 Manual switch to personality');
-        currentService = 'personality';
-        updateChatButtons();
-        document.querySelector('[data-section="personality"]').click();
-      };
       
       console.log('✅ Mind-Mapper AI initialization complete');
-      console.log(`🔍 Current service: ${currentService}`);
-      console.log(`🔍 Chat buttons status:`, {
-        personality: document.getElementById('personalityChatOpen')?.style.display,
-        conflict: document.getElementById('conflictChatOpen')?.style.display
-      });
-      
-      // Debug: Test navigation after 2 seconds
-      setTimeout(() => {
-        console.log('🧪 Testing navigation elements...');
-        console.log('Nav links found:', document.querySelectorAll('.nav-link[data-section]').length);
-        console.log('Service sections found:', document.querySelectorAll('.service-section').length);
-        console.log('Active section:', document.querySelector('.service-section.active')?.id);
-        console.log('Active nav link:', document.querySelector('.nav-link.active')?.textContent);
-      }, 2000);
     });
-  </script>
-</body>
-</html>
